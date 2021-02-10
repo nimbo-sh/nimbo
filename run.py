@@ -31,6 +31,10 @@ sys.exit()
 if args.command == "show_gpu_prices":
     utils.show_gpu_prices(session)
 
+elif args.command == "run":
+    ec2 = session.client('ec2')
+    print(dir(ec2))
+
 
 # Get current price for a given instance, region and os
 #price = get_price(get_region_name('eu-west-1'), 'c5.xlarge', 'Linux')
