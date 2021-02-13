@@ -65,7 +65,51 @@ def show_gpu_prices(session):
 
 def show_active_instances(session):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances()
+    response = ec2.describe_instances(
+        Filters=[
+            {'Name': 'instance-state-name', 'Values':['running']}
+        ]
+    )
+    for reservation in response["Reservations"]:
+        for inst in reservation["Instances"]:
+            print(f"ID: {inst['InstanceId']}\n"
+                  f"Launch Time: {inst['LaunchTime']}\n"
+                  f"InstanceType: {inst['InstanceType']}\n")
+
+
+def show_stopped_instances(session):
+    ec2 = session.client('ec2')
+    response = ec2.describe_instances(
+        Filters=[
+            {'Name': 'instance-state-name', 'Values':['stopped','stopping']}
+        ]
+    )
+    for reservation in response["Reservations"]:
+        for inst in reservation["Instances"]:
+            print(f"ID: {inst['InstanceId']}\n"
+                  f"Launch Time: {inst['LaunchTime']}\n"
+                  f"InstanceType: {inst['InstanceType']}\n")
+
+
+def stop_instance(session, instance_id):
+    ec2 = session.client('ec2')
+    response = ec2.stop_instances(
+        InstanceIds=[instance_id],
+    )
+    pprint(response)
+
+
+def delete_instance(session, instance_id):
+    ec2 = session.client('ec2')
+    response = ec2.terminate_instances(
+        InstanceIds=[instance_id],
+    )
+    pprint(response)
+
+
+def check_instance(session, instance_id):
+    ec2 = session.client('ec2')
+    response = ec2.get_all_instance_status(instance_ids=instance_id)
     pprint(response)
 
 
@@ -73,3 +117,5 @@ def show_active_buckets(session):
     s3 = session.client('s3')
     response = s3.list_buckets()
     pprint(response)
+
+

@@ -5,10 +5,11 @@ import argparse
 from pprint import pprint
 from pkg_resources import resource_filename
 
-import utils
+from core import utils, launch
 
 parser = argparse.ArgumentParser(description='Nimbo utilities.')
-parser.add_argument('command', nargs='?', default='show_active_instances')
+parser.add_argument('command', nargs='?', default='list_active')
+parser.add_argument('--id', type=str, default='')
 args = parser.parse_args()
 
 session = boto3.Session(profile_name='nimbo')
@@ -30,10 +31,24 @@ sys.exit()
 
 if args.command == "show_gpu_prices":
     utils.show_gpu_prices(session)
-
+elif args.command == "list_active":
+    utils.show_active_instances(session)
+elif args.command == "list_stopped":
+    utils.show_stopped_instances(session)
+elif args.command == "check_instance":
+    assert args.id != "", "--id must not be empty"
+    utils.check_instance(session, args.id)
+elif args.command == "stop_instance":
+    assert args.id != "", "--id must not be empty"
+    utils.stop_instance(session, args.id)
+elif args.command == "delete_instance":
+    assert args.id != "", "--id must not be empty"
+    utils.delete_instance(session, args.id)
+elif args.command == "check_instance":
+    assert args.id != "", "--id must not be empty"
+    utils.check_instance(session, args.instance_id)
 elif args.command == "run":
-    ec2 = session.client('ec2')
-    print(dir(ec2))
+    launch.run_job(session)
 
 
 # Get current price for a given instance, region and os
