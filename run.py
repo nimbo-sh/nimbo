@@ -13,7 +13,6 @@ parser.add_argument('--id', type=str, default='')
 args = parser.parse_args()
 
 session = boto3.Session(profile_name='nimbo')
-pricing = session.client('pricing', region_name='us-east-1')
 
 """
 for attr in pricing.describe_services(ServiceCode='AmazonEC2')["Services"][0]["AttributeNames"]:
@@ -44,6 +43,8 @@ elif args.command == "stop_instance":
 elif args.command == "delete_instance":
     assert args.id != "", "--id must not be empty"
     utils.delete_instance(session, args.id)
+elif args.command == "delete_all_instances":
+    utils.delete_all_instances(session, args.id)
 elif args.command == "check_instance":
     assert args.id != "", "--id must not be empty"
     utils.check_instance(session, args.instance_id)

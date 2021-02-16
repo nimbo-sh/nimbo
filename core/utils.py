@@ -74,7 +74,8 @@ def show_active_instances(session):
         for inst in reservation["Instances"]:
             print(f"ID: {inst['InstanceId']}\n"
                   f"Launch Time: {inst['LaunchTime']}\n"
-                  f"InstanceType: {inst['InstanceType']}\n")
+                  f"InstanceType: {inst['InstanceType']}\n"
+                  f"Public DNS: {inst['PublicDnsName']}\n")
 
 
 def show_stopped_instances(session):
@@ -107,10 +108,33 @@ def delete_instance(session, instance_id):
     pprint(response)
 
 
-def check_instance(session, instance_id):
+def delete_all_instances(session, instance_id):
     ec2 = session.client('ec2')
-    response = ec2.get_all_instance_status(instance_ids=instance_id)
-    pprint(response)
+    response = ec2.describe_instances(
+        Filters=[
+            {'Name': 'instance-state-name', 'Values':['running']}
+        ]
+    )
+    for reservation in response["Reservations"]:
+        for inst in reservation["Instances"]:
+            delete_response = ec2.terminate_instances(
+                InstanceIds=[inst['InstanceId']],
+            )
+            pprint(delete_response)
+
+
+def check_instance_status(session, instance_id):
+    ec2 = session.client('ec2')
+    response = ec2.describe_instances(InstanceIds=[instance_id])
+    status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
+    return status
+
+
+def check_instance_host(session, instance_id):
+    ec2 = session.client('ec2')
+    response = ec2.describe_instances(InstanceIds=[instance_id])
+    host = response["Reservations"][0]["Instances"][0]["PublicDnsName"]
+    return host
 
 
 def show_active_buckets(session):
