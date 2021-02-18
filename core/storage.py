@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import boto3
 from botocore.exceptions import ClientError
 
@@ -60,3 +61,39 @@ def list_buckets(session, bucket_name):
     print('Existing buckets:')
     for bucket in response['Buckets']:
         print(f'  {bucket["Name"]}')
+
+
+def sync_folder(session, bucket_name, source, target):
+    command = f"aws s3 sync {source} {target} --profile nimbo --delete"
+    print(f"\nRunning command: {command}\n")
+    subprocess.Popen(command, shell=True).communicate()
+
+
+def pull(session, config, folder):
+    assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
+
+    source = f's3://{config["bucket_name"]}/{config[folder+"_path"]}'
+    target = config[folder+"_path"]
+    sync_folder(session, config["bucket_name"], source, target) 
+
+
+def push(session, config, folder):
+    assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
+
+    source = config[folder+"_path"]
+    target = f's3://{config["bucket_name"]}/{config[folder+"_path"]}'
+    sync_folder(session, config["bucket_name"], source, target) 
+
+
+def ls(session, config, path):
+    if path in ["/", "."]:
+        path = ""
+
+    if len(path) > 0:
+        if path[-1] != "/":
+            path = path + "/"
+
+    s3_path = f's3://{config["bucket_name"]}/{path}'
+    command = f"aws s3 ls {s3_path} --profile nimbo"
+    print(f"\nRunning command: {command}\n")
+    subprocess.Popen(command, shell=True).communicate()
