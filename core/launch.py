@@ -20,15 +20,6 @@ def run_job(session):
         process = subprocess.Popen(bash_command.split(), stdout=f)
     output, error = process.communicate()
 
-    # Upload code files to bucket
-    print("Syncing code...")
-    bash_command = 'aws s3 sync . s3://nimbo-main-bucket/code --profile nimbo --exclude * --include *.py --include nimbo-environment.yml'
-    process = subprocess.Popen(bash_command.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    output = output.decode("utf-8") if output is not None else ''
-    error = error.decode("utf-8") if error is not None else ''
-    print(output, error)
-
     # Launch instance
     print("Launching instance... ", end="", flush=True)
     ec2 = session.client('ec2')
@@ -47,6 +38,7 @@ def run_job(session):
     instance = instance["Instances"][0]
     status = ""
 
+    # Wait for the instance to be running
     while status != "running":
         time.sleep(1)
         status = utils.check_instance_status(session, instance["InstanceId"])
@@ -54,6 +46,7 @@ def run_job(session):
 
     host = utils.check_instance_host(session, instance["InstanceId"])
 
+    # Wait for the instance to be ready for ssh
     host_ready = False
     while 1:
         output, error = subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} echo 'Hello World'", shell=True, 
@@ -63,10 +56,22 @@ def run_job(session):
         else:
             time.sleep(2)
 
-    subprocess.Popen(f"scp -i ./instance-key.pem ./remote_setup.sh ubuntu@{host}:/home/ubuntu".split()).communicate()
+    # Send bash, env, and python scripts to instance
+    print("\nSyncing setup scripts...")
+    subprocess.Popen(f"scp -i ./instance-key.pem ./scripts/remote_setup.sh ubuntu@{host}:/home/ubuntu", shell=True).communicate()
 
-    cmd = "bash ./remote_setup.sh"
-    subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} {cmd}", shell=True).communicate()
+    print("\nSyncing conda env yml...")
+    subprocess.Popen(f"scp -i ./instance-key.pem ./nimbo-environment.yml ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+
+    print("\nSyncing code...")
+    subprocess.Popen(f"rsync -avm -e 'ssh -i ./instance-key.pem' "
+                     f"--include '*/' --include '*.py' --exclude '*' "
+                     f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+
+
+    print("\nSetting up conda environment...")
+    command = "bash ./remote_setup.sh"
+    subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} {command}", shell=True).communicate()
 
     # aws ssm send-command --document-name "AWS-RunShellScript" --comment "listing services" --instance-ids "Instance-ID"
     # --parameters commands="service --status-all" --region us-west-2 --output text
