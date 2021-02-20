@@ -27,13 +27,16 @@ def run_job(session):
     # print(userdata)
     instance = ec2.run_instances(
         ImageId='ami-0e5657f6d3c3ea350',
-        InstanceType='t2.micro',
+        InstanceType='t2.small',
         KeyName='instance-key',
         MinCount=1,
         MaxCount=1,
         Placement={
             "Tenancy": "default"
         },
+        IamInstanceProfile={
+            "Name": "s3-full-access"
+        }
     )
     instance = instance["Instances"][0]
     status = ""
@@ -56,18 +59,24 @@ def run_job(session):
         else:
             time.sleep(2)
 
-    # Send bash, env, and python scripts to instance
-    print("\nSyncing setup scripts...")
-    subprocess.Popen(f"scp -i ./instance-key.pem ./scripts/remote_setup.sh ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+    # Send conda env yaml and setup scripts to instance
+    print("\nSyncing config file...")
+    subprocess.Popen(f"scp -i ./instance-key.pem ./config.yml ubuntu@{host}:/home/ubuntu", shell=True).communicate()
 
+    # THIS IS NOT SAFE - demo only
+    #print("\nSending aws credentials...")
+    #subprocess.Popen(f"scp -i ./instance-key.pem -r ~/.aws ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+
+    # Send conda env yaml and setup scripts to instance
     print("\nSyncing conda env yml...")
-    subprocess.Popen(f"scp -i ./instance-key.pem ./nimbo-environment.yml ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+    subprocess.Popen(f"scp -i ./instance-key.pem ./nimbo-environment.yml ./scripts/remote_setup.sh ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+    subprocess.Popen(f"rm ./nimbo-environment.yml", shell=True).communicate()
 
+    # Sync code with instance
     print("\nSyncing code...")
     subprocess.Popen(f"rsync -avm -e 'ssh -i ./instance-key.pem' "
                      f"--include '*/' --include '*.py' --exclude '*' "
                      f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
-
 
     print("\nSetting up conda environment...")
     command = "bash ./remote_setup.sh"
