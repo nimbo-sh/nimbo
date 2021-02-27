@@ -1,0 +1,7 @@
+bucket_name: nimbo-main-bucket
+datasets_path: data/datasets
+results_path: data/results
+
+profile: nimbo
+region_name: eu-west-1
+
