@@ -1,8 +1,9 @@
+import sys
+import json
+import subprocess
 from pprint import pprint
 import boto3
-import json
 from pkg_resources import resource_filename
-import sys
 
 
 full_region_names = {"eu-west-1": "EU (Ireland)"}
@@ -31,7 +32,7 @@ def get_full_region_name(region_name):
         return default_region
 
 
-def show_gpu_prices(session):
+def list_gpu_prices(session):
     instance_types = list(sorted(ec2_instance_types(session)))
     instance_types = [inst for inst in instance_types if inst[0] in ["p", "g"]]
     full_region_name = full_region_names[session.region_name]
@@ -67,7 +68,7 @@ def show_active_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values':['running']}
+            {'Name': 'instance-state-name', 'Values': ['running']}
         ]
     )
     for reservation in response["Reservations"]:
@@ -82,7 +83,7 @@ def show_stopped_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values':['stopped','stopping']}
+            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']}
         ]
     )
     for reservation in response["Reservations"]:
@@ -112,7 +113,7 @@ def delete_all_instances(session, instance_id):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values':['running']}
+            {'Name': 'instance-state-name', 'Values': ['running']}
         ]
     )
     for reservation in response["Reservations"]:
@@ -137,9 +138,45 @@ def check_instance_host(session, instance_id):
     return host
 
 
-def show_active_buckets(session):
+def list_active_buckets(session):
     s3 = session.client('s3')
     response = s3.list_buckets()
     pprint(response)
 
+
+def list_amis(session):
+    ec2 = session.client('ec2')
+    images = ec2.describe_images(Owners=['self'],
+                                 Filters=[{
+                                     "Name": "tag:created_by",
+                                     "Values": ["nimbo"]
+                                 }])["Images"]
+    pprint(images)
+
+
+def get_latest_nimbo_ami(session):
+    ec2 = session.client('ec2')
+    images = ec2.describe_images(Owners=['self'],
+                                 Filters=[{
+                                     "Name": "tag:created_by",
+                                     "Values": ["nimbo"]
+                                 },{
+                                     "Name": "state",
+                                     "Values": ["available"]
+                                 }])["Images"]
+    if len(images) > 0:
+        sorted_images = sorted(images, key=lambda x: x["CreationDate"])
+        return sorted_images[-1]["ImageId"]
+    else:
+        return None
+
+
+def delete_ami(session, ami):
+    ec2 = session.client('ec2')
+    ec2.deregister_image(ImageId=ami)
+
+
+def ssh(session, instance_id):
+    host = check_instance_host(session, instance_id)
+    subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host}", shell=True).communicate()
 

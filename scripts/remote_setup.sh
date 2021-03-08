@@ -13,5 +13,7 @@ conda activate nimbo
 conda env update -q --file nimbo-environment.yml
 conda install -q -c conda-forge awscli -y
 
-mkdir /home/ubuntu/data/datasets
-aws s3 cp --recursive s3://nimbo-main-bucket/data/datasets/* /home/ubuntu/data/datasets
+mkdir -p /home/ubuntu/data/datasets
+aws s3 cp --recursive s3://nimbo-main-bucket/data/datasets /home/ubuntu/data/datasets
+
+rm -rf /home/ubuntu/data/datasets

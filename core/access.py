@@ -1,3 +1,4 @@
+import json
 import boto3
 import requests
 from botocore.exceptions import ClientError
@@ -44,6 +45,9 @@ def allow_inbound_current_device(session, group_name):
 
 def create_s3_full_access_ec2_role(session):
     iam = session.client("iam")
+    role_name = "NimboAllowS3FullAccess"
+    instance_profile_name = "NimboInstanceProfile"
+
 
     policy = {
         "Version": "2012-10-17",
@@ -54,14 +58,18 @@ def create_s3_full_access_ec2_role(session):
             "Principal": {"Service": "ec2.amazonaws.com"}
         }
     }
-    role = iam.create_role(RoleName="AllowFullS3Access", AssumeRolePolicyDocument=json.dumps(policy))
-    response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess', RoleName='AllowFullS3Access')
+    role = iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(policy))
+    response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess', RoleName=role_name)
+
+    instance_profile = iam.create_instance_profile(InstanceProfileName=instance_profile_name,Path='/')
+    iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
 
 
 if __name__ == "__main__":
 
-    session = boto3.Session()
+    session = boto3.Session(profile_name="nimbo")
 
-    group_name = "nimbo-security-group"
+    group_name = "default"
     #create_security_group(session, group_name)
-    allow_inbound_current_device(session, group_name)
+    #allow_inbound_current_device(session, group_name)
+    create_s3_full_access_ec2_role(session)
