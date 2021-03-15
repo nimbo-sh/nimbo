@@ -39,13 +39,7 @@ sys.exit()
 """
 
 if args.command[0] == "run":
-    nimbo_ami = utils.get_latest_nimbo_ami(session)
-    if nimbo_ami is not None:
-        print(f"Using existing image ({nimbo_ami}).")
-        launch.launch_instance_from_ami(session, config, nimbo_ami)
-    else:
-        print("No image found. Creating new one.")
-        launch.launch_instance_from_scratch(session, config, args.noscript)
+    launch.launch_instance(session, config)
 
 elif args.command[0] == "ssh":
     utils.ssh(session, args.id)

@@ -5,4 +5,5 @@ results_path: data/results
 profile: nimbo
 region_name: eu-west-1
 instance_type: t2.small
+ami: ami-0e5657f6d3c3ea350
 
