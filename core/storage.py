@@ -63,6 +63,30 @@ def list_buckets(session, bucket_name):
         print(f'  {bucket["Name"]}')
 
 
+def list_snapshots(session):
+    # Retrieve the list of existing buckets
+    ec2 = session.client('ec2')
+
+    response = ec2.describe_snapshots(
+        Filters=[{
+            'Name': 'tag:created_by',
+            'Values': [
+                'nimbo',
+            ]},
+        ],
+        MaxResults=100,
+    )
+    return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
+
+
+def check_snapshot_state(session, snapshot_id):
+    ec2 = session.client('ec2')
+    response = ec2.describe_snapshots(
+        SnapshotIds=[snapshot_id]
+    )
+    return response["Snapshots"][0]["State"]
+
+
 def sync_folder(session, bucket_name, source, target):
     command = f"aws s3 sync {source} {target} --profile nimbo --delete"
     print(f"\nRunning command: {command}\n")
@@ -73,16 +97,16 @@ def pull(session, config, folder):
     assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
 
     source = f's3://{config["bucket_name"]}/{config[folder+"_path"]}'
-    target = config[folder+"_path"]
-    sync_folder(session, config["bucket_name"], source, target) 
+    target = config[folder + "_path"]
+    sync_folder(session, config["bucket_name"], source, target)
 
 
 def push(session, config, folder):
     assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
 
-    source = config[folder+"_path"]
+    source = config[folder + "_path"]
     target = f's3://{config["bucket_name"]}/{config[folder+"_path"]}'
-    sync_folder(session, config["bucket_name"], source, target) 
+    sync_folder(session, config["bucket_name"], source, target)
 
 
 def ls(session, config, path):

@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import subprocess
 from pprint import pprint
@@ -15,16 +16,40 @@ def launch_instance(session, config, noscript=False):
     # Operation is idempotent, so will not do anything if bucket already exists
     success = storage.create_bucket(session, 'nimbo-main-bucket')
 
-    # Launch instance
+    snapshots = storage.list_snapshots(session)
+
+    if len(snapshots) == 0:
+        print("No conda volume found. Creating new one.")
+        new_volume = 1
+        ebs_dict = {
+            'DeleteOnTermination': True,
+            'VolumeSize': 8,
+            'VolumeType': 'standard',
+        }
+    else:
+        print(f"Creating conda volume from snapshot {snapshots[-1]['SnapshotId']}")
+        new_volume = 0
+        ebs_dict = {
+            'DeleteOnTermination': True,
+            'SnapshotId': snapshots[-1]["SnapshotId"],
+        }
+
+    # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
     ec2 = session.client('ec2')
 
     # print(userdata)
     start_t = time.time()
     instance = ec2.run_instances(
+        BlockDeviceMappings=[
+            {
+                'DeviceName': '/dev/sdf',
+                'Ebs': ebs_dict,
+            },
+        ],
         ImageId=config['ami'],
         InstanceType=config["instance_type"],
-        KeyName='instance-key',
+        KeyName=config["instance_key"],
         MinCount=1,
         MaxCount=1,
         Placement={
@@ -43,7 +68,7 @@ def launch_instance(session, config, noscript=False):
         status = utils.check_instance_status(session, instance["InstanceId"])
 
     end_t = time.time()
-    print(f"Instance running. ({round((end_t-start_t), 2)})")
+    print(f"Instance running. ({round((end_t-start_t), 2)}s)")
 
     host = utils.check_instance_host(session, instance["InstanceId"])
 
@@ -60,10 +85,8 @@ def launch_instance(session, config, noscript=False):
     print("Ready.")
 
     # Get conda env yml of current env
-    bash_command = "conda env export"
-    with open("./nimbo-environment.yml", "w") as f:
-        process = subprocess.Popen(bash_command.split(), stdout=f)
-    output, error = process.communicate()
+    command = "conda env export > nimbo-environment.yml"
+    output, error = subprocess.Popen(command, shell=True).communicate()
 
     # Send conda env yaml and setup scripts to instance
     print("\nSyncing conda, config, and setup files...")
@@ -71,7 +94,7 @@ def launch_instance(session, config, noscript=False):
     subprocess.Popen(f"rm ./nimbo-environment.yml", shell=True).communicate()
 
     print("\nSetting up environment...")
-    command = "bash ./remote_setup.sh"
+    command = f"'export NEW_VOLUME={new_volume} && bash remote_setup.sh'"
     subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} {command}", shell=True).communicate()
 
     # Sync code with instance
@@ -89,5 +112,34 @@ def launch_instance(session, config, noscript=False):
         # Run user script
         pass
 
-    # Terminate instance
-    utils.delete_instance(session, instance["InstanceId"])
+    # Create snapshot
+    print("Saving conda env in a snapshot...", end="", flush=True)
+    response = ec2.describe_volumes(Filters=[
+        {
+            "Name": "attachment.instance-id",
+            "Values": [instance["InstanceId"]]
+        },
+        {
+            "Name": "attachment.device",
+            "Values": ['/dev/sdf']
+        }
+    ])
+    volume = response["Volumes"][0]
+    volume_id = volume["Attachments"][0]["VolumeId"]
+    snapshot = ec2.create_snapshot(
+        Description="Conda folder snapshot",
+        VolumeId=volume_id,
+        TagSpecifications=[{
+            "ResourceType": "snapshot",
+            "Tags": [{"Key": "created_by", "Value": "nimbo"}]
+        }]
+    )
+    # Wait for snapshot to be completed
+    while storage.check_snapshot_state(session, snapshot["SnapshotId"]) != "completed":
+        time.sleep(2)
+    print("Done.")
+
+
+    if config["delete_after_job_finish"] == True:
+        # Terminate instance
+        utils.delete_instance(session, instance["InstanceId"])
