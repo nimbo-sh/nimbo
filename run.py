@@ -42,7 +42,7 @@ if args.command[0] == "run":
     launch.launch_instance(session, config)
 
 elif args.command[0] == "ssh":
-    utils.ssh(session, args.id)
+    utils.ssh(session, args.command[1])
 
 elif args.command[0] == "list_gpu_prices":
     utils.list_gpu_prices(session)
@@ -66,7 +66,7 @@ elif args.command[0] == "stop_instance":
     utils.stop_instance(session, args.id)
 
 elif args.command[0] == "delete_instance":
-    utils.delete_instance(session, args.id)
+    utils.delete_instance(session, args.command[1])
 
 elif args.command[0] == "delete_all_instances":
     utils.delete_all_instances(session, args.id)
