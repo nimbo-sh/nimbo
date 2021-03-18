@@ -21,6 +21,7 @@ with open("./config.yml", "r") as f:
 
 print("Config:")
 pprint(config)
+print()
 
 session = boto3.Session(profile_name='nimbo')
 
@@ -39,7 +40,7 @@ sys.exit()
 """
 
 if args.command[0] == "run":
-    launch.launch_instance(session, config)
+    launch.launch_instance(session, config, args.command[1])
 
 elif args.command[0] == "ssh":
     utils.ssh(session, args.command[1])
