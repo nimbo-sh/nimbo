@@ -24,6 +24,9 @@ def launch_instance(session, config, job_cmd, noscript=False):
     # print(userdata)
     start_t = time.time()
     instance = ec2.run_instances(
+        BlockDeviceMappings=[{
+            'DeviceName': '/dev/sda1',
+            'Ebs': {'VolumeSize': config["disk_size"]}}],
         ImageId=config['ami'],
         InstanceType=config["instance_type"],
         KeyName=config["instance_key"],
