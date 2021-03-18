@@ -8,6 +8,25 @@ from pkg_resources import resource_filename
 
 full_region_names = {"eu-west-1": "EU (Ireland)"}
 
+# Each element is [num_gpus, gpu_type]
+instance_gpu_map = {
+    "p4d.24xlarge": [8, "A100"],
+    "p3.2xlarge": [1, "V100"],
+    "p3.8xlarge": [4, "V100"],
+    "p3.16xlarge": [8, "V100"],
+    "p3dn.24xlarge": [8, "V100"],
+    "p2.xlarge": [1, "K80"],
+    "p2.xlarge": [1, "K80"],
+    "p2.8xlarge": [8, "K80"],
+    "p2.16xlarge": [16, "K80"],
+    "g4dn.xlarge": [1, "T4"],
+    "g4dn.2xlarge": [1, "T4"],
+    "g4dn.4xlarge": [1, "T4"],
+    "g4dn.8xlarge": [1, "T4"],
+    "g4dn.16xlarge": [1, "T4"],
+    "g4dn.12xlarge": [4, "T4"],
+    "g4dn.metal": [8, "T4"],
+}   
 
 def ec2_instance_types(session):
     '''Yield all available EC2 instance types in region <region_name>'''
@@ -61,7 +80,14 @@ def list_gpu_prices(session):
         inst = inst['pricePerUnit']
         currency = list(inst.keys())[0]
         price = float(inst[currency])
-        print(instance_type + ": " + "%0.3f %s" % (price, currency))
+
+        if instance_type in instance_gpu_map:
+            num_gpus, gpu_type = instance_gpu_map[instance_type]
+            string = "{0: <16} {1: <10} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type) 
+        else:
+            string = "{0: <16} {1: <10}".format(instance_type, round(price, 2)) 
+
+        print(string)
 
 
 def show_active_instances(session):
