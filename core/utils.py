@@ -204,5 +204,5 @@ def delete_ami(session, ami):
 
 def ssh(session, instance_id):
     host = check_instance_host(session, instance_id)
-    subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host}", shell=True).communicate()
+    subprocess.Popen(f"ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 

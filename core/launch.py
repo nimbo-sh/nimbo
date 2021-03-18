@@ -48,12 +48,13 @@ def launch_instance(session, config, job_cmd, noscript=False):
     print(f"Instance running. ({round((end_t-start_t), 2)}s)")
 
     host = utils.check_instance_host(session, instance["InstanceId"])
+    ssh = "ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no'"
 
     # Wait for the instance to be ready for ssh
     print("Waiting for instance to be ready for ssh... ", end="", flush=True)
     host_ready = False
     while 1:
-        output, error = subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} echo 'Hello World'", shell=True,
+        output, error = subprocess.Popen(f"{ssh} ubuntu@{host} echo 'Hello World'", shell=True,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         if error == b'':
             break
@@ -81,7 +82,7 @@ def launch_instance(session, config, job_cmd, noscript=False):
 
     print("\nSetting up environment...")
     command = "bash remote_setup.sh"
-    subprocess.Popen(f"ssh -i ./instance-key.pem ubuntu@{host} {command} {job_cmd}", shell=True).communicate()
+    subprocess.Popen(f"{ssh} ubuntu@{host} {command} {job_cmd}", shell=True).communicate()
 
 
     # aws ssm send-command --document-name "AWS-RunShellScript" --comment "listing services" --instance-ids "Instance-ID"
