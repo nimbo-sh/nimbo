@@ -132,7 +132,7 @@ def delete_instance(session, instance_id):
     response = ec2.terminate_instances(
         InstanceIds=[instance_id],
     )
-    pprint(response)
+    pprint(response["TerminatingInstances"][0])
 
 
 def delete_all_instances(session, instance_id):
@@ -147,7 +147,7 @@ def delete_all_instances(session, instance_id):
             delete_response = ec2.terminate_instances(
                 InstanceIds=[inst['InstanceId']],
             )
-            pprint(delete_response)
+            pprint(delete_response["TerminatingInstances"][0])
 
 
 def check_instance_status(session, instance_id):
