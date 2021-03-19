@@ -26,7 +26,8 @@ instance_gpu_map = {
     "g4dn.16xlarge": [1, "T4"],
     "g4dn.12xlarge": [4, "T4"],
     "g4dn.metal": [8, "T4"],
-}   
+}
+
 
 def ec2_instance_types(session):
     '''Yield all available EC2 instance types in region <region_name>'''
@@ -57,6 +58,8 @@ def list_gpu_prices(session):
     full_region_name = full_region_names[session.region_name]
 
     pricing = session.client('pricing', region_name='us-east-1')
+    
+    print("{0: <16} {1: <15} {2}".format("InstanceType", "Price ($/hour)", "GPU"))
 
     for instance_type in instance_types:
         response = pricing.get_products(
@@ -83,9 +86,35 @@ def list_gpu_prices(session):
 
         if instance_type in instance_gpu_map:
             num_gpus, gpu_type = instance_gpu_map[instance_type]
-            string = "{0: <16} {1: <10} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type) 
+            string = "{0: <16} {1: <15} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type)
         else:
-            string = "{0: <16} {1: <10}".format(instance_type, round(price, 2)) 
+            string = "{0: <16} {1: <15}".format(instance_type, round(price, 2))
+
+        print(string)
+
+
+def list_spot_gpu_prices(session):
+    instance_types = list(sorted(ec2_instance_types(session)))
+    instance_types = [inst for inst in instance_types if inst[0] in ["p", "g"]]
+    full_region_name = full_region_names[session.region_name]
+
+    ec2 = session.client('ec2')
+
+    print("{0: <16} {1: <15} {2}".format("InstanceType", "Price ($/hour)", "GPU"))
+
+    for instance_type in instance_types:
+        response = ec2.describe_spot_price_history(
+            InstanceTypes=[instance_type],
+            Filters=[{"Name": "product-description", "Values": ["Linux/UNIX"]}]
+        )
+
+        price = float(response['SpotPriceHistory'][0]["SpotPrice"])
+
+        if instance_type in instance_gpu_map:
+            num_gpus, gpu_type = instance_gpu_map[instance_type]
+            string = "{0: <16} {1: <15} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type)
+        else:
+            string = "{0: <16} {1: <15}".format(instance_type, round(price, 2))
 
         print(string)
 
@@ -186,7 +215,7 @@ def get_latest_nimbo_ami(session):
                                  Filters=[{
                                      "Name": "tag:created_by",
                                      "Values": ["nimbo"]
-                                 },{
+                                 }, {
                                      "Name": "state",
                                      "Values": ["available"]
                                  }])["Images"]
@@ -205,4 +234,3 @@ def delete_ami(session, ami):
 def ssh(session, instance_id):
     host = check_instance_host(session, instance_id)
     subprocess.Popen(f"ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
-

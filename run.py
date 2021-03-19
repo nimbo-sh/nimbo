@@ -50,6 +50,9 @@ elif args.command[0] == "ssh":
 elif args.command[0] == "list_gpu_prices":
     utils.list_gpu_prices(session)
 
+elif args.command[0] == "list_spot_gpu_prices":
+    utils.list_spot_gpu_prices(session)
+
 elif args.command[0] == "list_active":
     utils.show_active_instances(session)
 
