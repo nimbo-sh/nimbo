@@ -1,4 +1,4 @@
-import os
+from os.path import join
 import sys
 import time
 import subprocess
@@ -8,9 +8,15 @@ from botocore.exceptions import ClientError
 
 from . import storage
 from . import utils
+from .paths import NIMBO
+from .ami.catalog import AMI_MAP
 
 
 def launch_instance(session, config, job_cmd, noscript=False):
+    assert config["image"] in AMI_MAP, \
+        "The image requested doesn't exist. " \
+        "Please check this link for a list of supported images."
+
     print("Job command:", job_cmd)
 
     # Create main bucket
@@ -27,7 +33,7 @@ def launch_instance(session, config, job_cmd, noscript=False):
         BlockDeviceMappings=[{
             'DeviceName': '/dev/sda1',
             'Ebs': {'VolumeSize': config["disk_size"]}}],
-        ImageId=config['ami'],
+        ImageId=AMI_MAP[config['image']],
         InstanceType=config["instance_type"],
         KeyName=config["instance_key"],
         MinCount=1,
@@ -50,8 +56,13 @@ def launch_instance(session, config, job_cmd, noscript=False):
     end_t = time.time()
     print(f"Instance running. ({round((end_t-start_t), 2)}s)")
 
+    if config["launch_only"]:
+        sys.exit()
+
+    INSTANCE_KEY = config["instance_key"]+".pem"
     host = utils.check_instance_host(session, instance["InstanceId"])
-    ssh = "ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no'"
+    ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
+    scp = f"scp -i {INSTANCE_KEY}"
 
     # Wait for the instance to be ready for ssh
     print("Waiting for instance to be ready for ssh... ", end="", flush=True)
@@ -65,37 +76,30 @@ def launch_instance(session, config, job_cmd, noscript=False):
             time.sleep(2)
     print("Ready.")
 
+    LOCAL_ENV = "local_env.yml"
+    CONFIG = "config.yml"
+    REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
+
     # Get conda env yml of current env
-    command = "conda env export > local_env.yml"
+    command = f"conda env export > {LOCAL_ENV}"
     output, error = subprocess.Popen(command, shell=True).communicate()
 
     # Send conda env yaml and setup scripts to instance
     print("\nSyncing conda, config, and setup files...")
-    subprocess.Popen("scp -i ./instance-key.pem "
-                     "./local_env.yml ./config.yml "
-                     "./scripts/remote_setup.sh "
+    subprocess.Popen(f"{scp} "
+                     f"{LOCAL_ENV} {CONFIG} {REMOTE_SETUP} "
                      f"ubuntu@{host}:/home/ubuntu", shell=True).communicate()
-    subprocess.Popen(f"rm ./local_env.yml", shell=True).communicate()
+    subprocess.Popen(f"rm {LOCAL_ENV}", shell=True).communicate()
 
     # Sync code with instance
     print("\nSyncing code...")
-    subprocess.Popen(f"rsync -avm -e 'ssh -i ./instance-key.pem' "
+    subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
                      f"--include '*/' --include '*.py' --exclude '*' "
                      f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
 
     print("\nSetting up environment...")
-    command = "bash remote_setup.sh"
+    command = f"bash remote_setup.sh"
     subprocess.Popen(f"{ssh} ubuntu@{host} {command} {job_cmd}", shell=True).communicate()
-
-
-    # aws ssm send-command --document-name "AWS-RunShellScript" --comment "listing services" --instance-ids "Instance-ID"
-    # --parameters commands="service --status-all" --region us-west-2 --output text
-
-    if noscript:
-        pass
-    else:
-        # Run user script
-        pass
 
     if config["delete_after_job_finish"] == True:
         # Terminate instance

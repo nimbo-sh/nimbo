@@ -1,3 +1,4 @@
+from os.path import join
 import sys
 import json
 import yaml
@@ -7,6 +8,7 @@ from pprint import pprint
 from pkg_resources import resource_filename
 
 from core import utils, storage, launch
+from core.paths import NIMBO
 
 parser = argparse.ArgumentParser(description='Nimbo utilities.')
 parser.add_argument('command', nargs='+', default='list_active')
@@ -16,7 +18,7 @@ parser.add_argument('--noscript', action="store_true")
 args = parser.parse_args()
 
 # Load yaml config file
-with open("./config.yml", "r") as f:
+with open(join(NIMBO, "config.yml"), "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 print("Config:")
