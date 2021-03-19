@@ -16,17 +16,17 @@ echo "Bucket name: $BUCKET_NAME"
 CONDASH=$CONDA_PATH/etc/profile.d/conda.sh
 ENV_NAME="$(grep 'name:' local_env.yml | awk '{print $2}')"
 echo ""
-echo "Using conda env $ENV_NAME"
+echo "Using conda env: $ENV_NAME"
 
 # Import conda from s3
 echo ""
 echo "Importing conda from s3..."
 mkdir -p $CONDA_PATH
-$AWS s3 cp s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
+$AWS s3 cp --quiet s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
 tar -xf conda-envs.tar -C $CONDA_PATH
 rm conda-envs.tar
 
-
+# ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
     echo ""
     echo "Conda installation found."
@@ -69,9 +69,9 @@ S3_RESULTS_PATH=s3://$BUCKET_NAME/$RESULTS_PATH
 
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH"
-$AWS s3 cp --recursive $S3_DATASETS_PATH $DATASETS_PATH
+$AWS s3 cp --quiet --recursive $S3_DATASETS_PATH $DATASETS_PATH
 printf "Importing results from $S3_RESULTS_PATH"
-$AWS s3 cp --recursive $S3_RESULTS_PATH $RESULTS_PATH
+$AWS s3 cp --quiet --recursive $S3_RESULTS_PATH $RESULTS_PATH
 
 # If the local and existing environments are different, update the env on the bucket
 if [ $UPDATE_ENV -eq 1 ]; then
@@ -83,10 +83,13 @@ fi
 
 cd repo
 echo ""
-echo "Running script..."
-printf "$@"
+echo "================================================="
+echo ""
+echo "Running job: $@"
 $@
 cd ..
+
+$AWS s3 sync $RESULTS_PATH $S3_RESULTS_PATH
 
 conda deactivate
 echo ""
