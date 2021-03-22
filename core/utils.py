@@ -1,9 +1,13 @@
+import os
 import sys
 import json
 import subprocess
 from pprint import pprint
 import boto3
 from pkg_resources import resource_filename
+
+from .paths import CWD
+from .ami.catalog import AMI_MAP
 
 
 full_region_names = {"eu-west-1": "EU (Ireland)"}
@@ -201,12 +205,9 @@ def list_active_buckets(session):
 
 def list_amis(session):
     ec2 = session.client('ec2')
-    images = ec2.describe_images(Owners=['self'],
-                                 Filters=[{
-                                     "Name": "tag:created_by",
-                                     "Values": ["nimbo"]
-                                 }])["Images"]
-    pprint(images)
+    print("{0: <25} {1}".format("AMI code", "System"))
+    for image_name, ami_code in AMI_MAP.items():
+        print("{0: <25} {1}".format(ami_code, image_name))
 
 
 def get_latest_nimbo_ami(session):
@@ -234,3 +235,14 @@ def delete_ami(session, ami):
 def ssh(session, instance_id):
     host = check_instance_host(session, instance_id)
     subprocess.Popen(f"ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
+
+
+def verify_correctness(config):
+
+    assert config["image"] in AMI_MAP, \
+        "The image requested doesn't exist. " \
+        "Please check this link for a list of supported images."
+
+    instance_key_name = config["instance_key"]
+    assert instance_key_name+".pem" in os.listdir(CWD), \
+        f"The key file '{instance_key_name}' wasn't found in the current directory."

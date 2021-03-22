@@ -13,10 +13,6 @@ from .ami.catalog import AMI_MAP
 
 
 def launch_instance(session, config, job_cmd, noscript=False):
-    assert config["image"] in AMI_MAP, \
-        "The image requested doesn't exist. " \
-        "Please check this link for a list of supported images."
-
     print("Job command:", job_cmd)
 
     # Create main bucket
@@ -86,13 +82,16 @@ def launch_instance(session, config, job_cmd, noscript=False):
             time.sleep(2)
     print("Ready.")
 
-    LOCAL_ENV = "local_env.yml"
     CONFIG = "config.yml"
     REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
 
-    # Get conda env yml of current env
-    command = f"conda env export > {LOCAL_ENV}"
-    output, error = subprocess.Popen(command, shell=True).communicate()
+    if "conda_yml" in config:
+        LOCAL_ENV = config["conda_yml"]
+    else:
+        # Get conda env yml of current env
+        LOCAL_ENV = "local_env.yml"
+        command = f"conda env export --from-history > {LOCAL_ENV}"
+        output, error = subprocess.Popen(command, shell=True).communicate()
 
     # Send conda env yaml and setup scripts to instance
     print("\nSyncing conda, config, and setup files...")

@@ -23,6 +23,7 @@ with open(join(NIMBO, "config.yml"), "r") as f:
 
 print("Config:")
 pprint(config)
+utils.verify_correctness(config)
 print()
 
 session = boto3.Session(profile_name='nimbo')
