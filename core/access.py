@@ -60,6 +60,7 @@ def create_s3_full_access_ec2_role(session):
     }
     role = iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(policy))
     response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess', RoleName=role_name)
+    response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonEC2FullAccess', RoleName=role_name)
 
     instance_profile = iam.create_instance_profile(InstanceProfileName=instance_profile_name,Path='/')
     iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
