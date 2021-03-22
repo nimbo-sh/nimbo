@@ -40,8 +40,7 @@ sys.exit()
 """
 
 if args.command[0] == "run":
-    assert len(args.commands[1:]) > 0, "No command passed to nimbo run."
-    launch.run_job(session, config, " ".join(args.commands[1:]))
+    launch.run_job(session, config, args.command[1])
 
 elif args.command[0] == "launch":
     launch.run_job(session, config, "_nimbo_launch")
