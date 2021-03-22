@@ -29,23 +29,33 @@ def launch_instance(session, config, job_cmd, noscript=False):
 
     # print(userdata)
     start_t = time.time()
-    instance = ec2.run_instances(
-        BlockDeviceMappings=[{
+    instance_config = {
+        "BlockDeviceMappings": [{
             'DeviceName': '/dev/sda1',
             'Ebs': {'VolumeSize': config["disk_size"]}}],
-        ImageId=AMI_MAP[config['image']],
-        InstanceType=config["instance_type"],
-        KeyName=config["instance_key"],
-        MinCount=1,
-        MaxCount=1,
-        Placement={
+        "ImageId": AMI_MAP[config['image']],
+        "InstanceType": config["instance_type"],
+        "KeyName": config["instance_key"],
+        "Placement": {
             "Tenancy": "default"
         },
-        IamInstanceProfile={
+        "IamInstanceProfile": {
             "Name": "NimboInstanceProfile"
         }
-    )
-    instance = instance["Instances"][0]
+    }
+    if config["spot"]:
+        instance = ec2.request_spot_instances(
+            BlockDurationMinutes=config["spot_duration"],
+            LaunchSpecification=instance_config
+        )
+        instance = instance["SpotInstanceRequests"][0]
+        
+    else:
+        instance_config["MinCount"] = 1
+        instance_config["MaxCount"] = 1
+        instance = ec2.run_instances(**instance_config)
+        instance = instance["Instances"][0]
+
     status = ""
 
     # Wait for the instance to be running
@@ -91,8 +101,16 @@ def launch_instance(session, config, job_cmd, noscript=False):
                      f"ubuntu@{host}:/home/ubuntu", shell=True).communicate()
     subprocess.Popen(f"rm {LOCAL_ENV}", shell=True).communicate()
 
-    # Sync code with instance
+    output, error = subprocess.Popen("git ls-tree -r HEAD --name-only", stdout=subprocess.PIPE, shell=True).communicate()
+    git_tracked_files = output.decode("utf-8").strip().splitlines()
+    include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
+    include_string = " ".join(include_files)
+
+     # Sync code with instance
     print("\nSyncing code...")
+    #subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
+    #                 f"--include '*/' {include_string} --exclude '*' "
+    #                 f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
     subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
                      f"--include '*/' --include '*.py' --exclude '*' "
                      f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
