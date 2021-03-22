@@ -97,18 +97,14 @@ echo ""
 echo "================================================="
 echo ""
 
-if [ $# -eq 0 ]; then
-    echo "No command passed to nimbo run. Continuing."
+if [ "$2" = "_nimbo_launch_and_setup" ]; then
+    echo "Setup complete. You can now use 'nimbo ssh <instance-id>' to ssh into this instance."
+    exit 0
 else
-    if [ "$1" = "_nimbo_launch_and_setup" ]; then
-        echo "Setup complete. You can now use 'nimbo ssh <instance-id>' to ssh into this instance."
-        exit 0
-    else
-        cd repo
-        echo "Running job: $@"
-        $@
-        cd ..
-    fi
+    cd repo
+    echo "Running job: $@"
+    ${@:2}
+    cd ..
 fi
 
 echo ""
@@ -126,3 +122,5 @@ fi
 conda deactivate
 echo ""
 echo "Job finished."
+
+#$AWS ec2 terminate-instances --instance-ids "$1"

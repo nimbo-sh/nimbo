@@ -52,12 +52,13 @@ def run_job(session, config, job_cmd):
         instance = ec2.run_instances(**instance_config)
         instance = instance["Instances"][0]
 
+    instance_id = instance["InstanceId"]
     status = ""
 
     # Wait for the instance to be running
     while status != "running":
         time.sleep(1)
-        status = utils.check_instance_status(session, instance["InstanceId"])
+        status = utils.check_instance_status(session, instance_id)
 
     end_t = time.time()
     print(f"Instance running. ({round((end_t-start_t), 2)}s)")
@@ -66,7 +67,7 @@ def run_job(session, config, job_cmd):
         sys.exit()
 
     INSTANCE_KEY = config["instance_key"]+".pem"
-    host = utils.check_instance_host(session, instance["InstanceId"])
+    host = utils.check_instance_host(session, instance_id)
     ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
     scp = f"scp -i {INSTANCE_KEY}"
 
@@ -121,7 +122,7 @@ def run_job(session, config, job_cmd):
     subprocess.Popen(f"{scp} {REMOTE_SETUP} "
                      f"ubuntu@{host}:/home/ubuntu/", shell=True).communicate()
     command = f"bash remote_setup.sh"
-    subprocess.Popen(f"{ssh} ubuntu@{host} {command} {job_cmd}", shell=True).communicate()
+    subprocess.Popen(f"{ssh} ubuntu@{host} {command} {instance_id} {job_cmd}", shell=True).communicate()
 
     if config["delete_after_job_finish"] == True and \
        job_cmd != "_nimbo_launch_and_setup":
