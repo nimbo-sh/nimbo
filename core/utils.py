@@ -168,7 +168,7 @@ def delete_instance(session, instance_id):
     pprint(response["TerminatingInstances"][0])
 
 
-def delete_all_instances(session, instance_id):
+def delete_all_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[

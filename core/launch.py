@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, basename
 import sys
 import time
 import subprocess
@@ -12,7 +12,7 @@ from .paths import NIMBO
 from .ami.catalog import AMI_MAP
 
 
-def launch_instance(session, config, job_cmd, noscript=False):
+def run_job(session, config, job_cmd):
     print("Job command:", job_cmd)
 
     # Create main bucket
@@ -62,7 +62,7 @@ def launch_instance(session, config, job_cmd, noscript=False):
     end_t = time.time()
     print(f"Instance running. ({round((end_t-start_t), 2)}s)")
 
-    if config["launch_only"]:
+    if job_cmd == "_nimbo_launch":
         sys.exit()
 
     INSTANCE_KEY = config["instance_key"]+".pem"
@@ -85,39 +85,45 @@ def launch_instance(session, config, job_cmd, noscript=False):
     CONFIG = "config.yml"
     REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
 
+    LOCAL_ENV = "local_env.yml"
     if "conda_yml" in config:
-        LOCAL_ENV = config["conda_yml"]
+        user_conda_yml = config["conda_yml"]
+        output, error = subprocess.Popen(f"cp {user_conda_yml} local_env.yml", shell=True).communicate()
     else:
         # Get conda env yml of current env
-        LOCAL_ENV = "local_env.yml"
-        command = f"conda env export --from-history > {LOCAL_ENV}"
+        command = f"conda env export > {LOCAL_ENV}"
         output, error = subprocess.Popen(command, shell=True).communicate()
 
     # Send conda env yaml and setup scripts to instance
     print("\nSyncing conda, config, and setup files...")
-    subprocess.Popen(f"{scp} "
-                     f"{LOCAL_ENV} {CONFIG} {REMOTE_SETUP} "
-                     f"ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+
+    # Create project folder and send env and config files there
+    subprocess.Popen(f"{ssh} ubuntu@{host} "
+                     f"mkdir project", shell=True).communicate()
+    subprocess.Popen(f"{scp} {LOCAL_ENV} {CONFIG} "
+                     f"ubuntu@{host}:/home/ubuntu/project/", shell=True).communicate()
     subprocess.Popen(f"rm {LOCAL_ENV}", shell=True).communicate()
 
+     # Sync code with instance
+    print("\nSyncing code...")
     output, error = subprocess.Popen("git ls-tree -r HEAD --name-only", stdout=subprocess.PIPE, shell=True).communicate()
     git_tracked_files = output.decode("utf-8").strip().splitlines()
     include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
     include_string = " ".join(include_files)
-
-     # Sync code with instance
-    print("\nSyncing code...")
     #subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
     #                 f"--include '*/' {include_string} --exclude '*' "
     #                 f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
     subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
                      f"--include '*/' --include '*.py' --exclude '*' "
-                     f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+                     f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
 
-    print("\nSetting up environment...")
+    # Run remote_setup script on instance
+    subprocess.Popen(f"{scp} {REMOTE_SETUP} "
+                     f"ubuntu@{host}:/home/ubuntu/", shell=True).communicate()
     command = f"bash remote_setup.sh"
     subprocess.Popen(f"{ssh} ubuntu@{host} {command} {job_cmd}", shell=True).communicate()
 
-    if config["delete_after_job_finish"] == True:
+    if config["delete_after_job_finish"] == True and \
+       job_cmd != "_nimbo_launch_and_setup":
         # Terminate instance
         utils.delete_instance(session, instance["InstanceId"])

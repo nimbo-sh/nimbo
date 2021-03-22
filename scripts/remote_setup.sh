@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-cd /home/ubuntu
+PROJ_DIR=/home/ubuntu/project
+cd $PROJ_DIR
 
 AWS=/usr/local/bin/aws
 CONDA_PATH=/home/ubuntu/miniconda3
@@ -20,11 +21,14 @@ echo "Using conda env: $ENV_NAME"
 
 # Import conda from s3
 echo ""
-echo "Importing conda from s3..."
+echo "Importing your conda envs from s3..."
 mkdir -p $CONDA_PATH
-$AWS s3 cp --quiet s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
-tar -xf conda-envs.tar -C $CONDA_PATH
-rm conda-envs.tar
+if $AWS s3 ls s3://$BUCKET_NAME/conda-envs.tar; then
+    $AWS s3 cp s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
+    tar -xf /home/ubuntu/conda-envs.tar -C $CONDA_PATH
+    rm /home/ubuntu/conda-envs.tar
+fi
+
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
@@ -33,8 +37,7 @@ if [ -f "$CONDASH" ]; then
     #echo "source $CONDASH" >> .bashrc
     source $CONDASH
 
-    ENVS=$(conda env list | awk '{print $1}' )
-    if [[ $ENVS = *"$ENV_NAME"* ]]; then
+    if conda activate $ENV_NAME; then
         # If env exists
         echo "Env $ENV_NAME found."
         conda activate $ENV_NAME
@@ -54,7 +57,7 @@ if [ -f "$CONDASH" ]; then
     else
         # If env doesn't exit
         echo "Env $ENV_NAME not found. Creating..."
-        conda env create -q --file local_env.yml
+        conda env create --file local_env.yml
         conda activate $ENV_NAME
         UPDATE_ENV=1
     fi;
@@ -81,21 +84,35 @@ mkdir -p $RESULTS_PATH
 S3_DATASETS_PATH=s3://$BUCKET_NAME/$DATASETS_PATH
 S3_RESULTS_PATH=s3://$BUCKET_NAME/$RESULTS_PATH
 
+INSTANCE_DATASETS_PATH=$PROJ_DIR/$DATASETS_PATH
+INSTANCE_RESULTS_PATH=$PROJ_DIR/$RESULTS_PATH
+
 echo ""
-echo "Importing datasets from $S3_DATASETS_PATH"
+echo "Importing datasets from $S3_DATASETS_PATH to $INSTANCE_DATASETS_PATH..."
 $AWS s3 cp --quiet --recursive $S3_DATASETS_PATH $DATASETS_PATH
-printf "Importing results from $S3_RESULTS_PATH"
+printf "Importing results from $S3_RESULTS_PATH to $INSTANCE_RESULTS_PATH..."
 $AWS s3 cp --quiet --recursive $S3_RESULTS_PATH $RESULTS_PATH
 
-
-cd repo
 echo ""
 echo "================================================="
 echo ""
-echo "Running job: $@"
-$@
-cd ..
 
+if [ $# -eq 0 ]; then
+    echo "No command passed to nimbo run. Continuing."
+else
+    if [ "$1" = "_nimbo_launch_and_setup" ]; then
+        echo "Setup complete. You can now use 'nimbo ssh <instance-id>' to ssh into this instance."
+        exit 0
+    else
+        cd repo
+        echo "Running job: $@"
+        $@
+        cd ..
+    fi
+fi
+
+echo ""
+echo "Saving results to S3..."
 $AWS s3 sync $RESULTS_PATH $S3_RESULTS_PATH
 
 # If the local and existing environments are different, update the env on the bucket
@@ -108,4 +125,4 @@ fi
 
 conda deactivate
 echo ""
-echo "Done."
+echo "Job finished."

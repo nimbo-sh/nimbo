@@ -12,9 +12,6 @@ from core.paths import NIMBO
 
 parser = argparse.ArgumentParser(description='Nimbo utilities.')
 parser.add_argument('command', nargs='+', default='list_active')
-parser.add_argument('--id', type=str, default='')
-parser.add_argument('--ami', type=str, default='')
-parser.add_argument('--noscript', action="store_true")
 args = parser.parse_args()
 
 # Load yaml config file
@@ -43,7 +40,14 @@ sys.exit()
 """
 
 if args.command[0] == "run":
-    launch.launch_instance(session, config, args.command[1])
+    assert len(args.commands[1:]) > 0, "No command passed to nimbo run."
+    launch.run_job(session, config, " ".join(args.commands[1:]))
+
+elif args.command[0] == "launch":
+    launch.run_job(session, config, "_nimbo_launch")
+
+elif args.command[0] == "launch-and-setup":
+    launch.run_job(session, config, "_nimbo_launch_and_setup") 
 
 elif args.command[0] == "ssh":
     utils.ssh(session, args.command[1])
@@ -64,19 +68,19 @@ elif args.command[0] == "list_amis":
     utils.list_amis(session)
 
 elif args.command[0] == "delete_ami":
-    utils.delete_ami(session, args.ami)
+    utils.delete_ami(session, args.command[1])
 
 elif args.command[0] == "check_instance":
-    utils.check_instance(session, args.id)
+    utils.check_instance(session, args.command[1])
 
 elif args.command[0] == "stop_instance":
-    utils.stop_instance(session, args.id)
+    utils.stop_instance(session, args.command[1])
 
 elif args.command[0] == "delete_instance":
     utils.delete_instance(session, args.command[1])
 
 elif args.command[0] == "delete_all_instances":
-    utils.delete_all_instances(session, args.id)
+    utils.delete_all_instances(session)
 
 elif args.command[0] == "check_instance":
     utils.check_instance(session, args.instance_id)
