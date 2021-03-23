@@ -1,15 +1,22 @@
+# Data paths
 bucket_name: nimbo-main-bucket
 datasets_path: repo/data/datasets
 results_path: repo/data/results
 
-profile: nimbo
+# Device, environment and regions
+aws_profile: nimbo
 region_name: eu-west-1
-instance_type: g4dn.2xlarge
+instance_type: g4dn.xlarge
 spot: no
-spot_duration: 60
+#spot_duration: 60
+
 image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
 disk_size: 64
 #conda_yml: 
 
-instance_key: instance-key
-delete_after_job_finish: no
+# Job options
+delete_after_job_finish: yes
+
+# Permissions and credentials
+security_group: default
+instance_key: hp-laptop
