@@ -1,11 +1,15 @@
 bucket_name: nimbo-main-bucket
-datasets_path: data/datasets
-results_path: data/results
+datasets_path: repo/data/datasets
+results_path: repo/data/results
 
 profile: nimbo
 region_name: eu-west-1
-instance_type: t2.small
-ami: ami-0e5657f6d3c3ea350
+instance_type: g4dn.2xlarge
+spot: no
+spot_duration: 60
+image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
+disk_size: 64
+#conda_yml: 
 
 instance_key: instance-key
-delete_after_job_finish: true
+delete_after_job_finish: no
