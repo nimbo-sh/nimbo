@@ -1,9 +1,37 @@
+from os.path import join
 import json
 import boto3
 import requests
+import subprocess
+from pprint import pprint
 from botocore.exceptions import ClientError
 
-""" These functions are to be ran at setup """
+from .paths import CWD
+
+
+def create_key_pair(session, name):
+    ec2 = session.client('ec2')
+    response = ec2.describe_key_pairs()
+    key_names = [k["KeyName"] for k in response["KeyPairs"]]
+    if name in key_names:
+        raise Exception(f"Key '{name}' already exists.\n"
+                        "Please choose a different name or delete "
+                        "that key with 'nimbo delete-key-pair <key_name>'.")
+    else:
+        keypair = ec2.create_key_pair(KeyName=name)
+        file_name = join(CWD, f"{name}.pem")
+        with open(file_name, "w") as f:
+            print(keypair["KeyMaterial"])
+            f.write(keypair["KeyMaterial"])
+        subprocess.Popen(f"chmod 400 {file_name}", shell=True).communicate()
+
+
+def delete_key_pair(session, name):
+    ec2 = session.client('ec2')
+    ec2.delete_key_pair(KeyName=name)
+    print(f"Please remember to also delete the '{name}.pem' file "
+          "using 'sudo rm {name}.pem'.")
+
 
 def create_security_group(session, group_name):
 
@@ -19,6 +47,24 @@ def create_security_group(session, group_name):
     print(f'Security Group {group_name} (id={security_group_id}) Created in vpc {vpc_id}.')
 
 
+def verify_current_machine_security_group(session, group_name):
+    # NOTE: This function is not working correctly.
+    # Verify that the security group chosen by the user has the inbound rule allowing the current computer
+
+    ec2 = session.client("ec2")
+    my_public_ip = requests.get('https://checkip.amazonaws.com').text.strip()
+
+    response = ec2.describe_security_groups(
+        GroupNames=[group_name],
+        Filters=[{"Name": "ip-permission.cidr", "Values": [f"{my_public_ip}/32"]}]
+    )
+    if len(response["SecurityGroups"]) == 0:
+        raise Exception(f"The securty group '{group_name}' doesn't give access "
+                        f"to your machine's public IP ({my_public_ip}/32). "
+                        "Please run 'nimbo allow-current-device <group_name>' "
+                        "or ask your admin to add your IP to this security group.")
+
+
 def allow_inbound_current_device(session, group_name):
 
     ec2 = session.client("ec2")
@@ -29,7 +75,7 @@ def allow_inbound_current_device(session, group_name):
 
     my_public_ip = requests.get('https://checkip.amazonaws.com').text.strip()
 
-    data = ec2.authorize_security_group_ingress(
+    response = ec2.authorize_security_group_ingress(
         GroupId=security_group_id,
         IpPermissions=[
             {
@@ -40,14 +86,14 @@ def allow_inbound_current_device(session, group_name):
             }
         ]
     )
-    print('Ingress Successfully Set %s' % data)
+    print("Ingress Successfully Set")
+    pprint(response)
 
 
-def create_s3_full_access_ec2_role(session):
+def create_instance_profile_and_role(session):
     iam = session.client("iam")
-    role_name = "NimboAllowS3FullAccess"
+    role_name = "NimboAllowS3AndEC2FullAccess"
     instance_profile_name = "NimboInstanceProfile"
-
 
     policy = {
         "Version": "2012-10-17",
@@ -62,8 +108,36 @@ def create_s3_full_access_ec2_role(session):
     response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess', RoleName=role_name)
     response = iam.attach_role_policy(PolicyArn='arn:aws:iam::aws:policy/AmazonEC2FullAccess', RoleName=role_name)
 
-    instance_profile = iam.create_instance_profile(InstanceProfileName=instance_profile_name,Path='/')
+    instance_profile = iam.create_instance_profile(InstanceProfileName=instance_profile_name, Path='/')
     iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
+
+
+def create_instance_profile(session, role_name):
+    iam = session.client("iam")
+    instance_profile_name = "NimboInstanceProfile"
+    instance_profile = iam.create_instance_profile(InstanceProfileName=instance_profile_name, Path='/')
+    iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
+
+
+def list_instance_profiles(session):
+    iam = session.client("iam")
+    response = iam.list_instance_profiles()
+    pprint(response["InstanceProfiles"])
+
+
+def verify_nimbo_instance_profile(session):
+    iam = session.client("iam")
+    response = iam.list_instance_profiles()
+    instance_profiles = response["InstanceProfiles"]
+    instance_profile_names = [p["InstanceProfileName"] for p in instance_profiles]
+    if "NimboInstanceProfile" not in instance_profile_names:
+        raise Exception("Instance profile 'NimboInstanceProfile' not found.\n"
+                        "An instance profile is necessary to give your instance access to EC2 and S3 resources.\n"
+                        "You can create an instance profile using 'nimbo create_instance_profile <role_name>'.\n"
+                        "If you are a root user, you can simply run 'nimbo create_instance_profile_and_role', "
+                        "and nimbo will create the necessary role policies and instance profile for you.\n"
+                        "Otherwise, please ask your admin for a role that provides the necessary EC2 and S3 read/write access.\n"
+                        "For more details please go to docs.nimbo.sh/instance-profiles.")
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ def create_bucket(session, bucket_name):
                          CreateBucketConfiguration=location)
     except ClientError as e:
         if e.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
-            print("Bucket nimbo-main-bucket exists.")
+            print("Bucket nimbo-main-bucket already exists.")
         else:
             logging.error(e)
         return False

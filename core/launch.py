@@ -6,8 +6,7 @@ from pprint import pprint
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-from . import storage
-from . import utils
+from . import storage, utils, access
 from .paths import NIMBO
 from .ami.catalog import AMI_MAP
 
@@ -15,9 +14,7 @@ from .ami.catalog import AMI_MAP
 def run_job(session, config, job_cmd):
     print("Job command:", job_cmd)
 
-    # Create main bucket
-    # Operation is idempotent, so will not do anything if bucket already exists
-    success = storage.create_bucket(session, 'nimbo-main-bucket')
+    access.verify_nimbo_instance_profile(session)
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
@@ -28,13 +25,13 @@ def run_job(session, config, job_cmd):
     instance_config = {
         "BlockDeviceMappings": [{
             'DeviceName': '/dev/sda1',
-            'Ebs': {'VolumeSize': config["disk_size"]}}],
+            'Ebs': {'VolumeSize': config["disk_size"]}
+        }],
         "ImageId": AMI_MAP[config['image']],
         "InstanceType": config["instance_type"],
         "KeyName": config["instance_key"],
-        "Placement": {
-            "Tenancy": "default"
-        },
+        "Placement": {"Tenancy": "default"},
+        "SecurityGroups": [config["security_group"]],
         "IamInstanceProfile": {
             "Name": "NimboInstanceProfile"
         }
@@ -62,8 +59,16 @@ def run_job(session, config, job_cmd):
 
     end_t = time.time()
     print(f"Instance running. ({round((end_t-start_t), 2)}s)")
+    print(f"InstanceId: {instance_id}")
+    print()
 
     if job_cmd == "_nimbo_launch":
+        print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
+        print("Please allow a few seconds for the instance to be ready for ssh.")
+        print(f"If the connection is refused when you run 'nimbo ssh {instance_id}' "
+              "wait a few seconds and try again.")
+        print(f"If the connection keeps being refused, delete the instance and try again, "
+              "or refer to https://docs.nimbo.sh/connection-refused.")
         sys.exit()
 
     INSTANCE_KEY = config["instance_key"]+".pem"
@@ -74,13 +79,21 @@ def run_job(session, config, job_cmd):
     # Wait for the instance to be ready for ssh
     print("Waiting for instance to be ready for ssh... ", end="", flush=True)
     host_ready = False
+    wait_time = 0
     while 1:
-        output, error = subprocess.Popen(f"{ssh} ubuntu@{host} echo 'Hello World'", shell=True,
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+        time.sleep(10)
+        wait_time += 5
+        output, error = subprocess.Popen(f"{ssh} ubuntu@{host} echo HelloWorld", 
+                                         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         if error == b'':
             break
-        else:
-            time.sleep(2)
+
+        if wait_time == 60:
+            print("\nDeleting test instance...")
+            utils.delete_instance(session, instance_id)
+            raise Exception("Something failed connecting to the instance. "
+                            "Please verify your security groups, instance key and instance profile. "
+                            "More info at docs.nimbo.sh/connection-issues.")
     print("Ready.")
 
     CONFIG = "config.yml"

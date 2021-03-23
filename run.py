@@ -1,3 +1,4 @@
+import os
 from os.path import join
 import sys
 import json
@@ -7,7 +8,7 @@ import argparse
 from pprint import pprint
 from pkg_resources import resource_filename
 
-from core import utils, storage, launch
+from core import access, utils, storage, launch
 from core.paths import NIMBO
 
 parser = argparse.ArgumentParser(description='Nimbo utilities.')
@@ -15,29 +16,25 @@ parser.add_argument('command', nargs='+', default='list_active')
 args = parser.parse_args()
 
 # Load yaml config file
+assert os.path.isfile("config.yml"), \
+    "Nimbo configuration file 'config.yml' not found.\n" \
+    "You can run 'nimbo create_config' for guided config file creation."
+
 with open(join(NIMBO, "config.yml"), "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 print("Config:")
 pprint(config)
-utils.verify_correctness(config)
+
+skip = None
+if args.command[0] in ["create-key-pair", "delete-key-pair"]:
+    skip = "instance-key"
+
+utils.verify_correctness(config, skip)
 print()
 
-session = boto3.Session(profile_name='nimbo')
+session = boto3.Session(profile_name=config["aws_profile"])
 
-"""
-for attr in pricing.describe_services(ServiceCode='AmazonEC2')["Services"][0]["AttributeNames"]:
-
-    response = pricing.get_attribute_values(
-        AttributeName=attr,
-        MaxResults=100,
-        ServiceCode='AmazonEC2',
-    )
-    print(attr)
-    pprint(response)
-    print()
-sys.exit()
-"""
 
 if args.command[0] == "run":
     launch.run_job(session, config, args.command[1])
@@ -46,10 +43,10 @@ elif args.command[0] == "launch":
     launch.run_job(session, config, "_nimbo_launch")
 
 elif args.command[0] == "launch-and-setup":
-    launch.run_job(session, config, "_nimbo_launch_and_setup") 
+    launch.run_job(session, config, "_nimbo_launch_and_setup")
 
 elif args.command[0] == "ssh":
-    utils.ssh(session, args.command[1])
+    utils.ssh(session, config, args.command[1])
 
 elif args.command[0] == "list_gpu_prices":
     utils.list_gpu_prices(session)
@@ -82,7 +79,10 @@ elif args.command[0] == "delete_all_instances":
     utils.delete_all_instances(session)
 
 elif args.command[0] == "check_instance":
-    utils.check_instance(session, args.instance_id)
+    utils.check_instance(session, args.command[1])
+
+elif args.command[0] == "create_bucket":
+    storage.create_bucket(session, args.command[1])
 
 elif args.command[0] == "push":
     storage.push(session, config, args.command[1])
@@ -93,5 +93,26 @@ elif args.command[0] == "pull":
 elif args.command[0] == "ls":
     storage.ls(session, config, args.command[1])
 
+elif args.command[0] == "create_key_pair":
+    access.create_key_pair(session, args.command[1])
+
+elif args.command[0] == "delete_key_pair":
+    access.delete_key_pair(session, args.command[1])
+
+elif args.command[0] == "allow_current_device":
+    access.allow_inbound_current_device(session, args.command[1])
+
+elif args.command[0] == "list_instance_profiles":
+    access.list_instance_profiles(session)
+
+elif args.command[0] == "create_instance_profile":
+    access.create_instance_profile(session, args.command[1])
+
+elif args.command[0] == "create_instance_profile_and_role":
+    access.create_instance_profile_and_role(session)
+
+elif args.command[0] == "test_access":
+    launch.run_access_test(session, config)
+
 else:
-    raise Exception(f"Command --{args.command[0]} not recognized.")
+    raise Exception(f"Nimbo command '{args.command[0]}' not recognized.")

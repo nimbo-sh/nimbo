@@ -232,17 +232,21 @@ def delete_ami(session, ami):
     ec2.deregister_image(ImageId=ami)
 
 
-def ssh(session, instance_id):
+def ssh(session, config, instance_id):
     host = check_instance_host(session, instance_id)
-    subprocess.Popen(f"ssh -i ./instance-key.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
+    instance_key = config['instance_key']
+    subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 
 
-def verify_correctness(config):
+def verify_correctness(config, skip=None):
 
     assert config["image"] in AMI_MAP, \
         "The image requested doesn't exist. " \
         "Please check this link for a list of supported images."
 
-    instance_key_name = config["instance_key"]
-    assert instance_key_name+".pem" in os.listdir(CWD), \
-        f"The key file '{instance_key_name}' wasn't found in the current directory."
+    if skip == "instance-key":
+        pass
+    else:
+        instance_key_name = config["instance_key"]
+        assert instance_key_name+".pem" in os.listdir(CWD), \
+            f"The instance key file '{instance_key_name}' wasn't found in the current directory."
