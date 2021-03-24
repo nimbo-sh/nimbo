@@ -165,7 +165,8 @@ def delete_instance(session, instance_id):
     response = ec2.terminate_instances(
         InstanceIds=[instance_id],
     )
-    pprint(response["TerminatingInstances"][0])
+    status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
+    print(f"Instance {instance_id}: {status}")
 
 
 def delete_all_instances(session):
@@ -177,10 +178,12 @@ def delete_all_instances(session):
     )
     for reservation in response["Reservations"]:
         for inst in reservation["Instances"]:
+            instance_id = inst['InstanceId']
             delete_response = ec2.terminate_instances(
-                InstanceIds=[inst['InstanceId']],
+                InstanceIds=[instance_id],
             )
-            pprint(delete_response["TerminatingInstances"][0])
+            status = delete_response["TerminatingInstances"][0]["CurrentState"]["Name"]
+            print(f"Instance {instance_id}: {status}")
 
 
 def check_instance_status(session, instance_id):
