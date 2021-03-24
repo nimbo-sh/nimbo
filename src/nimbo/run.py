@@ -9,7 +9,7 @@ from pprint import pprint
 from pkg_resources import resource_filename
 
 from .core import access, utils, storage, launch
-from .core.paths import NIMBO, CWD
+from .core.paths import NIMBO, CWD, CONFIG
 
 
 def main():
@@ -18,11 +18,11 @@ def main():
     args = parser.parse_args()
 
     # Load yaml config file
-    assert os.path.isfile("config.yml"), \
-        "Nimbo configuration file 'config.yml' not found.\n" \
+    assert os.path.isfile(CONFIG), \
+        f"Nimbo configuration file '{CONFIG}' not found.\n" \
         "You can run 'nimbo create_config' for guided config file creation."
 
-    with open(join(CWD, "config.yml"), "r") as f:
+    with open(CONFIG, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     print("Config:")
@@ -36,7 +36,6 @@ def main():
     print()
 
     session = boto3.Session(profile_name=config["aws_profile"])
-
 
     if args.command[0] == "run":
         launch.run_job(session, config, args.command[1])
@@ -79,9 +78,6 @@ def main():
 
     elif args.command[0] == "delete_all_instances":
         utils.delete_all_instances(session)
-
-    elif args.command[0] == "check_instance":
-        utils.check_instance(session, args.command[1])
 
     elif args.command[0] == "create_bucket":
         storage.create_bucket(session, args.command[1])

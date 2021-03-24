@@ -1,15 +1,19 @@
 #!/bin/bash
 set -e
 
+PYTHONUNBUFFERED=TRUE
 PROJ_DIR=/home/ubuntu/project
+CONFIG=nimbo-config.yml
 cd $PROJ_DIR
 
 AWS=/usr/local/bin/aws
 CONDA_PATH=/home/ubuntu/miniconda3
 
-DATASETS_PATH="$(grep 'datasets_path:' config.yml | awk '{print $2}')"
-RESULTS_PATH="$(grep 'results_path:' config.yml | awk '{print $2}')"
-BUCKET_NAME="$(grep 'bucket_name:' config.yml | awk '{print $2}')"
+DELETE_WHEN_DONE="$(grep 'delete_when_done:' $CONFIG | awk '{print $2}')"
+
+DATASETS_PATH="$(grep 'datasets_path:' $CONFIG | awk '{print $2}')"
+RESULTS_PATH="$(grep 'results_path:' $CONFIG | awk '{print $2}')"
+BUCKET_NAME="$(grep 'bucket_name:' $CONFIG | awk '{print $2}')"
 echo "Datasets path: $DATASETS_PATH"
 echo "Results path: $RESULTS_PATH"
 echo "Bucket name: $BUCKET_NAME"
@@ -24,7 +28,7 @@ echo ""
 echo "Importing your conda envs from s3..."
 mkdir -p $CONDA_PATH
 if $AWS s3 ls s3://$BUCKET_NAME/conda-envs.tar; then
-    $AWS s3 cp s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
+    $AWS s3 cp --quiet s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
     tar -xf /home/ubuntu/conda-envs.tar -C $CONDA_PATH
     rm /home/ubuntu/conda-envs.tar
 fi
@@ -57,7 +61,7 @@ if [ -f "$CONDASH" ]; then
     else
         # If env doesn't exit
         echo "Env $ENV_NAME not found. Creating..."
-        conda env create --file local_env.yml
+        conda env create -q --file local_env.yml
         conda activate $ENV_NAME
         UPDATE_ENV=1
     fi;
@@ -102,7 +106,7 @@ if [ "$2" = "_nimbo_launch_and_setup" ]; then
     exit 0
 else
     cd repo
-    echo "Running job: $@"
+    echo "Running job: ${@:2}"
     ${@:2}
     cd ..
 fi
@@ -123,4 +127,7 @@ conda deactivate
 echo ""
 echo "Job finished."
 
-#$AWS ec2 terminate-instances --instance-ids "$1"
+if [ "$DELETE_WHEN_DONE" = "yes" ]; then
+    echo "Deleting instance $1"
+    $AWS ec2 terminate-instances --instance-ids "$1"
+fi

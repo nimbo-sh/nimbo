@@ -1,13 +1,16 @@
 from os.path import join, basename
 import sys
 import time
+import logging
 import subprocess
+from subprocess import PIPE
+import traceback
 from pprint import pprint
 from datetime import datetime
 from botocore.exceptions import ClientError
 
 from . import storage, utils, access
-from .paths import NIMBO
+from .paths import NIMBO, CONFIG
 from .ami.catalog import AMI_MAP
 
 
@@ -42,7 +45,7 @@ def run_job(session, config, job_cmd):
             LaunchSpecification=instance_config
         )
         instance = instance["SpotInstanceRequests"][0]
-        
+
     else:
         instance_config["MinCount"] = 1
         instance_config["MaxCount"] = 1
@@ -51,96 +54,119 @@ def run_job(session, config, job_cmd):
 
     instance_id = instance["InstanceId"]
     status = ""
+    try:
+        # Wait for the instance to be running
+        while status != "running":
+            time.sleep(1)
+            status = utils.check_instance_status(session, instance_id)
 
-    # Wait for the instance to be running
-    while status != "running":
-        time.sleep(1)
-        status = utils.check_instance_status(session, instance_id)
+        end_t = time.time()
+        print(f"Instance running. ({round((end_t-start_t), 2)}s)")
+        print(f"InstanceId: {instance_id}")
+        print()
 
-    end_t = time.time()
-    print(f"Instance running. ({round((end_t-start_t), 2)}s)")
-    print(f"InstanceId: {instance_id}")
-    print()
+        if job_cmd == "_nimbo_launch":
+            print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
+            print("Please allow a few seconds for the instance to be ready for ssh.")
+            print(f"If the connection is refused when you run 'nimbo ssh {instance_id}' "
+                  "wait a few seconds and try again.")
+            print(f"If the connection keeps being refused, delete the instance and try again, "
+                  "or refer to https://docs.nimbo.sh/connection-refused.")
+            sys.exit()
 
-    if job_cmd == "_nimbo_launch":
-        print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
-        print("Please allow a few seconds for the instance to be ready for ssh.")
-        print(f"If the connection is refused when you run 'nimbo ssh {instance_id}' "
-              "wait a few seconds and try again.")
-        print(f"If the connection keeps being refused, delete the instance and try again, "
-              "or refer to https://docs.nimbo.sh/connection-refused.")
-        sys.exit()
+        INSTANCE_KEY = config["instance_key"] + ".pem"
+        host = utils.check_instance_host(session, instance_id)
+        ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
+        scp = f"scp -i {INSTANCE_KEY}"
 
-    INSTANCE_KEY = config["instance_key"]+".pem"
-    host = utils.check_instance_host(session, instance_id)
-    ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
-    scp = f"scp -i {INSTANCE_KEY}"
+        # Wait for the instance to be ready for ssh
+        print("Waiting for instance to be ready for ssh... ", end="", flush=True)
+        host_ready = False
+        wait_time = 0
+        while 1:
+            time.sleep(10)
+            wait_time += 5
+            output, error = subprocess.Popen(f"{ssh} ubuntu@{host} echo HelloWorld",
+                                             stdout=PIPE, stderr=PIPE, shell=True).communicate()
+            if error == b'':
+                break
 
-    # Wait for the instance to be ready for ssh
-    print("Waiting for instance to be ready for ssh... ", end="", flush=True)
-    host_ready = False
-    wait_time = 0
-    while 1:
-        time.sleep(10)
-        wait_time += 5
-        output, error = subprocess.Popen(f"{ssh} ubuntu@{host} echo HelloWorld", 
-                                         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        if error == b'':
-            break
+            if wait_time == 60:
+                raise Exception("Something failed when connecting to the instance.\n"
+                                "Please verify your security groups, instance key and instance profile.\n"
+                                "More info at docs.nimbo.sh/connection-issues.")
+        print("Ready.")
 
-        if wait_time == 60:
-            print("\nDeleting test instance...")
+        REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
+
+        LOCAL_ENV = "local_env.yml"
+        if "conda_yml" in config:
+            user_conda_yml = config["conda_yml"]
+            output = subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
+        else:
+            # Get conda env yml of current env
+            command = f"conda env export > {LOCAL_ENV}"
+            output = subprocess.check_output(command, shell=True)
+
+        # Send conda env yaml and setup scripts to instance
+        print("\nSyncing conda, config, and setup files...")
+
+        # Create project folder and send env and config files there
+        subprocess.check_output(f"{ssh} ubuntu@{host} "
+                                f"mkdir project", shell=True)
+        subprocess.check_output(f"{scp} {LOCAL_ENV} {CONFIG} "
+                                f"ubuntu@{host}:/home/ubuntu/project/", shell=True)
+        subprocess.check_output(f"rm {LOCAL_ENV}", shell=True)
+
+        # Sync code with instance
+        print("\nSyncing code...")
+        output, error = subprocess.Popen("git ls-tree -r HEAD --name-only",
+                                         stdout=PIPE, shell=True).communicate()
+        git_tracked_files = output.decode("utf-8").strip().splitlines()
+        include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
+        include_string = " ".join(include_files)
+        # subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
+        #                 f"--include '*/' {include_string} --exclude '*' "
+        #                 f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
+        subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
+                         f"--include '*/' --include '*.py' --exclude '*' "
+                         f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
+
+        # Run remote_setup script on instance
+        subprocess.check_output(f"{scp} {REMOTE_SETUP} "
+                                f"ubuntu@{host}:/home/ubuntu/", shell=True)
+        bash = f"bash remote_setup.sh"
+        if config["run_in_background"]:
+            full_command = f"'nohup {bash} {instance_id} {job_cmd} </dev/null >/home/ubuntu/nimbo-log.txt 2>&1 &'"
+        else:
+            full_command = f"{bash} {instance_id} {job_cmd}"
+
+        process = subprocess.Popen(f"{ssh} ubuntu@{host} {full_command}", shell=True)
+        stdout, stderr = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, process.args,
+                                                output=stdout, stderr=stderr)
+
+        if config["delete_when_done"] and \
+           not config["run_in_background"] and \
+           job_cmd != "_nimbo_launch_and_setup":
+            # Terminate instance if it isn't already being terminated
+            if utils.check_instance_status(session, instance_id) in ["running", "pending"]:
+                utils.delete_instance(session, instance_id)
+
+        if config["run_in_background"]:
+            print(f"Job running in instance {instance_id}")
+
+    except Exception as e:
+        if config["delete_on_error"]:
+            print("\nDeleting instance...")
             utils.delete_instance(session, instance_id)
-            raise Exception("Something failed connecting to the instance. "
-                            "Please verify your security groups, instance key and instance profile. "
-                            "More info at docs.nimbo.sh/connection-issues.")
-    print("Ready.")
-
-    CONFIG = "config.yml"
-    REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
-
-    LOCAL_ENV = "local_env.yml"
-    if "conda_yml" in config:
-        user_conda_yml = config["conda_yml"]
-        output, error = subprocess.Popen(f"cp {user_conda_yml} local_env.yml", shell=True).communicate()
-    else:
-        # Get conda env yml of current env
-        command = f"conda env export > {LOCAL_ENV}"
-        output, error = subprocess.Popen(command, shell=True).communicate()
-
-    # Send conda env yaml and setup scripts to instance
-    print("\nSyncing conda, config, and setup files...")
-
-    # Create project folder and send env and config files there
-    subprocess.Popen(f"{ssh} ubuntu@{host} "
-                     f"mkdir project", shell=True).communicate()
-    subprocess.Popen(f"{scp} {LOCAL_ENV} {CONFIG} "
-                     f"ubuntu@{host}:/home/ubuntu/project/", shell=True).communicate()
-    subprocess.Popen(f"rm {LOCAL_ENV}", shell=True).communicate()
-
-     # Sync code with instance
-    print("\nSyncing code...")
-    output, error = subprocess.Popen("git ls-tree -r HEAD --name-only", stdout=subprocess.PIPE, shell=True).communicate()
-    git_tracked_files = output.decode("utf-8").strip().splitlines()
-    include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
-    include_string = " ".join(include_files)
-    #subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
-    #                 f"--include '*/' {include_string} --exclude '*' "
-    #                 f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
-    subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
-                     f"--include '*/' --include '*.py' --exclude '*' "
-                     f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
-
-    # Run remote_setup script on instance
-    subprocess.Popen(f"{scp} {REMOTE_SETUP} "
-                     f"ubuntu@{host}:/home/ubuntu/", shell=True).communicate()
-    command = f"bash remote_setup.sh"
-    subprocess.Popen(f"{ssh} ubuntu@{host} {command} {instance_id} {job_cmd}", shell=True).communicate()
-
-    if config["delete_after_job_finish"] == True and \
-       job_cmd != "_nimbo_launch_and_setup":
-        # Terminate instance
+        traceback.print_exc()
+    except KeyboardInterrupt:
+        print("\nDeleting instance...")
         utils.delete_instance(session, instance_id)
+        sys.exit()
 
 
 def run_access_test(session, config):
@@ -185,7 +211,7 @@ def run_access_test(session, config):
     print(f"Instance running. Instance creation allowed \u2713")
     print()
 
-    INSTANCE_KEY = config["instance_key"]+".pem"
+    INSTANCE_KEY = config["instance_key"] + ".pem"
     host = utils.check_instance_host(session, instance_id)
     ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
     scp = f"scp -i {INSTANCE_KEY}"
