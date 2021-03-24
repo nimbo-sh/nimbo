@@ -33,8 +33,8 @@ setuptools.setup(
     },
     python_requires=">=3.6",
     install_requires=[
-        "awscli==1.19.17",
-        "boto3==1.17.17",
+        "awscli>=1.19",
+        "boto3>=1.17",
         "requests>=2.25",
    ],
 )
