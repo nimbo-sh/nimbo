@@ -12,24 +12,23 @@ from .ami.catalog import AMI_MAP
 
 full_region_names = {"eu-west-1": "EU (Ireland)"}
 
-# Each element is [num_gpus, gpu_type]
+# Each element is [num_gpus, gpu_type, ram, vcpus]
 instance_gpu_map = {
-    "p4d.24xlarge": [8, "A100"],
-    "p3.2xlarge": [1, "V100"],
-    "p3.8xlarge": [4, "V100"],
-    "p3.16xlarge": [8, "V100"],
-    "p3dn.24xlarge": [8, "V100"],
-    "p2.xlarge": [1, "K80"],
-    "p2.xlarge": [1, "K80"],
-    "p2.8xlarge": [8, "K80"],
-    "p2.16xlarge": [16, "K80"],
-    "g4dn.xlarge": [1, "T4"],
-    "g4dn.2xlarge": [1, "T4"],
-    "g4dn.4xlarge": [1, "T4"],
-    "g4dn.8xlarge": [1, "T4"],
-    "g4dn.16xlarge": [1, "T4"],
-    "g4dn.12xlarge": [4, "T4"],
-    "g4dn.metal": [8, "T4"],
+    "p4d.24xlarge": [8, "A100", 1152, 96],
+    "p3.2xlarge": [1, "V100", 61, 8],
+    "p3.8xlarge": [4, "V100", 244, 32],
+    "p3.16xlarge": [8, "V100", 488, 64],
+    "p3dn.24xlarge": [8, "V100", 768, 96],
+    "p2.xlarge": [1, "K80", 61, 4],
+    "p2.8xlarge": [8, "K80", 488, 32],
+    "p2.16xlarge": [16, "K80", 732, 64],
+    "g4dn.xlarge": [1, "T4", 16, 4],
+    "g4dn.2xlarge": [1, "T4", 32, 8],
+    "g4dn.4xlarge": [1, "T4", 64, 16],
+    "g4dn.8xlarge": [1, "T4", 128, 32],
+    "g4dn.16xlarge": [1, "T4", 256, 64],
+    "g4dn.12xlarge": [4, "T4", 192, 48],
+    "g4dn.metal": [8, "T4", 384, 96],
 }
 
 
@@ -56,14 +55,21 @@ def get_full_region_name(region_name):
         return default_region
 
 
+def format_price_string(instance_type, price, gpus, cpus, mem):
+    string = "{0: <16} {1: <15} {2: <10} {3: <5} {4:<7}".format(instance_type, price, gpus, cpus, mem)
+    return string
+
+
 def list_gpu_prices(session):
     instance_types = list(sorted(ec2_instance_types(session)))
-    instance_types = [inst for inst in instance_types if inst[0] in ["p", "g"]]
+    instance_types = [inst for inst in instance_types if inst[:2] in
+                      ["p2", "p3", "p4"] or inst[:3] in ["g4d"]]
     full_region_name = full_region_names[session.region_name]
 
     pricing = session.client('pricing', region_name='us-east-1')
 
-    print("{0: <16} {1: <15} {2}".format("InstanceType", "Price ($/hour)", "GPU"))
+    string = format_price_string("InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)")
+    print(string)
 
     for instance_type in instance_types:
         response = pricing.get_products(
@@ -88,23 +94,21 @@ def list_gpu_prices(session):
         currency = list(inst.keys())[0]
         price = float(inst[currency])
 
-        if instance_type in instance_gpu_map:
-            num_gpus, gpu_type = instance_gpu_map[instance_type]
-            string = "{0: <16} {1: <15} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type)
-        else:
-            string = "{0: <16} {1: <15}".format(instance_type, round(price, 2))
-
+        num_gpus, gpu_type, mem, cpus = instance_gpu_map[instance_type]
+        string = format_price_string(instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem)
         print(string)
 
 
 def list_spot_gpu_prices(session):
     instance_types = list(sorted(ec2_instance_types(session)))
-    instance_types = [inst for inst in instance_types if inst[0] in ["p", "g"]]
+    instance_types = [inst for inst in instance_types if inst[:2] in
+                      ["p2", "p3", "p4"] or inst[:3] in ["g4d"]]
     full_region_name = full_region_names[session.region_name]
 
     ec2 = session.client('ec2')
 
-    print("{0: <16} {1: <15} {2}".format("InstanceType", "Price ($/hour)", "GPU"))
+    string = format_price_string("InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)")
+    print(string)
 
     for instance_type in instance_types:
         response = ec2.describe_spot_price_history(
@@ -114,12 +118,8 @@ def list_spot_gpu_prices(session):
 
         price = float(response['SpotPriceHistory'][0]["SpotPrice"])
 
-        if instance_type in instance_gpu_map:
-            num_gpus, gpu_type = instance_gpu_map[instance_type]
-            string = "{0: <16} {1: <15} {2} x {3}".format(instance_type, round(price, 2), num_gpus, gpu_type)
-        else:
-            string = "{0: <16} {1: <15}".format(instance_type, round(price, 2))
-
+        num_gpus, gpu_type, mem, cpus = instance_gpu_map[instance_type]
+        string = format_price_string(instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem)
         print(string)
 
 
@@ -127,7 +127,8 @@ def show_active_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values': ['running']}
+            {'Name': 'instance-state-name', 'Values': ['running']},
+            {'Name': 'tag:created_by', 'Values': ['nimbo']}
         ]
     )
     for reservation in response["Reservations"]:
@@ -142,7 +143,8 @@ def show_stopped_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']}
+            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']},
+            {'Name': 'tag:created_by', 'Values': ['nimbo']}
         ]
     )
     for reservation in response["Reservations"]:
@@ -173,7 +175,8 @@ def delete_all_instances(session):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values': ['running']}
+            {'Name': 'instance-state-name', 'Values': ['running']},
+            {'Name': 'tag:created_by', 'Values': ['nimbo']}
         ]
     )
     for reservation in response["Reservations"]:

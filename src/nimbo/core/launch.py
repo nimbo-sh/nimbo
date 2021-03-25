@@ -1,3 +1,4 @@
+import os
 from os.path import join, basename, isfile
 import sys
 import time
@@ -15,12 +16,15 @@ from .ami.catalog import AMI_MAP
 
 
 def run_job(session, config, job_cmd):
+    print("Config:")
+    pprint(config)
+
     print("Job command:", job_cmd)
 
     access.verify_nimbo_instance_profile(session)
     if "conda_env" in config:
         assert isfile(config["conda_env"]), \
-            "Conda env file '{}' not found in current folder.".format(config["conda_env"])
+            "Conda env file '{}' not found in the current folder.".format(config["conda_env"])
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
@@ -42,16 +46,25 @@ def run_job(session, config, job_cmd):
             "Name": "NimboInstanceProfile"
         }
     }
+
     if config["spot"]:
         instance = ec2.request_spot_instances(
             BlockDurationMinutes=config["spot_duration"],
-            LaunchSpecification=instance_config
+            LaunchSpecification=instance_config,
+            TagSpecifications=[{
+                'ResourceType': 'spot-instances-request',
+                'Tags': [{'Key': 'created_by', 'Value': 'nimbo'}]
+            }]
         )
         instance = instance["SpotInstanceRequests"][0]
 
     else:
         instance_config["MinCount"] = 1
         instance_config["MaxCount"] = 1
+        instance_config["TagSpecifications"] = [{
+            'ResourceType': 'instance',
+            'Tags': [{'Key': 'created_by', 'Value': 'nimbo'}]
+        }]
         instance = ec2.run_instances(**instance_config)
         instance = instance["Instances"][0]
 
@@ -123,24 +136,29 @@ def run_job(session, config, job_cmd):
 
         # Sync code with instance
         print("\nSyncing code...")
-        output, error = subprocess.Popen("git ls-tree -r HEAD --name-only",
-                                         stdout=PIPE, shell=True).communicate()
-        git_tracked_files = output.decode("utf-8").strip().splitlines()
-        include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
-        include_string = " ".join(include_files)
-        # subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
-        #                 f"--include '*/' {include_string} --exclude '*' "
-        #                 f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
-        subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
-                         f"--include '*/' --include '*.py' --exclude '*' "
-                         f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
+        if ".git" not in os.listdir():
+            print("No git repo found. Syncing all the python files as a fallback.")
+            print("Please consider using git to track the files to sync.")
+            subprocess.Popen(f"rsync -avm -e 'ssh -i {INSTANCE_KEY}' "
+                             f"--include '*/' --include '*.py' --exclude '*' "
+                             f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
+        else:
+            output, error = subprocess.Popen("git ls-tree -r HEAD --name-only",
+                                             stdout=PIPE, shell=True).communicate()
+            git_tracked_files = output.decode("utf-8").strip().splitlines()
+            include_files = [f"--include '{file_name}'" for file_name in git_tracked_files]
+            include_string = " ".join(include_files)
+            subprocess.Popen(f"rsync -amr -e 'ssh -i {INSTANCE_KEY}' "
+                             f"--include '*/' {include_string} --exclude '*' "
+                             f". ubuntu@{host}:/home/ubuntu", shell=True).communicate()
 
         # Run remote_setup script on instance
         subprocess.check_output(f"{scp} {REMOTE_SETUP} "
                                 f"ubuntu@{host}:/home/ubuntu/", shell=True)
         bash = f"bash remote_setup.sh"
         if config["run_in_background"]:
-            full_command = f"'nohup {bash} {instance_id} {job_cmd} </dev/null >/home/ubuntu/nimbo-log.txt 2>&1 &'"
+            results_path = config["results_path"]
+            full_command = f"'nohup {bash} {instance_id} {job_cmd} </dev/null >/home/ubuntu/{results_path}/nimbo-log.txt 2>&1 &'"
         else:
             full_command = f"{bash} {instance_id} {job_cmd}"
 
@@ -154,7 +172,7 @@ def run_job(session, config, job_cmd):
         if config["delete_when_done"] and \
            not config["run_in_background"] and \
            job_cmd != "_nimbo_launch_and_setup":
-            
+
             if utils.check_instance_status(session, instance_id) in ["running", "pending"]:
                 # Terminate instance if it isn't already being terminated
                 utils.delete_instance(session, instance_id)

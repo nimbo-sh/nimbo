@@ -25,9 +25,9 @@ echo "Using conda env: $ENV_NAME"
 
 # Import conda from s3
 echo ""
-echo "Importing your conda envs from s3..."
 mkdir -p $CONDA_PATH
 if $AWS s3 ls s3://$BUCKET_NAME/conda-envs.tar; then
+    echo "Importing your conda envs from s3..."
     $AWS s3 cp --quiet s3://$BUCKET_NAME/conda-envs.tar /home/ubuntu/
     tar -xf /home/ubuntu/conda-envs.tar -C $CONDA_PATH
     rm /home/ubuntu/conda-envs.tar
@@ -61,7 +61,7 @@ if [ -f "$CONDASH" ]; then
     else
         # If env doesn't exit
         echo "Env $ENV_NAME not found. Creating..."
-        conda env create -q --file local_env.yml
+        time conda env create -q --file local_env.yml
         conda activate $ENV_NAME
         UPDATE_ENV=1
     fi;
