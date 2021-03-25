@@ -109,6 +109,9 @@ def main():
     elif args.command[0] == "create_instance_profile_and_role":
         access.create_instance_profile_and_role(session)
 
+    elif args.command[0] == "generate_config":
+        utils.generate_config()
+
     elif args.command[0] == "test_access":
         launch.run_access_test(session, config)
 

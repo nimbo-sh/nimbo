@@ -62,7 +62,7 @@ def list_gpu_prices(session):
     full_region_name = full_region_names[session.region_name]
 
     pricing = session.client('pricing', region_name='us-east-1')
-    
+
     print("{0: <16} {1: <15} {2}".format("InstanceType", "Price ($/hour)", "GPU"))
 
     for instance_type in instance_types:
@@ -251,5 +251,38 @@ def verify_correctness(config, skip=None):
         pass
     else:
         instance_key_name = config["instance_key"]
-        assert instance_key_name+".pem" in os.listdir(CWD), \
+        assert instance_key_name + ".pem" in os.listdir(CWD), \
             f"The instance key file '{instance_key_name}' wasn't found in the current directory."
+
+
+def generate_config():
+    config = """# Data paths
+bucket_name: my-bucket
+datasets_path: data/datasets
+results_path: data/results
+
+# Device, environment and regions
+aws_profile: my-profile
+region_name: eu-west-1
+instance_type: g4dn.xlarge
+spot: no
+#spot_duration: 60
+
+image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
+disk_size: 128
+conda_env: env.yml
+
+# Job options
+run_in_background: no
+delete_when_done: yes 
+delete_on_error: yes
+
+# Permissions and credentials
+security_group: default
+instance_key: my-laptop"""
+
+    with open("nimbo-config.yml", "w") as f:
+        f.write(config)
+
+    print("Config written to nimbo-config.yml.")
+    print("Please replace the bucket_name, aws_profile, and instance_key with your details.")
