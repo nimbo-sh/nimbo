@@ -105,10 +105,8 @@ if [ "$2" = "_nimbo_launch_and_setup" ]; then
     echo "Setup complete. You can now use 'nimbo ssh <instance-id>' to ssh into this instance."
     exit 0
 else
-    cd repo
     echo "Running job: ${@:2}"
     ${@:2}
-    cd ..
 fi
 
 echo ""
