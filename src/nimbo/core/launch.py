@@ -1,4 +1,4 @@
-from os.path import join, basename
+from os.path import join, basename, isfile
 import sys
 import time
 import logging
@@ -18,6 +18,9 @@ def run_job(session, config, job_cmd):
     print("Job command:", job_cmd)
 
     access.verify_nimbo_instance_profile(session)
+    if "conda_env" in config:
+        assert isfile(config["conda_env"]), \
+            "Conda env file '{}' not found in current folder.".format(config["conda_env"])
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
@@ -100,8 +103,8 @@ def run_job(session, config, job_cmd):
         REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
 
         LOCAL_ENV = "local_env.yml"
-        if "conda_yml" in config:
-            user_conda_yml = config["conda_yml"]
+        if "conda_env" in config:
+            user_conda_yml = config["conda_env"]
             output = subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
         else:
             # Get conda env yml of current env
@@ -151,8 +154,9 @@ def run_job(session, config, job_cmd):
         if config["delete_when_done"] and \
            not config["run_in_background"] and \
            job_cmd != "_nimbo_launch_and_setup":
-            # Terminate instance if it isn't already being terminated
+            
             if utils.check_instance_status(session, instance_id) in ["running", "pending"]:
+                # Terminate instance if it isn't already being terminated
                 utils.delete_instance(session, instance_id)
 
         if config["run_in_background"]:
