@@ -234,6 +234,10 @@ def verify_correctness(config):
     assert instance_key_name + ".pem" in os.listdir(CWD), \
         f"The instance key file '{instance_key_name}' wasn't found in the current directory."
 
+    assert "conda_env" in config
+    assert os.path.isfile(config["conda_env"]), \
+        "Conda env file '{}' not found in the current folder.".format(config["conda_env"])
+
 
 def generate_config():
     config = """# Data paths

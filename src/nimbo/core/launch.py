@@ -22,9 +22,6 @@ def run_job(session, config, job_cmd):
     print("Job command:", job_cmd)
 
     access.verify_nimbo_instance_profile(session)
-    if "conda_env" in config:
-        assert isfile(config["conda_env"]), \
-            "Conda env file '{}' not found in the current folder.".format(config["conda_env"])
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
@@ -118,13 +115,8 @@ def run_job(session, config, job_cmd):
         REMOTE_SETUP = join(NIMBO, "scripts/remote_setup.sh")
 
         LOCAL_ENV = "local_env.yml"
-        if "conda_env" in config:
-            user_conda_yml = config["conda_env"]
-            output = subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
-        else:
-            # Get conda env yml of current env
-            command = f"conda env export > {LOCAL_ENV}"
-            output = subprocess.check_output(command, shell=True)
+        user_conda_yml = config["conda_env"]
+        output = subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
 
         # Send conda env yaml and setup scripts to instance
         print("\nSyncing conda, config, and setup files...")
