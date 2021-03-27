@@ -53,7 +53,8 @@ def run_job(session, config, job_cmd):
             LaunchSpecification=instance_config,
             TagSpecifications=[{
                 'ResourceType': 'spot-instances-request',
-                'Tags': [{'Key': 'created_by', 'Value': 'nimbo'}]
+                'Tags': [{'Key': 'CreatedBy', 'Value': 'nimbo'},
+                         {'Key': 'Owner', 'Value': config["user_id"]}]
             }]
         )
         instance = instance["SpotInstanceRequests"][0]
@@ -63,7 +64,8 @@ def run_job(session, config, job_cmd):
         instance_config["MaxCount"] = 1
         instance_config["TagSpecifications"] = [{
             'ResourceType': 'instance',
-            'Tags': [{'Key': 'created_by', 'Value': 'nimbo'}]
+            'Tags': [{'Key': 'CreatedBy', 'Value': 'nimbo'},
+                     {'Key': 'Owner', 'Value': config["user_id"]}]
         }]
         instance = ec2.run_instances(**instance_config)
         instance = instance["Instances"][0]
@@ -74,7 +76,7 @@ def run_job(session, config, job_cmd):
         # Wait for the instance to be running
         while status != "running":
             time.sleep(1)
-            status = utils.check_instance_status(session, instance_id)
+            status = utils.check_instance_status(session, config, instance_id)
 
         end_t = time.time()
         print(f"Instance running. ({round((end_t-start_t), 2)}s)")
@@ -91,7 +93,7 @@ def run_job(session, config, job_cmd):
             sys.exit()
 
         INSTANCE_KEY = config["instance_key"] + ".pem"
-        host = utils.check_instance_host(session, instance_id)
+        host = utils.check_instance_host(session, config, instance_id)
         ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
         scp = f"scp -i {INSTANCE_KEY}"
 
@@ -173,7 +175,7 @@ def run_job(session, config, job_cmd):
            not config["run_in_background"] and \
            job_cmd != "_nimbo_launch_and_setup":
 
-            if utils.check_instance_status(session, instance_id) in ["running", "pending"]:
+            if utils.check_instance_status(session, config, instance_id) in ["running", "pending"]:
                 # Terminate instance if it isn't already being terminated
                 utils.delete_instance(session, instance_id)
 

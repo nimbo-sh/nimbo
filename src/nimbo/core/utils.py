@@ -123,12 +123,13 @@ def list_spot_gpu_prices(session):
         print(string)
 
 
-def show_active_instances(session):
+def show_active_instances(session, config):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
             {'Name': 'instance-state-name', 'Values': ['running']},
-            {'Name': 'tag:created_by', 'Values': ['nimbo']}
+            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
+            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
         ]
     )
     for reservation in response["Reservations"]:
@@ -139,12 +140,13 @@ def show_active_instances(session):
                   f"Public DNS: {inst['PublicDnsName']}\n")
 
 
-def show_stopped_instances(session):
+def show_stopped_instances(session, config):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
             {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']},
-            {'Name': 'tag:created_by', 'Values': ['nimbo']}
+            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
+            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
         ]
     )
     for reservation in response["Reservations"]:
@@ -171,12 +173,13 @@ def delete_instance(session, instance_id):
     print(f"Instance {instance_id}: {status}")
 
 
-def delete_all_instances(session):
+def delete_all_instances(session, config):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
             {'Name': 'instance-state-name', 'Values': ['running']},
-            {'Name': 'tag:created_by', 'Values': ['nimbo']}
+            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
+            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
         ]
     )
     for reservation in response["Reservations"]:
@@ -189,16 +192,22 @@ def delete_all_instances(session):
             print(f"Instance {instance_id}: {status}")
 
 
-def check_instance_status(session, instance_id):
+def check_instance_status(session, config, instance_id):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(InstanceIds=[instance_id])
+    response = ec2.describe_instances(
+        InstanceIds=[instance_id],
+        Filters=[{'Name': 'tag:Owner', 'Values': [config["user_id"]]}]
+    )
     status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
     return status
 
 
-def check_instance_host(session, instance_id):
+def check_instance_host(session, config, instance_id):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(InstanceIds=[instance_id])
+    response = ec2.describe_instances(
+        InstanceIds=[instance_id],
+        Filters=[{'Name': 'tag:Owner', 'Values': [config["user_id"]]}]
+    )
     host = response["Reservations"][0]["Instances"][0]["PublicDnsName"]
     return host
 
@@ -209,53 +218,21 @@ def list_active_buckets(session):
     pprint(response)
 
 
-def list_amis(session):
-    ec2 = session.client('ec2')
-    print("{0: <25} {1}".format("AMI code", "System"))
-    for image_name, ami_code in AMI_MAP.items():
-        print("{0: <25} {1}".format(ami_code, image_name))
-
-
-def get_latest_nimbo_ami(session):
-    ec2 = session.client('ec2')
-    images = ec2.describe_images(Owners=['self'],
-                                 Filters=[{
-                                     "Name": "tag:created_by",
-                                     "Values": ["nimbo"]
-                                 }, {
-                                     "Name": "state",
-                                     "Values": ["available"]
-                                 }])["Images"]
-    if len(images) > 0:
-        sorted_images = sorted(images, key=lambda x: x["CreationDate"])
-        return sorted_images[-1]["ImageId"]
-    else:
-        return None
-
-
-def delete_ami(session, ami):
-    ec2 = session.client('ec2')
-    ec2.deregister_image(ImageId=ami)
-
-
 def ssh(session, config, instance_id):
     host = check_instance_host(session, instance_id)
     instance_key = config['instance_key']
     subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 
 
-def verify_correctness(config, skip=None):
+def verify_correctness(config):
 
     assert config["image"] in AMI_MAP, \
         "The image requested doesn't exist. " \
         "Please check this link for a list of supported images."
 
-    if skip == "instance-key":
-        pass
-    else:
-        instance_key_name = config["instance_key"]
-        assert instance_key_name + ".pem" in os.listdir(CWD), \
-            f"The instance key file '{instance_key_name}' wasn't found in the current directory."
+    instance_key_name = config["instance_key"]
+    assert instance_key_name + ".pem" in os.listdir(CWD), \
+        f"The instance key file '{instance_key_name}' wasn't found in the current directory."
 
 
 def generate_config():

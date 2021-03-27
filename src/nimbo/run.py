@@ -29,14 +29,13 @@ def main():
         with open(CONFIG, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
 
-        skip = None
-        if args.command[0] in ["create-key-pair", "delete-key-pair"]:
-            skip = "instance-key"
-
-        utils.verify_correctness(config, skip)
+        utils.verify_correctness(config)
         print()
 
         session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
+
+        # Add user-id to config
+        config["user_id"] = session.client("sts").get_caller_identity()["UserId"]
 
         if args.command[0] == "run":
             launch.run_job(session, config, args.command[1])
@@ -57,16 +56,10 @@ def main():
             utils.list_spot_gpu_prices(session)
 
         elif args.command[0] == "list-active":
-            utils.show_active_instances(session)
+            utils.show_active_instances(session, config)
 
         elif args.command[0] == "list-stopped":
-            utils.show_stopped_instances(session)
-
-        elif args.command[0] == "list-amis":
-            utils.list_amis(session)
-
-        elif args.command[0] == "delete-ami":
-            utils.delete_ami(session, args.command[1])
+            utils.show_stopped_instances(session, config)
 
         elif args.command[0] == "check-instance":
             utils.check_instance(session, args.command[1])
@@ -78,7 +71,7 @@ def main():
             utils.delete_instance(session, args.command[1])
 
         elif args.command[0] == "delete-all-instances":
-            utils.delete_all_instances(session)
+            utils.delete_all_instances(session, config)
 
         elif args.command[0] == "create-bucket":
             storage.create_bucket(session, args.command[1])
@@ -92,11 +85,11 @@ def main():
         elif args.command[0] == "ls":
             storage.ls(session, config, args.command[1])
 
-        elif args.command[0] == "create-key-pair":
-            access.create_key_pair(session, args.command[1])
+        #elif args.command[0] == "create-key-pair":
+        #    access.create_key_pair(session, args.command[1])
 
-        elif args.command[0] == "delete-key-pair":
-            access.delete_key_pair(session, args.command[1])
+        #elif args.command[0] == "delete-key-pair":
+        #    access.delete_key_pair(session, args.command[1])
 
         elif args.command[0] == "allow-current-device":
             access.allow_inbound_current_device(session, args.command[1])
