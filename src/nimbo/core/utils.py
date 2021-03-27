@@ -241,12 +241,12 @@ def verify_correctness(config):
 
 def generate_config():
     config = """# Data paths
-bucket_name: my-bucket
+bucket_name: <your-bucket>
 datasets_path: data/datasets
 results_path: data/results
 
 # Device, environment and regions
-aws_profile: my-profile
+aws_profile: <your-aws-profile>
 region_name: eu-west-1
 instance_type: g4dn.xlarge
 spot: no
@@ -254,7 +254,7 @@ spot: no
 
 image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
 disk_size: 128
-conda_env: env.yml
+conda_env: <your-conda-env-yml>
 
 # Job options
 run_in_background: no
@@ -263,7 +263,7 @@ delete_on_error: yes
 
 # Permissions and credentials
 security_group: default
-instance_key: my-laptop"""
+instance_key: <your-ec2-key-pair>"""
 
     with open("nimbo-config.yml", "w") as f:
         f.write(config)
