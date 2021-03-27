@@ -208,7 +208,7 @@ def check_instance_host(session, config, instance_id):
         InstanceIds=[instance_id],
         Filters=[{'Name': 'tag:Owner', 'Values': [config["user_id"]]}]
     )
-    host = response["Reservations"][0]["Instances"][0]["PublicDnsName"]
+    host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     return host
 
 
@@ -230,8 +230,9 @@ def verify_correctness(config):
         "The image requested doesn't exist. " \
         "Please check this link for a list of supported images."
 
+    assert "instance_key" in config
     instance_key_name = config["instance_key"]
-    assert instance_key_name + ".pem" in os.listdir(CWD), \
+    assert os.path.isfile(instance_key_name + ".pem"), \
         f"The instance key file '{instance_key_name}' wasn't found in the current directory."
 
     assert "conda_env" in config
