@@ -110,14 +110,7 @@ def push(session, config, folder):
 
 
 def ls(session, config, path):
-    if path in ["/", "."]:
-        path = ""
-
-    if len(path) > 0:
-        if path[-1] != "/":
-            path = path + "/"
-
-    s3_path = f's3://{config["bucket_name"]}/{path}'
-    command = f"aws s3 ls {s3_path} --profile nimbo"
+    profile = config["aws_profile"]
+    command = f"aws s3 ls {s3_path} --profile {profile}"
     print(f"\nRunning command: {command}\n")
     subprocess.Popen(command, shell=True).communicate()
