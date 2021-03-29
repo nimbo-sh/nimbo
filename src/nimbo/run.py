@@ -8,14 +8,19 @@ import argparse
 from pprint import pprint
 from pkg_resources import resource_filename
 
-from .core import access, utils, storage, launch
+from .core import access, utils, storage, launch, config_utils
 from .core.paths import NIMBO, CWD, CONFIG
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Nimbo utilities.')
-    parser.add_argument('command', nargs='+', default='list_active')
-    args = parser.parse_args()
+def parse_args(args):
+    parser = argparse.ArgumentParser(description='NimboCLI.')
+    parser.add_argument('command', nargs='+')
+    return parser.parse_args(args)
+
+
+def main(args):
+
+    parser = parse_args(args)
 
     if args.command[0] == "generate-config":
         utils.generate_config()
@@ -24,12 +29,13 @@ def main():
         # Load yaml config file
         assert os.path.isfile(CONFIG), \
             f"Nimbo configuration file '{CONFIG}' not found.\n" \
-            "You can run 'nimbo create_config' for guided config file creation."
+            "You can run 'nimbo generate-config' for guided config file creation."
 
         with open(CONFIG, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
 
-        utils.verify_correctness(config)
+        config = config_utils.fill_defaults(config)
+        config_utils.verify_correctness(config)
         print()
 
         session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
@@ -108,3 +114,7 @@ def main():
 
         else:
             raise Exception(f"Nimbo command '{args.command[0]}' not recognized.")
+
+
+if __name__ == "__main__": 
+    main(sys.argv[1:])
