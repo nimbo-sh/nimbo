@@ -11,17 +11,23 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 from . import storage, utils, access
+from .utils import instance_tags
 from .paths import NIMBO, CONFIG
 from .ami.catalog import AMI_MAP
 
 
 def launch_instance(client, config):
+    if config["image"][:4] == "ami-":
+        image = config["image"]
+    else:
+        image = AMI_MAP[config['image']]
+
     instance_config = {
         "BlockDeviceMappings": [{
             'DeviceName': '/dev/sda1',
             'Ebs': {'VolumeSize': config["disk_size"]}
         }],
-        "ImageId": AMI_MAP[config['image']],
+        "ImageId": image,
         "InstanceType": config["instance_type"],
         "KeyName": config["instance_key"],
         "Placement": {"Tenancy": "default"},
@@ -37,8 +43,7 @@ def launch_instance(client, config):
             LaunchSpecification=instance_config,
             TagSpecifications=[{
                 'ResourceType': 'spot-instances-request',
-                'Tags': [{'Key': 'CreatedBy', 'Value': 'nimbo'},
-                         {'Key': 'Owner', 'Value': config["user_id"]}]
+                'Tags': instance_tags(config)
             }]
         )
         instance = instance["SpotInstanceRequests"][0]
@@ -48,8 +53,7 @@ def launch_instance(client, config):
         instance_config["MaxCount"] = 1
         instance_config["TagSpecifications"] = [{
             'ResourceType': 'instance',
-            'Tags': [{'Key': 'CreatedBy', 'Value': 'nimbo'},
-                     {'Key': 'Owner', 'Value': config["user_id"]}]
+            'Tags': instance_tags(config)
         }]
         instance = client.run_instances(**instance_config)
         instance = instance["Instances"][0]

@@ -144,10 +144,8 @@ def show_stopped_instances(session, config):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']},
-            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
-            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
-        ]
+            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']}
+        ] + instance_filters(config)
     )
     for reservation in response["Reservations"]:
         for inst in reservation["Instances"]:
@@ -177,10 +175,8 @@ def delete_all_instances(session, config):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         Filters=[
-            {'Name': 'instance-state-name', 'Values': ['running']},
-            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
-            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
-        ]
+            {'Name': 'instance-state-name', 'Values': ['running']}
+        ] + instance_filters(config)
     )
     for reservation in response["Reservations"]:
         for inst in reservation["Instances"]:
@@ -196,7 +192,7 @@ def check_instance_status(session, config, instance_id):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         InstanceIds=[instance_id],
-        Filters=[{'Name': 'tag:Owner', 'Values': [config["user_id"]]}]
+        Filters=instance_filters(config)
     )
     status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
     return status
@@ -206,7 +202,7 @@ def check_instance_host(session, config, instance_id):
     ec2 = session.client('ec2')
     response = ec2.describe_instances(
         InstanceIds=[instance_id],
-        Filters=[{'Name': 'tag:Owner', 'Values': [config["user_id"]]}]
+        Filters=instance_filters(config)
     )
     host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     return host
@@ -224,50 +220,18 @@ def ssh(session, config, instance_id):
     subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 
 
-def verify_correctness(config):
-
-    assert config["image"] in AMI_MAP, \
-        "The image requested doesn't exist. " \
-        "Please check this link for a list of supported images."
-
-    assert "instance_key" in config
-    instance_key_name = config["instance_key"]
-    assert os.path.isfile(instance_key_name + ".pem"), \
-        f"The instance key file '{instance_key_name}' wasn't found in the current directory."
-
-    assert "conda_env" in config
-    assert os.path.isfile(config["conda_env"]), \
-        "Conda env file '{}' not found in the current folder.".format(config["conda_env"])
+def instance_tags(config):
+    tags = [
+        {"Key": "CreatedBy", "Value": "nimbo"},
+        {"Key": "Owner", "Value": config["user_id"]}
+    ]
+    return tags
 
 
-def generate_config():
-    config = """# Data paths
-bucket_name: <your-bucket>
-datasets_path: data/datasets
-results_path: data/results
-
-# Device, environment and regions
-aws_profile: <your-aws-profile>
-region_name: eu-west-1
-instance_type: g4dn.xlarge
-spot: no
-#spot_duration: 60
-
-image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
-disk_size: 128
-conda_env: <your-conda-env-yml>
-
-# Job options
-run_in_background: no
-delete_when_done: yes 
-delete_on_error: yes
-
-# Permissions and credentials
-security_group: default
-instance_key: <your-ec2-key-pair>"""
-
-    with open("nimbo-config.yml", "w") as f:
-        f.write(config)
-
-    print("Config written to nimbo-config.yml.")
-    print("Please replace the bucket_name, aws_profile, and instance_key with your details.")
+def instance_filters(config):
+    tags = instance_tags(config)
+    filters = []
+    for tag in tags:
+        tag_filter = {"Name": "tag:"+tag["Key"], "Values": [tag["Value"]]}
+        filters.append(tag_filter)
+    return filters
