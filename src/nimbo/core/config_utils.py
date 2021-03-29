@@ -63,7 +63,7 @@ instance_type: g4dn.xlarge
 spot: no
 #spot_duration: 60
 
-image: ubuntu18-cuda10.2-cudnn7.6-conda4.9.2
+image: ubuntu18-drivers460
 disk_size: 128
 conda_env: <your-conda-env-yml>
 
