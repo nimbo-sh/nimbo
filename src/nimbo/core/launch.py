@@ -268,7 +268,23 @@ def run_access_test(session, config):
         output, error = subprocess.Popen(f"{ssh} ubuntu@{host} {command} {instance_id}", shell=True,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
         """
-        print("The instance has access the required S3 and EC2 permissions \u2713")
+        print("The instance profile has the required S3 and EC2 permissions \u2713")
+
+        # Send test file to s3 results path and delete it
+        profile = config["aws_profile"]
+        results_path = config["s3_results_path"]
+        subprocess.check_output("echo 'Hellow World' > nimbo-access-test.txt", shell=True)
+        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile}"
+        subprocess.check_output(command, shell=True)
+        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile}"
+        subprocess.check_output(command, shell=True)
+
+        # List folders in s3 datasets path
+        datasets_path = config["s3_datasets_path"]
+        command = f"aws s3 ls {datasets_path} --profile {profile}"
+        subprocess.check_output(command, shell=True)
+        print("You have the necessary S3 read/write permissions for the remote paths \u2713")
+
         print("\nEverything working \u2713")
         print("Instance has been deleted.")
 
