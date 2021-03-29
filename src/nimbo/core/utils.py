@@ -219,7 +219,7 @@ def list_active_buckets(session):
 
 
 def ssh(session, config, instance_id):
-    host = check_instance_host(session, instance_id)
+    host = check_instance_host(session, config, instance_id)
     instance_key = config['instance_key']
     subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 
