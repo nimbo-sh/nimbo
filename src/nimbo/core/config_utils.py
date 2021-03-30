@@ -52,20 +52,21 @@ def fill_defaults(config):
 
 def generate_config():
     config = """# Data paths
-bucket_name: <your-bucket>
-datasets_path: data/datasets
-results_path: data/results
+local_datasets_path: data/datasets
+local_results_path: data/results
+s3_datasets_path: s3://my-bucket/my-project/data/datasets
+s3_results_path: s3://my-bucket/my-project/data/results
 
 # Device, environment and regions
-aws_profile: <your-aws-profile>
+aws_profile: default
 region_name: eu-west-1
-instance_type: g4dn.xlarge
+instance_type: p2.xlarge
 spot: no
 #spot_duration: 60
 
 image: ubuntu18-drivers460
 disk_size: 128
-conda_env: <your-conda-env-yml>
+conda_env: your-conda-file.yml
 
 # Job options
 run_in_background: no
@@ -74,10 +75,9 @@ delete_on_error: yes
 
 # Permissions and credentials
 security_group: default
-instance_key: <your-ec2-key-pair>"""
+instance_key: your-ec2-key-pair  # without .pem """
 
     with open("nimbo-config.yml", "w") as f:
         f.write(config)
 
-    print("Config written to nimbo-config.yml.")
-    print("Please replace the bucket_name, aws_profile, and instance_key with your details.")
+    print("Boilerplate config written to nimbo-config.yml.")
