@@ -14,7 +14,7 @@ from .core.paths import NIMBO, CWD, CONFIG
 def run(args):
 
     if args[0] == "generate-config":
-        utils.generate_config()
+        config_utils.generate_config()
 
     else:
         # Load yaml config file
