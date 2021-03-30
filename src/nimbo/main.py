@@ -1,7 +1,7 @@
 import click
 import boto3
 
-from .core import access, utils, storage, launch, config_utils
+from .core import access, utils, storage, execute, config_utils
 
 
 def get_session_and_config(required_fields, fields_to_check):
@@ -47,27 +47,31 @@ def generate_config():
 
 @cli.command()
 @click.argument("job_cmd")
-def run(job_cmd):
+@click.option("--dry-run", is_flag=True)
+def run(job_cmd, dry_run):
     session, config = get_session_and_config_full_check()
-    launch.run_job(session, config, job_cmd)
+    execute.run_job(session, config, job_cmd, dry_run)
 
 
 @cli.command()
-def launch():
+@click.option("--dry-run", is_flag=True)
+def launch(dry_run):
     session, config = get_session_and_config_full_check()
-    launch.run_job(session, config, "_nimbo_launch")
+    execute.run_job(session, config, "_nimbo_launch", dry_run)
 
 
 @cli.command()
-def launch_and_setup():
+@click.option("--dry-run", is_flag=True)
+def launch_and_setup(dry_run):
     session, config = get_session_and_config_full_check()
-    launch.run_job(session, config, "_nimbo_launch_and_setup")
+    execute.run_job(session, config, "_nimbo_launch_and_setup", dry_run)
 
 
 @cli.command()
-def test_access():
+@click.option("--dry-run", is_flag=True)
+def test_access(dry_run):
     session, config = get_session_and_config_full_check()
-    launch.run_access_test(session, config)
+    execute.run_access_test(session, config, dry_run)
 
 
 @cli.command()

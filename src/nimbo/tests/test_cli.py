@@ -12,6 +12,11 @@ def write_fake_key():
         f.write('Mock key')
 
 
+def write_fake_conda():
+    with open('my-conda-file.yml', 'w') as f:
+        f.write('Mock requirements')
+
+
 def test_generate_config():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -73,4 +78,24 @@ def test_instance_actions():
         assert result.exit_code == 0
 
         result = runner.invoke(cli, "delete-all-instances --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+
+def test_run_job():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        generate_config(quiet=True)
+        write_fake_key()
+        write_fake_conda()
+
+        result = runner.invoke(cli, "run 'python --version' --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "launch --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "launch-and-setup --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "test-access --dry-run", catch_exceptions=False)
         assert result.exit_code == 0
