@@ -5,9 +5,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="nimbo",  # Replace with your own username
-    version="0.0.1",
+    version="0.0.3",
     author="NimboSH, Ltd.",
-    author_email="miguel@nimbo.sh",
+    author_email="support@nimbo.sh",
     description="Run machine jobs on AWS from your computer.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -28,13 +28,16 @@ setuptools.setup(
         where="src",
         exclude=["tests"]
     ),
+    package_data={"nimbo": ["scripts/*.sh"]},
+    include_package_data=True,
     entry_points = {
-        'console_scripts': ['nimbo=nimbo.run:main'],
+        'console_scripts': ['nimbo=nimbo.main:cli'],
     },
     python_requires=">=3.6",
     install_requires=[
         "awscli>=1.19<2.0",
         "boto3>=1.17",
         "requests>=2.25",
+        "click>=7.0",
    ],
 )
