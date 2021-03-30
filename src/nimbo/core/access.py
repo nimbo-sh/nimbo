@@ -6,8 +6,6 @@ import subprocess
 from pprint import pprint
 from botocore.exceptions import ClientError
 
-from .paths import CWD
-
 
 def create_key_pair(session, name):
     ec2 = session.client('ec2')
@@ -19,7 +17,7 @@ def create_key_pair(session, name):
                         "that key with 'nimbo delete-key-pair <key_name>'.")
     else:
         keypair = ec2.create_key_pair(KeyName=name)
-        file_name = join(CWD, f"{name}.pem")
+        file_name = f"{name}.pem"
         with open(file_name, "w") as f:
             print(keypair["KeyMaterial"])
             f.write(keypair["KeyMaterial"])

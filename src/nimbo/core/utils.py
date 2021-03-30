@@ -5,8 +5,8 @@ import subprocess
 from pprint import pprint
 import boto3
 from pkg_resources import resource_filename
+from botocore.exceptions import ClientError
 
-from .paths import CWD
 from .ami.catalog import AMI_MAP
 
 
@@ -60,7 +60,10 @@ def format_price_string(instance_type, price, gpus, cpus, mem):
     return string
 
 
-def list_gpu_prices(session):
+def list_gpu_prices(session, dry_run=False):
+    if dry_run:
+        return
+
     instance_types = list(sorted(ec2_instance_types(session)))
     instance_types = [inst for inst in instance_types if inst[:2] in
                       ["p2", "p3", "p4"] or inst[:3] in ["g4d"]]
@@ -99,7 +102,10 @@ def list_gpu_prices(session):
         print(string)
 
 
-def list_spot_gpu_prices(session):
+def list_spot_gpu_prices(session, dry_run=False):
+    if dry_run:
+        return
+
     instance_types = list(sorted(ec2_instance_types(session)))
     instance_types = [inst for inst in instance_types if inst[:2] in
                       ["p2", "p3", "p4"] or inst[:3] in ["g4d"]]
@@ -123,88 +129,128 @@ def list_spot_gpu_prices(session):
         print(string)
 
 
-def show_active_instances(session, config):
+def show_active_instances(session, config, dry_run=False):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(
-        Filters=[
-            {'Name': 'instance-state-name', 'Values': ['running']},
-            {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
-            {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
-        ]
-    )
-    for reservation in response["Reservations"]:
-        for inst in reservation["Instances"]:
-            print(f"ID: {inst['InstanceId']}\n"
-                  f"Launch Time: {inst['LaunchTime']}\n"
-                  f"InstanceType: {inst['InstanceType']}\n"
-                  f"Public DNS: {inst['PublicDnsName']}\n")
+    try:
+        response = ec2.describe_instances(
+            Filters=[
+                {'Name': 'instance-state-name', 'Values': ['running']},
+                {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
+                {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
+            ],
+            DryRun=dry_run
+        )
+        for reservation in response["Reservations"]:
+            for inst in reservation["Instances"]:
+                print(f"ID: {inst['InstanceId']}\n"
+                      f"Launch Time: {inst['LaunchTime']}\n"
+                      f"InstanceType: {inst['InstanceType']}\n"
+                      f"Public DNS: {inst['PublicDnsName']}\n")
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
 
 
-def show_stopped_instances(session, config):
+def show_stopped_instances(session, config, dry_run=False):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(
-        Filters=[
-            {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']}
-        ] + instance_filters(config)
-    )
-    for reservation in response["Reservations"]:
-        for inst in reservation["Instances"]:
-            print(f"ID: {inst['InstanceId']}\n"
-                  f"Launch Time: {inst['LaunchTime']}\n"
-                  f"InstanceType: {inst['InstanceType']}\n")
+    try:
+        response = ec2.describe_instances(
+            Filters=[
+                {'Name': 'instance-state-name', 'Values': ['stopped', 'stopping']}
+            ] + instance_filters(config),
+            DryRun=dry_run
+        )
+        for reservation in response["Reservations"]:
+            for inst in reservation["Instances"]:
+                print(f"ID: {inst['InstanceId']}\n"
+                      f"Launch Time: {inst['LaunchTime']}\n"
+                      f"InstanceType: {inst['InstanceType']}\n")
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
 
 
-def stop_instance(session, instance_id):
+def check_instance_status(session, config, instance_id, dry_run):
     ec2 = session.client('ec2')
-    response = ec2.stop_instances(
-        InstanceIds=[instance_id],
-    )
-    pprint(response)
+    try:
+        response = ec2.describe_instances(
+            InstanceIds=[instance_id],
+            Filters=instance_filters(config),
+            DryRun=dry_run
+        )
+        status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
+        return status
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
+        else:
+            return "mock-status"
 
 
-def delete_instance(session, instance_id):
+def stop_instance(session, instance_id, dry_run):
     ec2 = session.client('ec2')
-    response = ec2.terminate_instances(
-        InstanceIds=[instance_id],
-    )
-    status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
-    print(f"Instance {instance_id}: {status}")
+    try:
+        response = ec2.stop_instances(
+            InstanceIds=[instance_id],
+            DryRun=dry_run
+        )
+        pprint(response)
+    except ClientError as e:
+        if not ('DryRunOperation' in str(e) or \
+                'InvalidInstanceID.NotFound' in str(e)):
+            raise
 
 
-def delete_all_instances(session, config):
+def delete_instance(session, instance_id, dry_run):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(
-        Filters=[
-            {'Name': 'instance-state-name', 'Values': ['running']}
-        ] + instance_filters(config)
-    )
-    for reservation in response["Reservations"]:
-        for inst in reservation["Instances"]:
-            instance_id = inst['InstanceId']
-            delete_response = ec2.terminate_instances(
-                InstanceIds=[instance_id],
-            )
-            status = delete_response["TerminatingInstances"][0]["CurrentState"]["Name"]
-            print(f"Instance {instance_id}: {status}")
+    try:
+        response = ec2.terminate_instances(
+            InstanceIds=[instance_id],
+            DryRun=dry_run
+        )
+        status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
+        print(f"Instance {instance_id}: {status}")
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
 
 
-def check_instance_status(session, config, instance_id):
+def delete_all_instances(session, config, dry_run):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(
-        InstanceIds=[instance_id],
-        Filters=instance_filters(config)
-    )
-    status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
-    return status
+    try:
+        response = ec2.describe_instances(
+            Filters=[
+                {'Name': 'instance-state-name', 'Values': ['running']}
+            ] + instance_filters(config),
+            DryRun=dry_run
+        )
+        for reservation in response["Reservations"]:
+            for inst in reservation["Instances"]:
+                instance_id = inst['InstanceId']
+                delete_response = ec2.terminate_instances(
+                    InstanceIds=[instance_id],
+                )
+                status = delete_response["TerminatingInstances"][0]["CurrentState"]["Name"]
+                print(f"Instance {instance_id}: {status}")
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
 
 
-def check_instance_host(session, config, instance_id):
+
+def check_instance_host(session, config, instance_id, dry_run=False):
     ec2 = session.client('ec2')
-    response = ec2.describe_instances(
-        InstanceIds=[instance_id],
-        Filters=instance_filters(config)
-    )
-    host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
+    try: 
+        response = ec2.describe_instances(
+            InstanceIds=[instance_id],
+            Filters=instance_filters(config),
+            DryRun=dry_run,
+        )
+        host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
+    except ClientError as e:
+        if 'DryRunOperation' not in str(e):
+            raise
+        host = "random_host"
     return host
 
 
@@ -214,8 +260,12 @@ def list_active_buckets(session):
     pprint(response)
 
 
-def ssh(session, config, instance_id):
-    host = check_instance_host(session, config, instance_id)
+def ssh(session, config, instance_id, dry_run=False):
+    host = check_instance_host(session, config, instance_id, dry_run)
+    
+    if dry_run: 
+        return
+    
     instance_key = config['instance_key']
     subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 

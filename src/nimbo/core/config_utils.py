@@ -81,8 +81,8 @@ class ConfigVerifier():
     def check_instance_key(self):
         instance_key_name = self.config["instance_key"]
         if not os.path.isfile(instance_key_name + ".pem"):
-            raise FileNotFoundError(f"The instance key file '{instance_key_name}.pem' wasn't found in the current directory.\n" \
-                                    "Make sure the file exists, or see https://docs.nimbo.sh/getting-started#create-instance-key-pairs " \
+            raise FileNotFoundError(f"The instance key file '{instance_key_name}.pem' wasn't found in the current directory.\n"
+                                    "Make sure the file exists, or see https://docs.nimbo.sh/getting-started#create-instance-key-pairs "
                                     "for instructions on how to get one.")
 
     def check_conda(self):
@@ -107,7 +107,7 @@ def fill_defaults(config):
     return config_defaults
 
 
-def generate_config():
+def generate_config(quiet=False):
     config = """# Data paths
 local_datasets_path: data/datasets
 local_results_path: data/results
@@ -123,7 +123,7 @@ spot: no
 
 image: ubuntu18-drivers460
 disk_size: 128
-conda_env: your-conda-file.yml
+conda_env: my-conda-file.yml
 
 # Job options
 run_in_background: no
@@ -132,9 +132,10 @@ delete_on_error: yes
 
 # Permissions and credentials
 security_group: default
-instance_key: your-ec2-key-pair  # without .pem """
+instance_key: my-ec2-key-pair  # without .pem """
 
     with open("nimbo-config.yml", "w") as f:
         f.write(config)
 
-    print("Boilerplate config written to nimbo-config.yml.")
+    if not quiet:
+        print("Boilerplate config written to nimbo-config.yml.")
