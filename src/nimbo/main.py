@@ -1,39 +1,38 @@
-import os
-import sys
-import yaml
 import click
 import boto3
 
-from .core import config_utils
-from .core.paths import NIMBO, CWD, CONFIG
+from .core import access, utils, storage, launch, config_utils
 
 
-class SessionAndConfig(object):
-    def __init__(self):
-        # Load yaml config file
-        assert os.path.isfile(CONFIG), \
-            f"Nimbo configuration file '{CONFIG}' not found.\n" \
-            "You can run 'nimbo generate-config' for guided config file creation."
+def get_session_and_config(required_fields, fields_to_check):
+    config = config_utils.load_config()
 
-        with open(CONFIG, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
+    config = config_utils.fill_defaults(config)
+    config_utils.ConfigVerifier(config).verify(required_fields, fields_to_check)
 
-        config = config_utils.fill_defaults(config)
-        # config_utils.verify_correctness(config)
-        print()
+    session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
 
-        session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
+    # Add user-id to config
+    config["user_id"] = session.client("sts").get_caller_identity()["UserId"]
 
-        # Add user-id to config
-        config["user_id"] = session.client("sts").get_caller_identity()["UserId"]
+    return session, config
 
 
-pass_session_config = click.make_pass_decorator(SessionAndConfig, ensure=True)
+def get_session_and_config_full_check():
+    return get_session_and_config("all", "all")
+
+
+def get_session_and_config_instance_key():
+    return get_session_and_config(["aws_profile", "region_name", "instance_key"], ["instance_key"])
+
+
+def get_session_and_config_minimal():
+    return get_session_and_config(["aws_profile", "region_name"], [])
 
 
 @click.group()
 def cli():
-    click.echo("Running")
+    pass
 
 
 @cli.command()
@@ -42,138 +41,137 @@ def generate_config():
 
 
 @cli.command()
-@pass_session_config
 @click.argument("job_cmd")
-def run(sc, job_cmd):
-    print(sc.session)
-    print(sc.config)
-    launch.run_job(sc.session, sc.config, job_cmd)
+def run(job_cmd):
+    session, config = get_session_and_config_full_check()
+    launch.run_job(session, config, job_cmd)
 
 
 @cli.command()
-@pass_session_config
-def launch(sc):
-    launch.run_job(sc.session, sc.config, "_nimbo_launch")
+def launch():
+    session, config = get_session_and_config_full_check()
+    launch.run_job(session, config, "_nimbo_launch")
 
 
 @cli.command()
-@pass_session_config
-def launch_and_setup(sc):
-    launch.run_job(sc.session, sc.config, "_nimbo_launch_and_setup")
+def launch_and_setup():
+    session, config = get_session_and_config_full_check()
+    launch.run_job(session, config, "_nimbo_launch_and_setup")
 
 
 @cli.command()
-@pass_session_config
-def test_access(sc):
-    launch.run_access_test(sc.session, sc.config)
+def test_access():
+    session, config = get_session_and_config_full_check()
+    launch.run_access_test(session, config)
 
 
 @cli.command()
-@pass_session_config
-def ssh(sc):
-    utils.ssh(sc.session, sc.config, args[1])
-
-
-@cli.command()
-@pass_session_config
-def list_gpu_prices(sc):
-    utils.list_gpu_prices(sc.session)
-
-
-@cli.command()
-@pass_session_config
-def list_spot_gpu_prices(sc):
-    utils.list_spot_gpu_prices(sc.session)
-
-
-@cli.command()
-@pass_session_config
-def list_active(sc):
-    utils.show_active_instances(sc.session, sc.config)
-
-
-@cli.command()
-@pass_session_config
-def list_stopped(sc):
-    utils.show_stopped_instances(sc.session, sc.config)
-
-
-@cli.command()
-@pass_session_config
 @click.argument("instance_id")
-def check_instance(sc, instance_id):
-    utils.check_instance(sc.session, instance_id)
+def ssh(instance_id):
+    session, config = get_session_and_config_instance_key()
+    utils.ssh(session, config, instance_id)
 
 
 @cli.command()
-@pass_session_config
+def list_gpu_prices():
+    session, config = get_session_and_config_minimal()
+    utils.list_gpu_prices(session)
+
+
+@cli.command()
+def list_spot_gpu_prices():
+    session, config = get_session_and_config_minimal()
+    utils.list_spot_gpu_prices(session)
+
+
+@cli.command()
+def list_active():
+    session, config = get_session_and_config_minimal()
+    utils.show_active_instances(session, config)
+
+
+@cli.command()
+def list_stopped():
+    session, config = get_session_and_config_minimal()
+    utils.show_stopped_instances(session, config)
+
+
+@cli.command()
 @click.argument("instance_id")
-def stop_instance(sc, instance_id):
-    utils.stop_instance(sc.session, instance_id)
+def check_instance(instance_id):
+    session, config = get_session_and_config_minimal()
+    utils.check_instance(session, instance_id)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("instance_id")
-def delete_instance(sc, instance_id):
-    utils.delete_instance(sc.session, instance_id)
+def stop_instance(instance_id):
+    session, config = get_session_and_config_minimal()
+    utils.stop_instance(session, instance_id)
 
 
 @cli.command()
-@pass_session_config
-def delete_all_instances(sc):
-    utils.delete_all_instances(sc.session, sc.config)
+@click.argument("instance_id")
+def delete_instance(instance_id):
+    session, config = get_session_and_config_minimal()
+    utils.delete_instance(session, instance_id)
 
 
 @cli.command()
-@pass_session_config
+def delete_all_instances():
+    session, config = get_session_and_config_minimal()
+    utils.delete_all_instances(session, config)
+
+
+@cli.command()
 @click.argument("bucket_name")
-def create_bucket(sc, bucket_name):
-    storage.create_bucket(sc.session, bucket_name)
+def create_bucket(bucket_name):
+    session, config = get_session_and_config_minimal()
+    storage.create_bucket(session, bucket_name)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
-def push(sc, folder):
-    storage.push(sc.session, sc.config, folder)
+def push(folder):
+    session, config = get_session_and_config_minimal()
+    storage.push(session, config, folder)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
-def pull(sc, folder):
-    storage.pull(sc.session, sc.config, folder)
+def pull(folder):
+    session, config = get_session_and_config_minimal()
+    storage.pull(session, config, folder)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("path")
-def pull(sc, path):
-    storage.ls(sc.session, sc.config, path)
+def ls(path):
+    session, config = get_session_and_config_minimal()
+    storage.ls(session, config, path)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("security_group")
-def allow_current_device(sc, security_group):
-    access.allow_inbound_current_device(sc.session, security_group)
+def allow_current_device(security_group):
+    session, config = get_session_and_config_minimal()
+    access.allow_inbound_current_device(session, security_group)
 
 
 @cli.command()
-@pass_session_config
-def list_instance_profiles(sc):
-    access.list_instance_profiles(sc.session)
+def list_instance_profiles():
+    session, config = get_session_and_config_minimal()
+    access.list_instance_profiles(session)
 
 
 @cli.command()
-@pass_session_config
 @click.argument("role_name")
-def create_instance_profile(sc, role_name):
-    access.create_instance_profile(sc.session, role_name)
+def create_instance_profile(role_name):
+    session, config = get_session_and_config_minimal()
+    access.create_instance_profile(session, role_name)
 
 
 @cli.command()
-@pass_session_config
-def create_instance_profile_and_role(sc):
-    access.create_instance_profile_and_role(sc.session)
+def create_instance_profile_and_role():
+    session, config = get_session_and_config_minimal()
+    access.create_instance_profile_and_role(session)

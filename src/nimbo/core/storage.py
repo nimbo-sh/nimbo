@@ -112,5 +112,5 @@ def push(session, config, folder):
 def ls(session, config, path):
     profile = config["aws_profile"]
     command = f"aws s3 ls {path} --profile {profile}"
-    print(f"\nRunning command: {command}\n")
+    print(f"Running command: {command}")
     subprocess.Popen(command, shell=True).communicate()

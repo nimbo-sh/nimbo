@@ -82,10 +82,10 @@ def run(args):
         elif args[0] == "ls":
             storage.ls(session, config, args[1])
 
-        #elif args[0] == "create-key-pair":
+        # elif args[0] == "create-key-pair":
         #    access.create_key_pair(session, args[1])
 
-        #elif args[0] == "delete-key-pair":
+        # elif args[0] == "delete-key-pair":
         #    access.delete_key_pair(session, args[1])
 
         elif args[0] == "allow-current-device":
@@ -109,4 +109,3 @@ def run(args):
 
 def main():
     run(sys.argv[1:])
-
