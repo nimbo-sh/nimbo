@@ -83,7 +83,7 @@ def launch_and_setup(dry_run):
 @click.option("--dry-run", is_flag=True)
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""
-    session, config = get_session_and_config_full_check()
+    session, config = get_session_and_config_instance_key()
     execute.run_access_test(session, config, dry_run)
 
 

@@ -11,7 +11,6 @@ CONDA_PATH=/home/ubuntu/miniconda3
 
 CONDASH=$CONDA_PATH/etc/profile.d/conda.sh
 echo ""
-echo "Using conda env: $ENV_NAME"
 mkdir -p $CONDA_PATH
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
