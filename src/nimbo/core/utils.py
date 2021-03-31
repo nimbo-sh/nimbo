@@ -170,7 +170,7 @@ def show_stopped_instances(session, config, dry_run=False):
             raise
 
 
-def check_instance_status(session, config, instance_id, dry_run):
+def check_instance_status(session, config, instance_id, dry_run=False):
     ec2 = session.client('ec2')
     try:
         response = ec2.describe_instances(
@@ -187,7 +187,7 @@ def check_instance_status(session, config, instance_id, dry_run):
             return "mock-status"
 
 
-def stop_instance(session, instance_id, dry_run):
+def stop_instance(session, instance_id, dry_run=False):
     ec2 = session.client('ec2')
     try:
         response = ec2.stop_instances(
@@ -201,7 +201,7 @@ def stop_instance(session, instance_id, dry_run):
             raise
 
 
-def delete_instance(session, instance_id, dry_run):
+def delete_instance(session, instance_id, dry_run=False):
     ec2 = session.client('ec2')
     try:
         response = ec2.terminate_instances(
@@ -215,7 +215,7 @@ def delete_instance(session, instance_id, dry_run):
             raise
 
 
-def delete_all_instances(session, config, dry_run):
+def delete_all_instances(session, config, dry_run=False):
     ec2 = session.client('ec2')
     try:
         response = ec2.describe_instances(
