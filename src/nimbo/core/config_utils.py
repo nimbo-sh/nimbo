@@ -109,10 +109,10 @@ def fill_defaults(config):
 
 def generate_config(quiet=False):
     config = """# Data paths
-local_datasets_path: data/datasets
-local_results_path: data/results
-s3_datasets_path: s3://my-bucket/my-project/data/datasets
-s3_results_path: s3://my-bucket/my-project/data/results
+local_datasets_path: your-datasets-folder
+local_results_path: you-results-folder
+s3_datasets_path: s3://my-bucket/my-project/some-datasets-folder
+s3_results_path: s3://my-bucket/my-project/some-results-folder
 
 # Device, environment and regions
 aws_profile: default

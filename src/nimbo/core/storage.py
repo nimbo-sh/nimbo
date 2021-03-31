@@ -87,26 +87,28 @@ def check_snapshot_state(session, snapshot_id):
     return response["Snapshots"][0]["State"]
 
 
-def sync_folder(session, source, target, profile):
-    command = f"aws s3 sync {source} {target} --profile {profile} --delete"
+def sync_folder(session, source, target, profile, delete=False):
+    command = f"aws s3 sync {source} {target} --profile {profile}"
+    if delete:
+        command = command + " --delete"
     print(f"\nRunning command: {command}\n")
     subprocess.Popen(command, shell=True).communicate()
 
 
-def pull(session, config, folder):
+def pull(session, config, folder, delete=False):
     assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
 
     source = config["s3_" + folder + "_path"]
     target = config["local_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"])
+    sync_folder(session, source, target, config["aws_profile"], delete)
 
 
-def push(session, config, folder):
+def push(session, config, folder, delete=False):
     assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
 
     source = config["local_" + folder + "_path"]
     target = config["s3_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"])
+    sync_folder(session, source, target, config["aws_profile"], delete)
 
 
 def ls(session, config, path):
