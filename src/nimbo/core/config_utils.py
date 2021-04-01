@@ -10,7 +10,7 @@ VALID_FIELD_NAMES = [
     "aws_profile", "region_name", "instance_type",
     "spot", "spot_duration",
     "image", "disk_size", "conda_env",
-    "run_in_background", "delete_when_done", "delete_on_error",
+    "run_in_background", "persist",
     "security_group", "instance_key"
 ]
 
@@ -19,7 +19,7 @@ ALL_REQUIRED_FIELDS = [
     "s3_results_path", "s3_datasets_path",
     "aws_profile", "region_name", "instance_type",
     "image", "disk_size", "conda_env",
-    "run_in_background", "delete_when_done", "delete_on_error",
+    "run_in_background", "persist",
     "security_group", "instance_key"
 ]
 
@@ -98,8 +98,7 @@ def fill_defaults(config):
         "image": "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2",
         "disk_size": 128,
         "run_in_background": False,
-        "delete_when_done": True,
-        "delete_on_error": True,
+        "persist": False,
         "security_group": "default"
     }
 
@@ -127,8 +126,7 @@ conda_env: my-conda-file.yml
 
 # Job options
 run_in_background: no
-delete_when_done: yes
-delete_on_error: yes
+persist: no
 
 # Permissions and credentials
 security_group: default

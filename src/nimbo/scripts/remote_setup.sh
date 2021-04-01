@@ -1,16 +1,53 @@
 #!/bin/bash
-set -e
+
+trap "kill 0" EXIT
+trap 'echo "Job failed."; do_cleanup; exit' ERR
+trap 'echo "Received signal to stop."; do_cleanup; exit' SIGQUIT SIGTERM SIGINT
+
+do_cleanup () { 
+    echo "Backing up nimbo logs..."
+    $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH
+
+    PERSIST="$(grep 'persist:' $CONFIG | awk '{print $2}')"
+    if [ "$PERSIST" = "no" ]; then
+        echo "Deleting instance $INSTANCE_ID..."
+        $AWS ec2 terminate-instances --instance-ids $INSTANCE_ID >/dev/null
+        echo "Done."
+    fi
+}
+
+INSTANCE_ID=$1
 
 PYTHONUNBUFFERED=TRUE
-PROJ_DIR=/home/ubuntu/project
-CONFIG=nimbo-config.yml
-cd $PROJ_DIR
 
 AWS=/usr/local/bin/aws
+PROJ_DIR=/home/ubuntu/project
 CONDA_PATH=/home/ubuntu/miniconda3
-
 CONDASH=$CONDA_PATH/etc/profile.d/conda.sh
-echo ""
+
+cd $PROJ_DIR
+
+CONFIG=nimbo-config.yml
+LOCAL_DATASETS_PATH="$(grep 'local_datasets_path:' $CONFIG | awk '{print $2}')"
+LOCAL_RESULTS_PATH="$(grep 'local_results_path:' $CONFIG | awk '{print $2}')"
+S3_DATASETS_PATH="$(grep 's3_datasets_path:' $CONFIG | awk '{print $2}')"
+S3_RESULTS_PATH="$(grep 's3_results_path:' $CONFIG | awk '{print $2}')"
+ENV_FILE=local_env.yml
+ENV_NAME="$(grep 'name:' $ENV_FILE | awk '{print $2}')"
+
+S3_LOG_NAME=$(date +%Y-%m-%d_%H-%M-%S).txt
+S3_LOG_PATH=$S3_RESULTS_PATH/nimbo-logs/$S3_LOG_NAME
+LOCAL_LOG=/home/ubuntu/nimbo-log.txt
+echo "Will save logs to $S3_LOG_PATH"
+
+while true; do 
+    $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH
+    sleep 3
+done &
+
+mkdir -p $LOCAL_DATASETS_PATH
+mkdir -p $LOCAL_RESULTS_PATH
+
 mkdir -p $CONDA_PATH
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
@@ -27,22 +64,13 @@ fi
 
 source $CONDASH
 
-ENV_NAME="$(grep 'name:' local_env.yml | awk '{print $2}')"
 echo "Creating conda environment: $ENV_NAME"
-conda env create -q --file local_env.yml
+conda env create -q --file $ENV_FILE
 conda activate $ENV_NAME
 
 echo "Done."
 
 # Import datasets and results from the bucket
-LOCAL_DATASETS_PATH="$(grep 'local_datasets_path:' $CONFIG | awk '{print $2}')"
-LOCAL_RESULTS_PATH="$(grep 'local_results_path:' $CONFIG | awk '{print $2}')"
-S3_DATASETS_PATH="$(grep 's3_datasets_path:' $CONFIG | awk '{print $2}')"
-S3_RESULTS_PATH="$(grep 's3_results_path:' $CONFIG | awk '{print $2}')"
-
-mkdir -p $LOCAL_DATASETS_PATH
-mkdir -p $LOCAL_RESULTS_PATH
-
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH to $LOCAL_DATASETS_PATH..."
 $AWS s3 cp --quiet --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH
@@ -54,7 +82,7 @@ echo "================================================="
 echo ""
 
 if [ "$2" = "_nimbo_launch_and_setup" ]; then
-    echo "Setup complete. You can now use 'nimbo ssh <instance-id>' to ssh into this instance."
+    echo "Setup complete. You can now use 'nimbo ssh $1' to ssh into this instance."
     exit 0
 else
     echo "Running job: ${@:2}"
@@ -69,9 +97,5 @@ conda deactivate
 echo ""
 echo "Job finished."
 
-DELETE_WHEN_DONE="$(grep 'delete_when_done:' $CONFIG | awk '{print $2}')"
-if [ "$DELETE_WHEN_DONE" = "yes" ]; then
-    echo "Deleting instance $1..."
-    $AWS ec2 terminate-instances --instance-ids "$1"
-    echo "Done."
-fi
+do_cleanup; exit
+

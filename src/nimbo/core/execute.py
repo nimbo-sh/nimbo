@@ -114,19 +114,21 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
     subprocess.check_output(f"{scp_cmd} {REMOTE_SCRIPT} "
                             f"ubuntu@{host}:/home/ubuntu/", shell=True)
 
+    NIMBO_LOG = "/home/ubuntu/nimbo-log.txt"
     bash_cmd = f"bash {script}"
     if config["run_in_background"]:
         results_path = config["local_results_path"]
-        full_command = f"'nohup {bash_cmd} {instance_id} {job_cmd} </dev/null >/home/ubuntu/nimbo-log.txt 2>&1 &'"
+        full_command = f"nohup {bash_cmd} {instance_id} {job_cmd} </dev/null >{NIMBO_LOG} 2>&1 &"
     else:
-        full_command = f"{bash_cmd} {instance_id} {job_cmd}"
+        full_command = f"{bash_cmd} {instance_id} {job_cmd} | tee {NIMBO_LOG}"
 
-    process = subprocess.Popen(f"{ssh_cmd} ubuntu@{host} {full_command}", shell=True)
-    stdout, stderr = process.communicate()
+    stdout, stderr = subprocess.Popen(f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True).communicate()
+    """
     retcode = process.poll()
     if retcode:
         raise subprocess.CalledProcessError(retcode, process.args,
                                             output=stdout, stderr=stderr)
+    """
 
 
 def run_job(session, config, job_cmd, dry_run=False):
@@ -168,7 +170,7 @@ def run_job(session, config, job_cmd, dry_run=False):
         INSTANCE_KEY = config["instance_key"] + ".pem"
         time.sleep(5)
         host = utils.check_instance_host(session, config, instance_id)
-        ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
+        ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
 
         # Wait for the instance to be ready for ssh
@@ -195,6 +197,7 @@ def run_job(session, config, job_cmd, dry_run=False):
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config)
 
+        """
         if config["delete_when_done"] and \
            not config["run_in_background"] and \
            job_cmd != "_nimbo_launch_and_setup":
@@ -205,15 +208,17 @@ def run_job(session, config, job_cmd, dry_run=False):
 
         if config["run_in_background"]:
             print(f"Job running in instance {instance_id}")
-
+        """
     except Exception as e:
-        if config["delete_on_error"]:
-            print("\nDeleting instance...")
+        print("\nError.")
+        if not config["persist"]:
+            print(f"Deleting instance {instance_id}...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
     except KeyboardInterrupt:
-        print("\nDeleting instance...")
-        utils.delete_instance(session, instance_id)
+        if not config["persist"]:
+            print(f"Deleting instance {instance_id}...")
+            utils.delete_instance(session, instance_id)
         traceback.print_exc()
         sys.exit()
 
@@ -223,7 +228,7 @@ def run_access_test(session, config, dry_run=False):
         return
     config["instance_type"] = "t3.medium"
     config["run_in_background"] = False
-    config["delete_when_done"] = True
+    config["persist"] = False
 
     access.verify_nimbo_instance_profile(session)
     print("Instance profile 'NimboInstanceProfile' found \u2713")
@@ -257,7 +262,7 @@ def run_access_test(session, config, dry_run=False):
         INSTANCE_KEY = config["instance_key"] + ".pem"
         time.sleep(5)
         host = utils.check_instance_host(session, config, instance_id)
-        ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
+        ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20"
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
 
         # Wait for the instance to be ready for ssh
@@ -268,14 +273,6 @@ def run_access_test(session, config, dry_run=False):
         subprocess.check_output(f"{scp} {CONFIG} "
                                 f"ubuntu@{host}:/home/ubuntu/", shell=True)
         run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh", config)
-        """
-        REMOTE_TEST = join(NIMBO, "scripts/remote_s3_test.sh")
-        subprocess.Popen(f"{scp} {CONFIG} {REMOTE_TEST} "
-                         f"ubuntu@{host}:/home/ubuntu", shell=True).communicate()
-        command = "bash remote_s3_test.sh"
-        output, error = subprocess.Popen(f"{ssh} ubuntu@{host} {command} {instance_id}", shell=True,
-                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        """
         print("The instance profile has the required S3 and EC2 permissions \u2713")
 
         # Send test file to s3 results path and delete it
@@ -297,13 +294,15 @@ def run_access_test(session, config, dry_run=False):
         print("Instance has been deleted.")
 
     except Exception as e:
-        if config["delete_on_error"]:
-            print("\nDeleting instance...")
+        print("\nError.")
+        if not config["persist"]:
+            print(f"Deleting instance {instance_id}...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
     except KeyboardInterrupt:
-        print("\nDeleting instance...")
-        utils.delete_instance(session, instance_id)
+        if not config["persist"]:
+            print(f"Deleting instance {instance_id}...")
+            utils.delete_instance(session, instance_id)
         traceback.print_exc()
         sys.exit()
 

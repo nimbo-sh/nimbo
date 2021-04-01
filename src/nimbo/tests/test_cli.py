@@ -84,7 +84,7 @@ def test_instance_actions():
             if 'InvalidInstanceID.NotFound' not in str(e):
                 raise
 
-        result = runner.invoke(cli, "delete-all-instances --dry-run", catch_exceptions=False)
+        result = runner.invoke(cli, "delete-all-instances --dry-run", input="y", catch_exceptions=False)
         assert result.exit_code == 0
 
 

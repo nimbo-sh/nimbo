@@ -145,7 +145,7 @@ def show_active_instances(session, config, dry_run=False):
                 print(f"ID: {inst['InstanceId']}\n"
                       f"Launch Time: {inst['LaunchTime']}\n"
                       f"InstanceType: {inst['InstanceType']}\n"
-                      f"IP Address: {inst['PublicIPAddress']}\n")
+                      f"IP Address: {inst['PublicIpAddress']}\n")
     except ClientError as e:
         if 'DryRunOperation' not in str(e):
             raise

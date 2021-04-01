@@ -16,8 +16,7 @@ conda_env: env.yml
 
 # Job options
 run_in_background: no
-delete_when_done: yes 
-delete_on_error: yes
+persist: no
 
 # Permissions and credentials
 security_group: default
