@@ -183,8 +183,6 @@ def check_instance_status(session, config, instance_id, dry_run=False):
     except ClientError as e:
         if 'DryRunOperation' not in str(e):
             raise
-        else:
-            return "mock-status"
 
 
 def stop_instance(session, instance_id, dry_run=False):
@@ -196,8 +194,7 @@ def stop_instance(session, instance_id, dry_run=False):
         )
         pprint(response)
     except ClientError as e:
-        if not ('DryRunOperation' in str(e) or \
-                'InvalidInstanceID.NotFound' in str(e)):
+        if not 'DryRunOperation' in str(e):
             raise
 
 
@@ -237,10 +234,9 @@ def delete_all_instances(session, config, dry_run=False):
             raise
 
 
-
 def check_instance_host(session, config, instance_id, dry_run=False):
     ec2 = session.client('ec2')
-    try: 
+    try:
         response = ec2.describe_instances(
             InstanceIds=[instance_id],
             Filters=instance_filters(config),
@@ -262,10 +258,10 @@ def list_active_buckets(session):
 
 def ssh(session, config, instance_id, dry_run=False):
     host = check_instance_host(session, config, instance_id, dry_run)
-    
-    if dry_run: 
+
+    if dry_run:
         return
-    
+
     instance_key = config['instance_key']
     subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
 
@@ -282,6 +278,6 @@ def instance_filters(config):
     tags = instance_tags(config)
     filters = []
     for tag in tags:
-        tag_filter = {"Name": "tag:"+tag["Key"], "Values": [tag["Value"]]}
+        tag_filter = {"Name": "tag:" + tag["Key"], "Values": [tag["Value"]]}
         filters.append(tag_filter)
     return filters

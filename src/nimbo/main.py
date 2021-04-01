@@ -176,19 +176,21 @@ def create_bucket(bucket_name):
 
 @cli.command()
 @click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
-def push(folder):
+@click.option("--delete", is_flag=True)
+def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
     session, config = get_session_and_config_storage()
-    storage.push(session, config, folder)
+    storage.push(session, config, folder, delete)
 
 
 @cli.command()
 @click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
-def pull(folder):
+@click.option("--delete", is_flag=True)
+def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer.
     """
     session, config = get_session_and_config_storage()
-    storage.pull(session, config, folder)
+    storage.pull(session, config, folder, delete)
 
 
 @cli.command()

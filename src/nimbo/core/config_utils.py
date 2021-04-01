@@ -28,7 +28,7 @@ def load_config():
     # Load yaml config file
     if not os.path.isfile(CONFIG):
         raise FileNotFoundError(f"Nimbo configuration file '{CONFIG}' not found.\n"
-                                "You can run 'nimbo generate-config' for guided config file creation.")
+                                "You can run 'nimbo generate-config' to create a default config file.")
 
     with open(CONFIG, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)

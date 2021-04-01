@@ -60,6 +60,9 @@ rm libnvinfer7_7.1.3-1+cuda11.0_amd64.deb nvidia-machine-learning-repo-ubuntu180
 # Install zip
 sudo apt-get install -y zip
 
+# Install texlive
+sudo apt-get install -y texlive
+
 # Install awscli-v2
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
