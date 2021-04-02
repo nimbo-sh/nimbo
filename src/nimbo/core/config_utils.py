@@ -106,10 +106,37 @@ def fill_defaults(config):
     return config_defaults
 
 
+def fill_defaults(config):
+    # Modifies dictionary in place
+    config_defaults = {
+        "spot": False,
+        "spot_duration": 0,
+        "image": "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2",
+        "disk_size": 128,
+        "run_in_background": False,
+        "persist": False,
+        "security_group": "default"
+    }
+    for key, value in config_defaults.items():
+        if key not in config:
+            config[key] = value
+
+
+def remove_trailing_backslashes(config):
+    # Modifies dictionary in place
+    fields = ["local_datasets_path",
+              "local_results_path",
+              "s3_datasets_path",
+              "s3_results_path"]
+
+    for field in fields:
+        config[field] = config[field].strip("/")
+
+
 def generate_config(quiet=False):
     config = """# Data paths
-local_datasets_path: your-datasets-folder
-local_results_path: you-results-folder
+local_datasets_path: my-datasets-folder
+local_results_path: my-results-folder
 s3_datasets_path: s3://my-bucket/my-project/some-datasets-folder
 s3_results_path: s3://my-bucket/my-project/some-results-folder
 

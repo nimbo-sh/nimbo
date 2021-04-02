@@ -197,18 +197,6 @@ def run_job(session, config, job_cmd, dry_run=False):
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config)
 
-        """
-        if config["delete_when_done"] and \
-           not config["run_in_background"] and \
-           job_cmd != "_nimbo_launch_and_setup":
-
-            if utils.check_instance_status(session, config, instance_id) in ["running", "pending"]:
-                # Terminate instance if it isn't already being terminated
-                utils.delete_instance(session, instance_id)
-
-        if config["run_in_background"]:
-            print(f"Job running in instance {instance_id}")
-        """
     except Exception as e:
         print("\nError.")
         if not config["persist"]:
@@ -288,7 +276,7 @@ def run_access_test(session, config, dry_run=False):
         datasets_path = config["s3_datasets_path"]
         command = f"aws s3 ls {datasets_path} --profile {profile}"
         subprocess.check_output(command, shell=True)
-        print("You have the necessary S3 read/write permissions for the remote paths \u2713")
+        print("You have the necessary S3 read/write permissions from your computer \u2713")
 
         print("\nEverything working \u2713")
         print("Instance has been deleted.")

@@ -18,8 +18,6 @@ do_cleanup () {
 
 INSTANCE_ID=$1
 
-PYTHONUNBUFFERED=TRUE
-
 AWS=/usr/local/bin/aws
 PROJ_DIR=/home/ubuntu/project
 CONDA_PATH=/home/ubuntu/miniconda3

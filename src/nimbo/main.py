@@ -7,7 +7,8 @@ from .core import access, utils, storage, execute, config_utils
 def get_session_and_config(required_fields, fields_to_check):
     config = config_utils.load_config()
 
-    config = config_utils.fill_defaults(config)
+    config_utils.fill_defaults(config)
+    config_utils.remove_trailing_backslashes(config)
     config_utils.ConfigVerifier(config).verify(required_fields, fields_to_check)
 
     session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
@@ -177,7 +178,7 @@ def create_bucket(bucket_name):
 
 
 @cli.command()
-@click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
+@click.argument("folder", type=click.Choice(["datasets", "results", "logs"]), required=True)
 @click.option("--delete", is_flag=True,
               help="Deletes any files that exist in the local folder but don't exist in the remote folder.")
 def push(folder, delete):
@@ -187,7 +188,7 @@ def push(folder, delete):
 
 
 @cli.command()
-@click.argument("folder", type=click.Choice(["datasets", "results"]), required=True)
+@click.argument("folder", type=click.Choice(["datasets", "results", "logs"]), required=True)
 @click.option("--delete", is_flag=True, 
               help="Deletes any files that exist in the local folder but don't exist in the remote folder.")
 def pull(folder, delete):

@@ -1,3 +1,4 @@
+from os.path import join
 import logging
 import subprocess
 import boto3
@@ -96,18 +97,26 @@ def sync_folder(session, source, target, profile, delete=False):
 
 
 def pull(session, config, folder, delete=False):
-    assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
+    assert folder in ["datasets", "results", "logs"]
 
-    source = config["s3_" + folder + "_path"]
-    target = config["local_" + folder + "_path"]
+    if folder == "logs":
+        source = join(config["s3_results_path"], "nimbo-logs")
+        target = join(config["local_results_path"], "nimbo-logs")
+    else:
+        source = config["s3_" + folder + "_path"]
+        target = config["local_" + folder + "_path"]
     sync_folder(session, source, target, config["aws_profile"], delete)
 
 
 def push(session, config, folder, delete=False):
-    assert folder in ["datasets", "results"], "Use 'nimbo push datasets' or 'nimbo push results'."
+    assert folder in ["datasets", "results", "logs"]
 
-    source = config["local_" + folder + "_path"]
-    target = config["s3_" + folder + "_path"]
+    if folder == "logs":
+        source = join(config["local_results_path"], "nimbo-logs")
+        target = join(config["s3_results_path"], "nimbo-logs")
+    else:
+        source = config["local_" + folder + "_path"]
+        target = config["s3_" + folder + "_path"]
     sync_folder(session, source, target, config["aws_profile"], delete)
 
 
