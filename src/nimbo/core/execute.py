@@ -68,14 +68,14 @@ def wait_for_instance_running(session, config, instance_id):
         status = utils.check_instance_status(session, config, instance_id)
 
 
-def wait_for_ssh_ready(ssh_cmd, host):
+def wait_for_ssh_ready(host):
     print(f"Waiting for instance to be ready for ssh at {host}. This can take up to 2 minutes... ", end="", flush=True)
     host_ready = False
     wait_time = 0
     while 1:
         time.sleep(5)
         wait_time += 2
-        output, error = subprocess.Popen(f"nc -w 2 {host} 22", 
+        output, error = subprocess.Popen(f"nc -w 2 {host} 22",
                                          stdout=PIPE, stderr=PIPE, shell=True).communicate()
 
         if "ssh" in output.decode("utf-8").lower():
@@ -133,7 +133,7 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
 
 def run_job(session, config, job_cmd, dry_run=False):
     if dry_run:
-        return 
+        return
     print("Config:")
     pprint(config)
 
@@ -158,23 +158,26 @@ def run_job(session, config, job_cmd, dry_run=False):
         print(f"InstanceId: {instance_id}")
         print()
 
+        INSTANCE_KEY = config["instance_key"] + ".pem"
+        time.sleep(5)
+        host = utils.check_instance_host(session, config, instance_id)
+
+        # Wait for the instance to be ready for ssh
+        wait_for_ssh_ready(host)
+
         if job_cmd == "_nimbo_launch":
             print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
+            """
             print("Please allow a few seconds for the instance to be ready for ssh.")
             print(f"If the connection is refused when you run 'nimbo ssh {instance_id}' "
                   "wait a few seconds and try again.")
             print(f"If the connection keeps being refused, delete the instance and try again, "
                   "or refer to https://docs.nimbo.sh/connection-refused.")
-            sys.exit()
+            """
+            return job_cmd + "_success"
 
-        INSTANCE_KEY = config["instance_key"] + ".pem"
-        time.sleep(5)
-        host = utils.check_instance_host(session, config, instance_id)
         ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
-
-        # Wait for the instance to be ready for ssh
-        wait_for_ssh_ready(ssh, host)
 
         LOCAL_ENV = "local_env.yml"
         user_conda_yml = config["conda_env"]
@@ -194,21 +197,30 @@ def run_job(session, config, job_cmd, dry_run=False):
         print("\nSyncing code...")
         sync_code(host, INSTANCE_KEY)
 
+        if job_cmd == "_nimbo_notebook":
+            subprocess.Popen(f"{ssh} -o 'ExitOnForwardFailure yes' "
+                             "ubuntu@{host} -NfL 57467:localhost:57467 >/dev/null 2>&1 &", shell=True).communicate()
+
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config)
+
+        return job_cmd + "_success"
 
     except Exception as e:
         print("\nError.")
         if not config["persist"]:
-            print(f"Deleting instance {instance_id}...")
+            print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
+        return "error"
     except KeyboardInterrupt:
         if not config["persist"]:
-            print(f"Deleting instance {instance_id}...")
+            print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
-        sys.exit()
+        return "keyboard-interrupt"
+
+
 
 
 def run_access_test(session, config, dry_run=False):
@@ -284,12 +296,12 @@ def run_access_test(session, config, dry_run=False):
     except Exception as e:
         print("\nError.")
         if not config["persist"]:
-            print(f"Deleting instance {instance_id}...")
+            print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
     except KeyboardInterrupt:
         if not config["persist"]:
-            print(f"Deleting instance {instance_id}...")
+            print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
         sys.exit()

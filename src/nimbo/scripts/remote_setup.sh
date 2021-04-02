@@ -17,6 +17,7 @@ do_cleanup () {
 }
 
 INSTANCE_ID=$1
+JOB_CMD=$2
 
 AWS=/usr/local/bin/aws
 PROJ_DIR=/home/ubuntu/project
@@ -40,6 +41,7 @@ echo "Will save logs to $S3_LOG_PATH"
 
 while true; do 
     $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH
+    $AWS s3 sync --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH
     sleep 3
 done &
 
@@ -79,9 +81,11 @@ echo ""
 echo "================================================="
 echo ""
 
-if [ "$2" = "_nimbo_launch_and_setup" ]; then
+if [ "$JOB_CMD" = "_nimbo_launch_and_setup" ]; then
     echo "Setup complete. You can now use 'nimbo ssh $1' to ssh into this instance."
     exit 0
+elif [ "$JOB_CMD" = "_nimbo_notebook" ]; then
+    jupyter notebook --no-browser --port 57467
 else
     echo "Running job: ${@:2}"
     ${@:2}

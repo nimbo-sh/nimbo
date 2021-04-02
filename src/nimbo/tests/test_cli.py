@@ -117,7 +117,7 @@ def test_push_pull():
         for mode in ["datasets", "results"]:
             folder = config[f"local_{mode}_path"]
             os.mkdir(folder)
-            file_name = f"{folder}/mnist.txt"
+            file_name = join(folder, "mnist.txt")
     
             # Add a dataset to local and push it to S3        
             write_fake_file(file_name, "Fake dataset")
@@ -139,3 +139,19 @@ def test_push_pull():
             result = runner.invoke(cli, f"pull {mode}", catch_exceptions=False)
             assert result.exit_code == 0
             assert os.listdir(folder) == []
+
+        # Test logs
+        folder = join(config[f"local_datasets_path"], "nimbo-logs")
+        os.mkdir(folder)
+        file_name = join(folder, "log.txt")
+        write_fake_file(file_name, "Fake log")
+
+        result = runner.invoke(cli, f"push logs", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        os.remove(file_name)
+        assert os.listdir(folder) == []
+
+        result = runner.invoke(cli, f"pull logs", catch_exceptions=False)
+        assert result.exit_code == 0
+        assert os.listdir(folder) == ["log.txt"]

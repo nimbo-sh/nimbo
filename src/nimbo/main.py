@@ -8,8 +8,8 @@ def get_session_and_config(required_fields, fields_to_check):
     config = config_utils.load_config()
 
     config_utils.fill_defaults(config)
-    config_utils.remove_trailing_backslashes(config)
     config_utils.ConfigVerifier(config).verify(required_fields, fields_to_check)
+    config_utils.remove_trailing_backslashes(config)
 
     session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
 
@@ -75,9 +75,18 @@ def launch(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 def launch_and_setup(dry_run):
-    """Launches an EC2 instance and sets up your code and conda environment, without running any job."""
+    """Launches an EC2 instance with your code and environment, without running any job."""
     session, config = get_session_and_config_full_check()
     execute.run_job(session, config, "_nimbo_launch_and_setup", dry_run)
+
+
+@cli.command()
+@click.option("--dry-run", is_flag=True)
+def notebook(dry_run):
+    """Launches a jupyter notebook on an EC2 instance with your code and environment."""
+    session, config = get_session_and_config_full_check()
+    config["run_on_background"] = False
+    execute.run_job(session, config, "_nimbo_notebook", dry_run)
 
 
 @cli.command()
