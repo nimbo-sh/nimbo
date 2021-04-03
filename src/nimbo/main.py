@@ -82,15 +82,6 @@ def launch_and_setup(dry_run):
 
 @cli.command()
 @click.option("--dry-run", is_flag=True)
-def notebook(dry_run):
-    """Launches a jupyter notebook on an EC2 instance with your code and environment."""
-    session, config = get_session_and_config_full_check()
-    config["run_on_background"] = False
-    execute.run_job(session, config, "_nimbo_notebook", dry_run)
-
-
-@cli.command()
-@click.option("--dry-run", is_flag=True)
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""
     session, config = get_session_and_config_instance_key()

@@ -197,10 +197,6 @@ def run_job(session, config, job_cmd, dry_run=False):
         print("\nSyncing code...")
         sync_code(host, INSTANCE_KEY)
 
-        if job_cmd == "_nimbo_notebook":
-            subprocess.Popen(f"{ssh} -o 'ExitOnForwardFailure yes' "
-                             "ubuntu@{host} -NfL 57467:localhost:57467 >/dev/null 2>&1 &", shell=True).communicate()
-
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config)
 

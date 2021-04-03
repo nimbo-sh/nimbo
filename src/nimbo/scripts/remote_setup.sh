@@ -84,8 +84,6 @@ echo ""
 if [ "$JOB_CMD" = "_nimbo_launch_and_setup" ]; then
     echo "Setup complete. You can now use 'nimbo ssh $1' to ssh into this instance."
     exit 0
-elif [ "$JOB_CMD" = "_nimbo_notebook" ]; then
-    jupyter notebook --no-browser --port 57467
 else
     echo "Running job: ${@:2}"
     ${@:2}
