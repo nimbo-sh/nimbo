@@ -24,9 +24,9 @@ def test_run_no_code():
     with runner.isolated_filesystem():
         copy_assets(["config", "key", "env"])
 
-        result = runner.invoke(cli, "delete-all-instances", catch_exceptions=False)
+        result = runner.invoke(cli, "delete-all-instances", input="y", catch_exceptions=False)
         assert result.exit_code == 0
         result = runner.invoke(cli, "run 'python --version'", catch_exceptions=False)
         assert result.exit_code == 0
-        result = runner.invoke(cli, "delete-all-instances", catch_exceptions=False)
+        result = runner.invoke(cli, "delete-all-instances", input="y", catch_exceptions=False)
         assert result.exit_code == 0

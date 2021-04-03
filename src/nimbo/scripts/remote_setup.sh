@@ -16,6 +16,8 @@ do_cleanup () {
     fi
 }
 
+PYTHONUNBUFFERED=1
+
 INSTANCE_ID=$1
 JOB_CMD=$2
 

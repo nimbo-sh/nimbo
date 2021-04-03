@@ -11,7 +11,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 from . import storage, utils, access
-from .utils import instance_tags
+from .utils import instance_tags, instance_filters
 from .paths import NIMBO, CONFIG
 from .ami.catalog import AMI_MAP
 
@@ -38,16 +38,42 @@ def launch_instance(client, config):
     }
 
     if config["spot"]:
+        if "spot_duration" in config:
+            extra_kwargs = {"BlockDurationMinutes": config["spot_duration"]}
+        else:
+            extra_kwargs = {}
+
         instance = client.request_spot_instances(
-            BlockDurationMinutes=config["spot_duration"],
             LaunchSpecification=instance_config,
             TagSpecifications=[{
                 'ResourceType': 'spot-instances-request',
                 'Tags': instance_tags(config)
-            }]
+            }],
+            **extra_kwargs
         )
-        instance = instance["SpotInstanceRequests"][0]
+        instance_request = instance["SpotInstanceRequests"][0]
+        request_id = instance_request["SpotInstanceRequestId"]
+        print("Spot instance request submitted.")
+        print("Waiting for the spot instance request to be fulfilled... ", end="", flush=False)
 
+        status = ""
+        while status != "fulfilled":
+            time.sleep(1)
+            response = client.describe_spot_instance_requests(
+                SpotInstanceRequestIds=[request_id],
+                Filters=instance_filters(config)
+            )
+            instance_request = response["SpotInstanceRequests"][0]
+            status = instance_request["Status"]["Code"]
+            if status not in ["fulfilled", "pending-evaluation", "pending-fulfillment"]:
+                raise Exception(response["SpotInstanceRequests"][0]["Status"])
+
+        print("Done.")
+        client.create_tags(
+            Resources=[instance_request["InstanceId"]],
+            Tags=instance_tags(config)
+        )
+        instance = instance_request
     else:
         instance_config["MinCount"] = 1
         instance_config["MaxCount"] = 1
@@ -86,7 +112,7 @@ def wait_for_ssh_ready(host):
 
         if wait_time == 60:
             raise Exception("Something failed when connecting to the instance.\n"
-                            "Please verify your security groups, instance key and instance profile.\n"
+                            "Please verify your security groups, instance key and instance profile, and try again.\n"
                             "More info at docs.nimbo.sh/connection-issues.")
     print("Ready.")
 

@@ -1,6 +1,7 @@
 import os
 from os.path import join
-from shutil import copy
+from shutil import copy, rmtree
+import subprocess
 import pytest
 from click.testing import CliRunner
 from botocore.exceptions import ClientError
@@ -140,18 +141,24 @@ def test_push_pull():
             assert result.exit_code == 0
             assert os.listdir(folder) == []
 
-        # Test logs
-        folder = join(config[f"local_datasets_path"], "nimbo-logs")
-        os.mkdir(folder)
-        file_name = join(folder, "log.txt")
+        logs_folder = join(config["local_results_path"], "nimbo-logs")
+        os.mkdir(logs_folder)
+        file_name = join(logs_folder, "log.txt")
         write_fake_file(file_name, "Fake log")
+        assert os.listdir(logs_folder) == ["log.txt"]
 
-        result = runner.invoke(cli, f"push logs", catch_exceptions=False)
+        result = runner.invoke(cli, "push logs", catch_exceptions=False)
         assert result.exit_code == 0
 
         os.remove(file_name)
-        assert os.listdir(folder) == []
+        assert os.listdir(logs_folder) == []
 
-        result = runner.invoke(cli, f"pull logs", catch_exceptions=False)
+        result = runner.invoke(cli, "pull logs", catch_exceptions=False)
         assert result.exit_code == 0
-        assert os.listdir(folder) == ["log.txt"]
+        assert os.listdir(logs_folder) == ["log.txt"]
+
+        os.remove(file_name)
+        result = runner.invoke(cli, "push logs --delete", catch_exceptions=False)
+        os.rmdir(logs_folder)
+        result = runner.invoke(cli, "push results --delete", catch_exceptions=False)
+

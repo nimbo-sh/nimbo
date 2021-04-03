@@ -17,7 +17,7 @@ VALID_FIELD_NAMES = [
 ALL_REQUIRED_FIELDS = [
     "local_results_path", "local_datasets_path",
     "s3_results_path", "s3_datasets_path",
-    "aws_profile", "region_name", "instance_type",
+    "aws_profile", "region_name", "instance_type", "spot",
     "image", "disk_size", "conda_env",
     "run_in_background", "persist",
     "security_group", "instance_key"
@@ -45,6 +45,9 @@ class ConfigVerifier():
         self.check_field_names()
         self.check_required_fields(required_fields)
         self.check_field_values(fields_to_check)
+
+        if self.config["disk_size"] < 128:
+            raise ValueError("Disk size must be greater than 127Gb.")
 
     def check_required_fields(self, required_fields):
         if required_fields == "all":
@@ -92,25 +95,9 @@ class ConfigVerifier():
 
 
 def fill_defaults(config):
-    config_defaults = {
-        "spot": False,
-        "spot_duration": 0,
-        "image": "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2",
-        "disk_size": 128,
-        "run_in_background": False,
-        "persist": False,
-        "security_group": "default"
-    }
-
-    config_defaults.update(config)
-    return config_defaults
-
-
-def fill_defaults(config):
     # Modifies dictionary in place
     config_defaults = {
         "spot": False,
-        "spot_duration": 0,
         "image": "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2",
         "disk_size": 128,
         "run_in_background": False,

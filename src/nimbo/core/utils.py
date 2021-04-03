@@ -134,18 +134,18 @@ def show_active_instances(session, config, dry_run=False):
     try:
         response = ec2.describe_instances(
             Filters=[
-                {'Name': 'instance-state-name', 'Values': ['running']},
-                {'Name': 'tag:CreatedBy', 'Values': ['nimbo']},
-                {'Name': 'tag:Owner', 'Values': [config["user_id"]]}
-            ],
+                {'Name': 'instance-state-name', 'Values': ['running', 'pending']},
+            ] + instance_filters(config),
             DryRun=dry_run
         )
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
-                print(f"ID: {inst['InstanceId']}\n"
+                print(f"Id: {inst['InstanceId']}\n"
+                      f"Status: {inst['State']['Name']}\n"
                       f"Launch Time: {inst['LaunchTime']}\n"
                       f"InstanceType: {inst['InstanceType']}\n"
                       f"IP Address: {inst['PublicIpAddress']}\n")
+
     except ClientError as e:
         if 'DryRunOperation' not in str(e):
             raise

@@ -9,7 +9,8 @@ def copy_assets(assets):
     dst = os.getcwd()
      
     if "key" in assets:
-        copy(join(assets_path, "employee-instance-key.pem"), dst)
+        key_name = [p for p in os.listdir(assets_path) if p[-4:] == ".pem"][0]
+        copy(join(assets_path, key_name), dst)
     if "config" in assets:
         copy(join(assets_path, "nimbo-config.yml"), dst)
     if "env" in assets:
