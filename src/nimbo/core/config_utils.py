@@ -46,8 +46,8 @@ class ConfigVerifier():
         self.check_required_fields(required_fields)
         self.check_field_values(fields_to_check)
 
-        if self.config["disk_size"] < 128:
-            raise ValueError("Disk size must be greater than 127Gb.")
+        #if self.config["disk_size"] < 128:
+        #    raise ValueError("Disk size must be greater than 127Gb.")
 
     def check_required_fields(self, required_fields):
         if required_fields == "all":
