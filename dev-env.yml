@@ -1,0 +1,11 @@
+name: nimbo-dev
+channels:
+    - defaults
+dependencies:
+    - python=3.8
+    - pip
+    - pip:
+      - requests
+      - awscli==1.19
+      - boto3==1.17
+      - click==7.1.2
