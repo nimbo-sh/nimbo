@@ -96,6 +96,7 @@ def wait_for_instance_running(session, config, instance_id):
 
 def wait_for_ssh_ready(host):
     print(f"Waiting for instance to be ready for ssh at {host}. This can take up to 2 minutes... ", end="", flush=True)
+    start = time.time()
     host_ready = False
     wait_time = 0
     while 1:
@@ -114,7 +115,8 @@ def wait_for_ssh_ready(host):
             raise Exception("Something failed when connecting to the instance.\n"
                             "Please verify your security groups, instance key and instance profile, and try again.\n"
                             "More info at docs.nimbo.sh/connection-issues.")
-    print("Ready.")
+    finish = time.time()
+    print("Ready. (%0.3fs)"%(finish-start))
 
 
 def sync_code(host, instance_key):
