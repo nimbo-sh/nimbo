@@ -114,7 +114,7 @@ def wait_for_ssh_ready(host):
         if wait_time == 60:
             raise Exception("Something failed when connecting to the instance.\n"
                             "Please verify your security groups, instance key and instance profile, and try again.\n"
-                            "More info at docs.nimbo.sh/connection-issues.")
+                            "More info at docs.nimbo.sh/common-issues#cant-ssh.")
     finish = time.time()
     print("Ready. (%0.3fs)"%(finish-start))
 
