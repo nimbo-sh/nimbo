@@ -150,4 +150,4 @@ instance_key: my-ec2-key-pair  # without .pem """
         f.write(config)
 
     if not quiet:
-        print("Boilerplate config written to nimbo-config.yml.")
+        print("Example config written to nimbo-config.yml.")

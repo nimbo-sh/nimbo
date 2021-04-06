@@ -63,7 +63,7 @@ def verify_current_machine_security_group(session, group_name):
                         "or ask your admin to add your IP to this security group.")
 
 
-def allow_inbound_current_device(session, group_name):
+def allow_inbound_current_ip(session, group_name):
 
     ec2 = session.client("ec2")
 

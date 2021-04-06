@@ -210,7 +210,7 @@ def ls(path):
 
 @cli.command()
 @click.argument("security_group")
-def allow_current_device(security_group):
+def allow_current_ip(security_group):
     """Adds the IP of the current machine to the allowed inbound rules of GROUP.
 
     GROUP is the security group to which the inbound rule will be added.
