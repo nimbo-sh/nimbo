@@ -1,8 +1,8 @@
 import os
 import yaml
 
-from .ami.catalog import AMI_MAP
-from .paths import CONFIG
+from nimbo.core.ami.catalog import AMI_MAP
+from nimbo.core.paths import CONFIG
 
 VALID_FIELD_NAMES = [
     "local_results_path", "local_datasets_path",

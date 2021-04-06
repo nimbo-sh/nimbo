@@ -1,7 +1,7 @@
 import click
 import boto3
 
-from .core import access, utils, storage, execute, config_utils
+from nimbo.core import access, utils, storage, execute, config_utils
 
 
 def get_session_and_config(required_fields, fields_to_check):
@@ -57,7 +57,7 @@ def run(job_cmd, dry_run):
     """Runs the JOB_CMD command on an EC2 instance.
 
     JOB_CMD is any command you would run locally.\n
-    E.g. \"python train.py --epochs=10\".\n
+    E.g. \"python runner.py --epochs=10\".\n
     The command must be between quotes. 
     """
     session, config = get_session_and_config_full_check()
@@ -75,7 +75,7 @@ def launch(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 def launch_and_setup(dry_run):
-    """Launches an EC2 instance with your code and environment, without running any job."""
+    """Launches an EC2 instance with your code, data and environment, without running any job."""
     session, config = get_session_and_config_full_check()
     execute.run_job(session, config, "_nimbo_launch_and_setup", dry_run)
 

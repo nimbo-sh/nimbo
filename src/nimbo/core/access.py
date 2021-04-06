@@ -80,7 +80,7 @@ def allow_inbound_current_device(session, group_name):
                 'IpProtocol': 'tcp',
                 'FromPort': 22,
                 'ToPort': 22,
-                'IpRanges': [{'CidrIp': f'{my_public_ip}/32'}]
+                'IpRanges': [{'CidrIp': f'{my_public_ip}/16'}]
             }
         ]
     )

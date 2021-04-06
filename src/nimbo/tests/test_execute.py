@@ -5,7 +5,7 @@ from shutil import copy
 import pytest
 from click.testing import CliRunner
 
-from nimbo.main import cli
+from nimbo.main import *
 from nimbo.tests.utils import copy_assets
 
 
@@ -29,4 +29,35 @@ def test_run_no_code():
         result = runner.invoke(cli, "run 'python --version'", catch_exceptions=False)
         assert result.exit_code == 0
         result = runner.invoke(cli, "delete-all-instances", input="y", catch_exceptions=False)
+        assert result.exit_code == 0
+
+
+def test_launch():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        copy_assets(["config", "key", "env"])
+
+        session, config = get_session_and_config_full_check()
+        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+
+        assert response["message"] == "_nimbo_launch_success"
+        instance_id = response["instance_id"]
+        
+        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
+        assert result.exit_code == 0
+
+
+def test_spot_launch():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        copy_assets(["config", "key", "env"])
+
+        session, config = get_session_and_config_full_check()
+        config["spot"] = True
+        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+
+        assert response["message"] == "_nimbo_launch_success"
+        instance_id = response["instance_id"]
+        
+        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
         assert result.exit_code == 0

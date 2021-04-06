@@ -10,10 +10,10 @@ from pprint import pprint
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-from . import storage, utils, access
-from .utils import instance_tags, instance_filters
-from .paths import NIMBO, CONFIG
-from .ami.catalog import AMI_MAP
+from nimbo.core import storage, utils, access
+from nimbo.core.utils import instance_tags, instance_filters
+from nimbo.core.paths import NIMBO, CONFIG
+from nimbo.core.ami.catalog import AMI_MAP
 
 
 def launch_instance(client, config):
@@ -95,7 +95,8 @@ def wait_for_instance_running(session, config, instance_id):
 
 
 def wait_for_ssh_ready(host):
-    print(f"Waiting for instance to be ready for ssh at {host}. This can take up to 2 minutes... ", end="", flush=True)
+    print(f"Waiting for instance to be ready for ssh at {host}. "
+          "This can take up to a minute... ", end="", flush=True)
     start = time.time()
     host_ready = False
     wait_time = 0
@@ -161,7 +162,7 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
 
 def run_job(session, config, job_cmd, dry_run=False):
     if dry_run:
-        return
+        return {"message": job_cmd + "_dry_run"}
     print("Config:")
     pprint(config)
 
@@ -202,7 +203,7 @@ def run_job(session, config, job_cmd, dry_run=False):
             print(f"If the connection keeps being refused, delete the instance and try again, "
                   "or refer to https://docs.nimbo.sh/connection-refused.")
             """
-            return job_cmd + "_success"
+            return {"message": job_cmd + "_success", "instance_id": instance_id}
 
         ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
@@ -290,7 +291,7 @@ def run_access_test(session, config, dry_run=False):
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
 
         # Wait for the instance to be ready for ssh
-        wait_for_ssh_ready(ssh, host)
+        wait_for_ssh_ready(host)
 
         print("Instance key allows ssh access to remote instance \u2713")
         print("Security group allows ssh access to remote instance \u2713")
@@ -301,16 +302,17 @@ def run_access_test(session, config, dry_run=False):
 
         # Send test file to s3 results path and delete it
         profile = config["aws_profile"]
+        region = config["region_name"]
         results_path = config["s3_results_path"]
         subprocess.check_output("echo 'Hellow World' > nimbo-access-test.txt", shell=True)
-        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile}"
+        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
-        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile}"
+        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
 
         # List folders in s3 datasets path
         datasets_path = config["s3_datasets_path"]
-        command = f"aws s3 ls {datasets_path} --profile {profile}"
+        command = f"aws s3 ls {datasets_path} --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
         print("You have the necessary S3 read/write permissions from your computer \u2713")
 

@@ -88,8 +88,8 @@ def check_snapshot_state(session, snapshot_id):
     return response["Snapshots"][0]["State"]
 
 
-def sync_folder(session, source, target, profile, delete=False):
-    command = f"aws s3 sync {source} {target} --profile {profile}"
+def sync_folder(session, source, target, profile, region, delete=False):
+    command = f"aws s3 sync {source} {target} --profile {profile} --region {region}"
     if delete:
         command = command + " --delete"
     print(f"\nRunning command: {command}\n")
@@ -105,7 +105,7 @@ def pull(session, config, folder, delete=False):
     else:
         source = config["s3_" + folder + "_path"]
         target = config["local_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"], delete)
+    sync_folder(session, source, target, config["aws_profile"], config["region_name"], delete)
 
 
 def push(session, config, folder, delete=False):
@@ -117,11 +117,12 @@ def push(session, config, folder, delete=False):
     else:
         source = config["local_" + folder + "_path"]
         target = config["s3_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"], delete)
+    sync_folder(session, source, target, config["aws_profile"], config["region_name"], delete)
 
 
 def ls(session, config, path):
     profile = config["aws_profile"]
-    command = f"aws s3 ls {path} --profile {profile}"
+    region = config["region_name"]
+    command = f"aws s3 ls {path} --profile {profile} --region {region}"
     print(f"Running command: {command}")
     subprocess.Popen(command, shell=True).communicate()

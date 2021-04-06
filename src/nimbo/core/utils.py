@@ -7,7 +7,7 @@ import boto3
 from pkg_resources import resource_filename
 from botocore.exceptions import ClientError
 
-from .ami.catalog import AMI_MAP
+from nimbo.core.ami.catalog import AMI_MAP
 
 
 full_region_names = {"eu-west-1": "EU (Ireland)"}
@@ -263,7 +263,9 @@ def ssh(session, config, instance_id, dry_run=False):
         return
 
     instance_key = config['instance_key']
-    subprocess.Popen(f"ssh -i ./{instance_key}.pem -o 'StrictHostKeyChecking no' ubuntu@{host}", shell=True).communicate()
+    subprocess.Popen(f"ssh -i ./{instance_key}.pem "
+                     f"-o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
+                     f"ubuntu@{host}", shell=True).communicate()
 
 
 def instance_tags(config):

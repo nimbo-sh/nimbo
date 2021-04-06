@@ -114,10 +114,16 @@ def test_push_pull():
 
         config = load_config()
 
+        os.mkdir(config["local_datasets_path"])
+        os.mkdir(config["local_results_path"])
+        result = runner.invoke(cli, "push datasets --delete", catch_exceptions=False)
+        assert result.exit_code == 0
+        result = runner.invoke(cli, "push results --delete", catch_exceptions=False)
+        assert result.exit_code == 0
+
         # Run the code below for both datasets and results folders
         for mode in ["datasets", "results"]:
             folder = config[f"local_{mode}_path"]
-            os.mkdir(folder)
             file_name = join(folder, "mnist.txt")
     
             # Add a dataset to local and push it to S3        
@@ -159,6 +165,8 @@ def test_push_pull():
 
         os.remove(file_name)
         result = runner.invoke(cli, "push logs --delete", catch_exceptions=False)
+        assert result.exit_code == 0
         os.rmdir(logs_folder)
         result = runner.invoke(cli, "push results --delete", catch_exceptions=False)
+        assert result.exit_code == 0
 

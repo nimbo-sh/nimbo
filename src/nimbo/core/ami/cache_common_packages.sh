@@ -10,19 +10,7 @@
 #conda env remove -n pytorch1.8.0-cuda10.1
 
 ## declare an array variable
-declare -a arr=("pytorch=1.4.0=py3.5_cuda10.0.130_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.5_cuda10.1.243_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.5_cuda9.2.148_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.6_cuda10.0.130_cudnn7.6.3_0" 
-                "pytorch=1.4.0=py3.6_cuda10.1.243_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.6_cuda9.2.148_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.7_cuda10.0.130_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.7_cuda10.1.243_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.7_cuda9.2.148_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.8_cuda10.0.130_cudnn7.6.3_0" 
-                "pytorch=1.4.0=py3.8_cuda10.1.243_cudnn7.6.3_0"
-                "pytorch=1.4.0=py3.8_cuda9.2.148_cudnn7.6.3_0"
-                "pytorch=1.5.0=py3.5_cuda10.1.243_cudnn7.6.3_0" 
+declare -a arr=("pytorch=1.5.0=py3.5_cuda10.1.243_cudnn7.6.3_0" 
                 "pytorch=1.5.0=py3.5_cuda10.2.89_cudnn7.6.5_0"
                 "pytorch=1.5.0=py3.5_cuda9.2.148_cudnn7.6.3_0"
                 "pytorch=1.5.0=py3.6_cuda10.1.243_cudnn7.6.3_0" 
