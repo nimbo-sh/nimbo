@@ -36,7 +36,7 @@ def get_session_and_config_minimal():
     return get_session_and_config(["aws_profile", "region_name"], [])
 
 
-@click.group()
+@click.group(context_settings=dict(max_content_width=150))
 def cli():
     pass
 
@@ -190,7 +190,7 @@ def push(folder, delete):
 
 @cli.command()
 @click.argument("folder", type=click.Choice(["datasets", "results", "logs"]), required=True)
-@click.option("--delete", is_flag=True, 
+@click.option("--delete", is_flag=True,
               help="Deletes any files that exist in the local folder but don't exist in the remote folder.")
 def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
