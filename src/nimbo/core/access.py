@@ -7,30 +7,6 @@ from pprint import pprint
 from botocore.exceptions import ClientError
 
 
-def create_key_pair(session, name):
-    ec2 = session.client('ec2')
-    response = ec2.describe_key_pairs()
-    key_names = [k["KeyName"] for k in response["KeyPairs"]]
-    if name in key_names:
-        raise Exception(f"Key '{name}' already exists.\n"
-                        "Please choose a different name or delete "
-                        "that key with 'nimbo delete-key-pair <key_name>'.")
-    else:
-        keypair = ec2.create_key_pair(KeyName=name)
-        file_name = f"{name}.pem"
-        with open(file_name, "w") as f:
-            print(keypair["KeyMaterial"])
-            f.write(keypair["KeyMaterial"])
-        subprocess.Popen(f"chmod 400 {file_name}", shell=True).communicate()
-
-
-def delete_key_pair(session, name):
-    ec2 = session.client('ec2')
-    ec2.delete_key_pair(KeyName=name)
-    print(f"Please remember to also delete the '{name}.pem' file "
-          "using 'sudo rm {name}.pem'.")
-
-
 def create_security_group(session, group_name):
 
     ec2 = session.client("ec2")
