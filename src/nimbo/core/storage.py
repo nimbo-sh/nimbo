@@ -28,14 +28,12 @@ def upload_file(session, file_name, bucket, object_name=None):
     return True
 
 
-def create_bucket(session, bucket_name, dry_run):
+def create_bucket(session, bucket_name):
     """Create an S3 bucket in a specified region
 
     :param bucket_name: Bucket to create
     :return: True if bucket created, else False
     """
-    if dry_run:
-        return
 
     # Create bucket
     try:
@@ -47,9 +45,11 @@ def create_bucket(session, bucket_name, dry_run):
         if e.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
             print("Bucket nimbo-main-bucket already exists.")
         else:
-            raise
+            logging.error(e)
+        return False
 
     print("Bucket %s created." % bucket_name)
+    return True
 
 
 def list_buckets(session, bucket_name):
@@ -93,13 +93,7 @@ def sync_folder(session, source, target, profile, region, delete=False):
     if delete:
         command = command + " --delete"
     print(f"\nRunning command: {command}\n")
-
-    try: 
-        subprocess.Popen(command, shell=True).communicate()
-
-    except subprocess.CalledProcessError as e:
-        print("\nError.")
-        sys.exit()
+    subprocess.Popen(command, shell=True).communicate()
 
 
 def pull(session, config, folder, delete=False):
@@ -131,10 +125,4 @@ def ls(session, config, path):
     region = config["region_name"]
     command = f"aws s3 ls {path} --profile {profile} --region {region}"
     print(f"Running command: {command}")
-
-    try: 
-        subprocess.Popen(command, shell=True).communicate()
-    except subprocess.CalledProcessError as e:
-        print("\nError.")
-        sys.exit()
-
+    subprocess.Popen(command, shell=True).communicate()
