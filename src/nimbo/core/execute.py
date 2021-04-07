@@ -6,6 +6,7 @@ import logging
 import subprocess
 from subprocess import PIPE
 import traceback
+import requests
 from pprint import pprint
 from datetime import datetime
 from botocore.exceptions import ClientError
@@ -13,14 +14,20 @@ from botocore.exceptions import ClientError
 from nimbo.core import storage, utils, access
 from nimbo.core.utils import instance_tags, instance_filters
 from nimbo.core.paths import NIMBO, CONFIG
-from nimbo.core.ami.catalog import AMI_MAP
+#from nimbo.core.ami.catalog import AMI_MAP
 
 
 def launch_instance(client, config):
+    response = requests.get("https://nimboami-default-rtdb.firebaseio.com/ami-map.json")
+    ami_map = response.json()
     if config["image"][:4] == "ami-":
         image = config["image"]
     else:
-        image = AMI_MAP[config['image']]
+        if config['image'] in ami_map:
+            image = ami_map[config['image']]
+        else:
+            raise ValueError(f"The image {config['image']} was not found in Nimbo's managed image catalog.\n"
+                             "Check https://docs.nimbo.sh/managed-images for a list of managed images.")
 
     instance_config = {
         "BlockDeviceMappings": [{
@@ -117,7 +124,7 @@ def wait_for_ssh_ready(host):
                             "Please verify your security groups, instance key and instance profile, and try again.\n"
                             "More info at docs.nimbo.sh/common-issues#cant-ssh.")
     finish = time.time()
-    print("Ready. (%0.3fs)"%(finish-start))
+    print("Ready. (%0.3fs)" % (finish - start))
 
 
 def sync_code(host, instance_key):
@@ -275,7 +282,6 @@ def run_access_test(session, config, dry_run=False):
         print("\nError.")
         sys.exit()
 
-
     access.verify_nimbo_instance_profile(session)
     print("Instance profile 'NimboInstanceProfile' found \u2713")
 
@@ -287,7 +293,6 @@ def run_access_test(session, config, dry_run=False):
     start_t = time.time()
     instance = launch_instance(ec2, config)
     instance_id = instance["InstanceId"]
-
 
     try:
         # Wait for the instance to be running

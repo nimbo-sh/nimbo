@@ -46,7 +46,7 @@ class ConfigVerifier():
         self.check_required_fields(required_fields)
         self.check_field_values(fields_to_check)
 
-        #if self.config["disk_size"] < 128:
+        # if self.config["disk_size"] < 128:
         #    raise ValueError("Disk size must be greater than 127Gb.")
 
     def check_required_fields(self, required_fields):
@@ -70,21 +70,15 @@ class ConfigVerifier():
 
     def check_field_values(self, fields_to_check):
         if fields_to_check == "all":
-            fields_to_check = ["image", "instance_key", "conda"]
+            fields_to_check = ["instance_key", "conda"]
 
         for field in fields_to_check:
             getattr(self, f"check_{field}")()
 
-    def check_image(self):
-        if self.config["image"][:4] != "ami-":
-            if self.config["image"] not in AMI_MAP:
-                raise KeyError("The image requested doesn't exist. "
-                               "Please check https://docs.nimbo.sh/managed-images for a list of supported images.")
-
     def check_instance_key(self):
         instance_key_name = self.config["instance_key"]
         if not os.path.isfile(instance_key_name + ".pem"):
-            raise FileNotFoundError(f"The instance key file '{instance_key_name}.pem' wasn't found in the current directory.\n"
+            raise FileNotFoundError(f"The instance key file '{instance_key_name}.pem' was not found in the current directory.\n"
                                     "Make sure the file exists, or see https://docs.nimbo.sh/getting-started#create-instance-key-pairs "
                                     "for instructions on how to get one.")
 
@@ -122,8 +116,8 @@ def remove_trailing_backslashes(config):
 
 def generate_config(quiet=False):
     config = """# Data paths
-local_datasets_path: my-datasets-folder
-local_results_path: my-results-folder
+local_datasets_path: my-datasets-folder  # relavtive to project root 
+local_results_path: my-results-folder  # relative to project root
 s3_datasets_path: s3://my-bucket/my-project/some-datasets-folder
 s3_results_path: s3://my-bucket/my-project/some-results-folder
 
@@ -132,7 +126,6 @@ aws_profile: default
 region_name: eu-west-1
 instance_type: p2.xlarge
 spot: no
-# spot_duration: 60
 
 image: ubuntu18-drivers460
 disk_size: 128

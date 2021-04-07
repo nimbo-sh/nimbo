@@ -1,5 +1,6 @@
 
 AMI_MAP = {
+    "ubuntu18-latest-drivers": "ami-0d58184f336a94387",
     "ubuntu18-pytorch1.8.0": "ami-0d58184f336a94387",
     "ubuntu18-drivers460": "ami-0189241054cf4869f",
     "ubuntu18-cuda11.0-cudnn8.0-conda4.9.2": "ami-0189241054cf4869f",
