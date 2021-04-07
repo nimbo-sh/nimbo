@@ -21,24 +21,6 @@ def create_security_group(session, group_name):
     print(f'Security Group {group_name} (id={security_group_id}) Created in vpc {vpc_id}.')
 
 
-def verify_current_machine_security_group(session, group_name):
-    # NOTE: This function is not working correctly.
-    # Verify that the security group chosen by the user has the inbound rule allowing the current computer
-
-    ec2 = session.client("ec2")
-    my_public_ip = requests.get('https://checkip.amazonaws.com').text.strip()
-
-    response = ec2.describe_security_groups(
-        GroupNames=[group_name],
-        Filters=[{"Name": "ip-permission.cidr", "Values": [f"{my_public_ip}/32"]}]
-    )
-    if len(response["SecurityGroups"]) == 0:
-        raise Exception(f"The securty group '{group_name}' doesn't give access "
-                        f"to your machine's public IP ({my_public_ip}/32). "
-                        "Please run 'nimbo allow-current-device <group_name>' "
-                        "or ask your admin to add your IP to this security group.")
-
-
 def allow_inbound_current_ip(session, group_name):
 
     ec2 = session.client("ec2")
