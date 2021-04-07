@@ -7,10 +7,10 @@ s3_datasets_path: s3://nimbo-test-bucket/different_datasets
 # Device, environment and regions
 aws_profile: nimbo-employee
 region_name: eu-west-1
-instance_type: g4dn.xlarge
+instance_type: p2.xlarge
 spot: no
 
-image: ubuntu18-cuda11.0-cudnn8.0-conda4.9.2
+image: ubuntu18-cuda11-0-cudnn8-0-conda4-9-2
 disk_size: 64
 conda_env: env.yml
 
@@ -20,4 +20,4 @@ persist: no
 
 # Permissions and credentials
 security_group: default
-instance_key: laptop-employee-instance-key
+instance_key: employee-instance-key
