@@ -237,14 +237,15 @@ def run_job(session, config, job_cmd, dry_run=False):
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
-        sys.exit()
-
+        return "error"
     except KeyboardInterrupt:
         if not config["persist"]:
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
-        sys.exit()
+        return "keyboard-interrupt"
+
+
 
 
 def run_access_test(session, config, dry_run=False):
@@ -253,28 +254,6 @@ def run_access_test(session, config, dry_run=False):
     config["instance_type"] = "t3.medium"
     config["run_in_background"] = False
     config["persist"] = False
-
-    try:
-        # Send test file to s3 results path and delete it
-        profile = config["aws_profile"]
-        region = config["region_name"]
-        results_path = config["s3_results_path"]
-        subprocess.check_output("echo 'Hellow World' > nimbo-access-test.txt", shell=True)
-        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile} --region {region}"
-        subprocess.check_output(command, shell=True)
-        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile} --region {region}"
-        subprocess.check_output(command, shell=True)
-
-        # List folders in s3 datasets path
-        datasets_path = config["s3_datasets_path"]
-        command = f"aws s3 ls {datasets_path} --profile {profile} --region {region}"
-        subprocess.check_output(command, shell=True)
-        print("You have the necessary S3 read/write permissions from your computer \u2713")
-
-    except subprocess.CalledProcessError as e:
-        print("\nError.")
-        sys.exit()
-
 
     access.verify_nimbo_instance_profile(session)
     print("Instance profile 'NimboInstanceProfile' found \u2713")
@@ -287,7 +266,6 @@ def run_access_test(session, config, dry_run=False):
     start_t = time.time()
     instance = launch_instance(ec2, config)
     instance_id = instance["InstanceId"]
-
 
     try:
         # Wait for the instance to be running
@@ -322,15 +300,24 @@ def run_access_test(session, config, dry_run=False):
         run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh", config)
         print("The instance profile has the required S3 and EC2 permissions \u2713")
 
+        # Send test file to s3 results path and delete it
+        profile = config["aws_profile"]
+        region = config["region_name"]
+        results_path = config["s3_results_path"]
+        subprocess.check_output("echo 'Hellow World' > nimbo-access-test.txt", shell=True)
+        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile} --region {region}"
+        subprocess.check_output(command, shell=True)
+        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile} --region {region}"
+        subprocess.check_output(command, shell=True)
+
+        # List folders in s3 datasets path
+        datasets_path = config["s3_datasets_path"]
+        command = f"aws s3 ls {datasets_path} --profile {profile} --region {region}"
+        subprocess.check_output(command, shell=True)
+        print("You have the necessary S3 read/write permissions from your computer \u2713")
+
         print("\nEverything working \u2713")
         print("Instance has been deleted.")
-
-    except subprocess.CalledProcessError as e:
-        print("\nError.")
-        if not config["persist"]:
-            print(f"Deleting instance {instance_id} (from local)...")
-            utils.delete_instance(session, instance_id)
-        sys.exit()
 
     except Exception as e:
         print("\nError.")
@@ -338,8 +325,6 @@ def run_access_test(session, config, dry_run=False):
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
-        sys.exit()
-
     except KeyboardInterrupt:
         if not config["persist"]:
             print(f"Deleting instance {instance_id} (from local)...")
