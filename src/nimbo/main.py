@@ -168,13 +168,14 @@ def delete_all_instances(dry_run):
 
 @cli.command()
 @click.argument("bucket_name")
-def create_bucket(bucket_name):
+@click.option("--dry-run", is_flag=True)
+def create_bucket(bucket_name, dry_run):
     """Create a bucket BUCKET_NAME in S3.
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
     session, config = get_session_and_config_minimal()
-    storage.create_bucket(session, bucket_name)
+    storage.create_bucket(session, bucket_name, dry_run)
 
 
 @cli.command()
@@ -210,40 +211,44 @@ def ls(path):
 
 @cli.command()
 @click.argument("security_group")
-def allow_current_ip(security_group):
+@click.option("--dry-run", is_flag=True)
+def allow_current_ip(security_group, dry_run):
     """Adds the IP of the current machine to the allowed inbound rules of GROUP.
 
     GROUP is the security group to which the inbound rule will be added.
     """
     session, config = get_session_and_config_minimal()
-    access.allow_inbound_current_device(session, security_group)
+    access.allow_inbound_current_ip(session, security_group, dry_run)
 
 
 @cli.command()
-def list_instance_profiles():
+@click.option("--dry-run", is_flag=True)
+def list_instance_profiles(dry_run):
     """Lists the instance profiles available in your account."""
     session, config = get_session_and_config_minimal()
-    access.list_instance_profiles(session)
+    access.list_instance_profiles(session, dry_run)
 
 
 @cli.command()
 @click.argument("role_name")
-def create_instance_profile(role_name):
+@click.option("--dry-run", is_flag=True)
+def create_instance_profile(role_name, dry_run):
     """Creates an instance profile called NimboInstanceProfile with role ROLE_NAME.
 
     ROLE_NAME is the role to associate with the instance profile.
     """
 
     session, config = get_session_and_config_minimal()
-    access.create_instance_profile(session, role_name)
+    access.create_instance_profile(session, role_name, dry_run)
 
 
 @cli.command()
-def create_instance_profile_and_role():
+@click.option("--dry-run", is_flag=True)
+def create_instance_profile_and_role(dry_run):
     """Creates an instance profile called NimboInstanceProfile and the associated role.
 
     The role created has full EC2 and S3 access.\n
     Only recommended for individual accounts with root access.
     """
     session, config = get_session_and_config_minimal()
-    access.create_instance_profile_and_role(session)
+    access.create_instance_profile_and_role(session, dry_run)

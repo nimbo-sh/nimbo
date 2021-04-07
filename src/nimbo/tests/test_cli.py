@@ -170,3 +170,31 @@ def test_push_pull():
         result = runner.invoke(cli, "push results --delete", catch_exceptions=False)
         assert result.exit_code == 0
 
+
+
+def test_instance_profile_and_security_group():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        copy_assets(["config"])
+        # Running as nimbo-employee with limited permissions
+
+        try:
+            result = runner.invoke(cli, "allow-current-ip default --dry-run", catch_exceptions=False)
+        except ClientError as e:
+            if "UnauthorizedOperation" not in str(e):
+                raise
+
+        try:
+            result = runner.invoke(cli, "allow-current-ip default --dry-run", catch_exceptions=False)
+        except ClientError as e:
+            if "UnauthorizedOperation" not in str(e):
+                raise
+
+        result = runner.invoke(cli, "list-instance-profiles --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "create-instance-profile fake_role --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "create-instance-profile-and-role --dry-run", catch_exceptions=False)
+        assert result.exit_code == 0
