@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 
 from nimbo.main import cli
 from nimbo.core.config_utils import generate_config, load_config
-from nimbo.tests.utils import copy_assets
+from .utils import copy_assets
 
 
 def write_fake_file(path, text):
