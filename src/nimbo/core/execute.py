@@ -28,6 +28,7 @@ def launch_instance(client, config):
         else:
             raise ValueError(f"The image {config['image']} was not found in Nimbo's managed image catalog.\n"
                              "Check https://docs.nimbo.sh/managed-images for a list of managed images.")
+    print(f"Using image {image}")
 
     instance_config = {
         "BlockDeviceMappings": [{
@@ -103,7 +104,7 @@ def wait_for_instance_running(session, config, instance_id):
 
 def wait_for_ssh_ready(host):
     print(f"Waiting for instance to be ready for ssh at {host}. "
-          "This can take up to a minute... ", end="", flush=True)
+          "This can take up to 2 minutes... ", end="", flush=True)
     start = time.time()
     host_ready = False
     wait_time = 0
