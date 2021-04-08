@@ -123,6 +123,8 @@ def push(session, config, folder, delete=False):
 def ls(session, config, path):
     profile = config["aws_profile"]
     region = config["region_name"]
+    path = path.strip("/")
+    path = path + "/"
     command = f"aws s3 ls {path} --profile {profile} --region {region}"
     print(f"Running command: {command}")
     subprocess.Popen(command, shell=True).communicate()
