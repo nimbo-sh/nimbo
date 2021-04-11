@@ -1,7 +1,6 @@
 import os
 import yaml
 
-from nimbo.core.ami.catalog import AMI_MAP
 from nimbo.core.paths import CONFIG
 
 VALID_FIELD_NAMES = [
