@@ -8,12 +8,22 @@ from botocore.exceptions import ClientError
 
 from nimbo.main import cli
 from nimbo.core.config_utils import generate_config, load_config
-from .utils import copy_assets
+from nimbo.tests.utils import copy_assets
 
 
 def write_fake_file(path, text):
     with open(path, 'w') as f:
         f.write(text)
+
+
+def set_yaml_value(file, key, value):
+    with open(file, "r") as f:
+        config = yaml.load(f)
+
+    config[key] = value
+
+    with open(file, "w") as f:
+        yaml.dump(config, f)
 
 
 def test_generate_config():
@@ -43,10 +53,19 @@ def test_list_prices():
     with runner.isolated_filesystem():
         copy_assets(["config"])
 
-        result = runner.invoke(cli, "list-gpu-prices --dry-run", catch_exceptions=False)
+        result = runner.invoke(cli, "list-gpu-prices", catch_exceptions=False)
         assert result.exit_code == 0
 
-        result = runner.invoke(cli, "list-spot-gpu-prices --dry-run", catch_exceptions=False)
+        result = runner.invoke(cli, "list-spot-gpu-prices", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        # Check if it works for us-east-2 region
+        set_yaml_value("nimbo-config.yml", "region", "us-east-2")
+
+        result = runner.invoke(cli, "list-gpu-prices", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        result = runner.invoke(cli, "list-spot-gpu-prices", catch_exceptions=False)
         assert result.exit_code == 0
 
 

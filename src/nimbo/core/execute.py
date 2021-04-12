@@ -237,7 +237,7 @@ def run_job(session, config, job_cmd, dry_run=False):
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config)
 
-        return job_cmd + "_success"
+        return {"message": job_cmd + "_success", "instance_id": instance_id}
 
     except Exception as e:
         print("\nError.")
@@ -245,14 +245,13 @@ def run_job(session, config, job_cmd, dry_run=False):
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
         traceback.print_exc()
-        sys.exit()
+        return {"message": job_cmd + "_error", "instance_id": instance_id}
 
     except KeyboardInterrupt:
         if not config["persist"]:
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
-        traceback.print_exc()
-        sys.exit()
+        return {"message": job_cmd + "_interrupt", "instance_id": instance_id}
 
 
 def run_access_test(session, config, dry_run=False):

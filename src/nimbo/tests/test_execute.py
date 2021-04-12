@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from nimbo.main import *
-from .utils import copy_assets
+from nimbo.tests.utils import copy_assets
 
 
 def test_test_access():

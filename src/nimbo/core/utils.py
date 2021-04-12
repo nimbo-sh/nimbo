@@ -7,9 +7,6 @@ import boto3
 from pkg_resources import resource_filename
 from botocore.exceptions import ClientError
 
-from nimbo.core.ami.catalog import AMI_MAP
-
-
 full_region_names = {"eu-west-1": "EU (Ireland)"}
 
 # Each element is [num_gpus, gpu_type, ram, vcpus]

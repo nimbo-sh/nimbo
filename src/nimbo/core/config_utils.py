@@ -1,7 +1,6 @@
 import os
 import yaml
 
-from nimbo.core.ami.catalog import AMI_MAP
 from nimbo.core.paths import CONFIG
 
 VALID_FIELD_NAMES = [
@@ -127,7 +126,7 @@ region_name: eu-west-1
 instance_type: p2.xlarge
 spot: no
 
-image: ubuntu18-drivers460
+image: ubuntu18-latest-drivers
 disk_size: 128
 conda_env: my-conda-file.yml
 
