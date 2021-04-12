@@ -9,3 +9,4 @@ dependencies:
       - awscli==1.19
       - boto3==1.17
       - click==7.1.2
+      - firebase-admin

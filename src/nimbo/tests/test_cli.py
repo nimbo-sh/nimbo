@@ -2,29 +2,13 @@ import os
 from os.path import join
 from shutil import copy, rmtree
 import subprocess
-import yaml
 import pytest
 from click.testing import CliRunner
 from botocore.exceptions import ClientError
 
 from nimbo.main import cli
 from nimbo.core.config_utils import generate_config, load_config
-from nimbo.tests.utils import copy_assets
-
-
-def write_fake_file(path, text):
-    with open(path, 'w') as f:
-        f.write(text)
-
-
-def set_yaml_value(file, key, value):
-    with open(file, "r") as f:
-        config = yaml.load(f)
-
-    config[key] = value
-
-    with open(file, "w") as f:
-        yaml.dump(config, f)
+from nimbo.tests.utils import copy_assets, write_fake_file, set_yaml_value
 
 
 def test_generate_config():

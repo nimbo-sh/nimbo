@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from nimbo.main import *
-from nimbo.tests.utils import copy_assets
+from nimbo.tests.utils import copy_assets, write_fake_file, set_yaml_value
 
 
 def test_test_access():
@@ -42,7 +42,17 @@ def test_launch():
 
         assert response["message"] == "_nimbo_launch_success"
         instance_id = response["instance_id"]
-        
+
+        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
+        assert result.exit_code == 0
+
+        set_yaml_value("nimbo-config.yml", "region_name", "us-east-2")
+        session, config = get_session_and_config_full_check()
+        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+
+        assert response["message"] == "_nimbo_launch_success"
+        instance_id = response["instance_id"]
+
         result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
         assert result.exit_code == 0
 
@@ -58,6 +68,6 @@ def test_spot_launch():
 
         assert response["message"] == "_nimbo_launch_success"
         instance_id = response["instance_id"]
-        
+
         result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
         assert result.exit_code == 0

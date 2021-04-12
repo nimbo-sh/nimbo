@@ -14,20 +14,11 @@ from botocore.exceptions import ClientError
 from nimbo.core import storage, utils, access
 from nimbo.core.utils import instance_tags, instance_filters
 from nimbo.core.paths import NIMBO, CONFIG
-#from nimbo.core.ami.catalog import AMI_MAP
+from nimbo.core.ami import get_image_id
 
 
 def launch_instance(client, config):
-    response = requests.get("https://nimboami-default-rtdb.firebaseio.com/ami-map.json")
-    ami_map = response.json()
-    if config["image"][:4] == "ami-":
-        image = config["image"]
-    else:
-        if config['image'] in ami_map:
-            image = ami_map[config['image']]
-        else:
-            raise ValueError(f"The image {config['image']} was not found in Nimbo's managed image catalog.\n"
-                             "Check https://docs.nimbo.sh/managed-images for a list of managed images.")
+    image = get_image_id(config)
     print(f"Using image {image}")
 
     instance_config = {
@@ -180,7 +171,7 @@ def run_job(session, config, job_cmd, dry_run=False):
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
-    ec2 = session.client('ec2')
+    ec2 = session.client("ec2")
 
     start_t = time.time()
 
