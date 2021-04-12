@@ -2,6 +2,7 @@ import os
 from os.path import join
 from shutil import copy, rmtree
 import subprocess
+import yaml
 import pytest
 from click.testing import CliRunner
 from botocore.exceptions import ClientError
@@ -60,7 +61,7 @@ def test_list_prices():
         assert result.exit_code == 0
 
         # Check if it works for us-east-2 region
-        set_yaml_value("nimbo-config.yml", "region", "us-east-2")
+        set_yaml_value("nimbo-config.yml", "region_name", "us-east-2")
 
         result = runner.invoke(cli, "list-gpu-prices", catch_exceptions=False)
         assert result.exit_code == 0

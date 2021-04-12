@@ -10,7 +10,7 @@ region_name: eu-west-1
 instance_type: p2.xlarge
 spot: no
 
-image: ubuntu18-cuda11-0-cudnn8-0-conda4-9-2
+image: ubuntu18-latest-drivers
 disk_size: 64
 conda_env: env.yml
 

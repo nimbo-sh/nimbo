@@ -6,12 +6,8 @@ sudo apt-get update
 sudo apt install -y build-essential
 sudo apt-get install -y linux-headers-$(uname -r)
 
-
-# Install zip
-sudo apt-get install -y zip
-
 # Install texlive
-sudo apt-get install -y texlive
+sudo apt-get install -y zip ffmpeg texlive
 
 # Install awscli-v2
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
