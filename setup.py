@@ -26,7 +26,7 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(
         where="src",
-        exclude=["tests"]
+        exclude=["tests", "ami"]
     ),
     package_data={"nimbo": ["scripts/*.sh"]},
     include_package_data=True,
