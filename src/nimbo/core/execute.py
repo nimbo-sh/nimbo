@@ -176,7 +176,7 @@ def run_job(session, config, job_cmd, dry_run=False):
 
     print("Job command:", job_cmd)
 
-    access.verify_nimbo_instance_profile(session)
+    #access.verify_nimbo_instance_profile(session)
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
@@ -283,8 +283,8 @@ def run_access_test(session, config, dry_run=False):
         print("\nError.")
         sys.exit()
 
-    access.verify_nimbo_instance_profile(session)
-    print("Instance profile 'NimboInstanceProfile' found \u2713")
+    #access.verify_nimbo_instance_profile(session)
+    #print("Instance profile 'NimboInstanceProfile' found \u2713")
 
     # Launch instance with new volume for anaconda
     print("Launching test instance... ", end="", flush=True)
