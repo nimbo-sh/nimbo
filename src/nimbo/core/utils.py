@@ -1,11 +1,13 @@
-import os
-import sys
+import functools
 import json
 import subprocess
+import sys
 from pprint import pprint
-import boto3
-from pkg_resources import resource_filename
+
+import botocore
+import botocore.errorfactory
 from botocore.exceptions import ClientError
+from pkg_resources import resource_filename
 
 full_region_names = {
     "af-south-1": "Africa (Cape Town)",
@@ -303,3 +305,20 @@ def instance_filters(config):
         tag_filter = {"Name": "tag:" + tag["Key"], "Values": [tag["Value"]]}
         filters.append(tag_filter)
     return filters
+
+
+def handle_boto_client_errors(func):
+    """
+    Decorator for all functions that use boto3 where an error is possible.
+    This decorator prints the message returned by AWS and stops Nimbo.
+    """
+
+    @functools.wraps(func)
+    def decorated(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except botocore.errorfactory.ClientError as e:
+            print(e.response["Error"]["Message"])
+            sys.exit(1)
+
+    return decorated

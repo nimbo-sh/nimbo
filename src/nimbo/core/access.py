@@ -1,12 +1,13 @@
-from os.path import join
 import json
+from pprint import pprint
+
 import boto3
 import requests
-import subprocess
-from pprint import pprint
-from botocore.exceptions import ClientError
+
+from .utils import handle_boto_client_errors
 
 
+@handle_boto_client_errors
 def create_security_group(session, group_name, dry_run=False):
 
     ec2 = session.client("ec2")
@@ -22,6 +23,7 @@ def create_security_group(session, group_name, dry_run=False):
     print(f'Security Group {group_name} (id={security_group_id}) Created in vpc {vpc_id}.')
 
 
+@handle_boto_client_errors
 def allow_inbound_current_ip(session, group_name, dry_run=False):
 
     ec2 = session.client("ec2")
@@ -47,6 +49,7 @@ def allow_inbound_current_ip(session, group_name, dry_run=False):
     pprint(response)
 
 
+@handle_boto_client_errors
 def create_instance_profile_and_role(session, dry_run=False):
     iam = session.client("iam")
     role_name = "NimboS3AndEC2FullAccess"
@@ -71,6 +74,7 @@ def create_instance_profile_and_role(session, dry_run=False):
     iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
 
 
+@handle_boto_client_errors
 def create_instance_profile(session, role_name, dry_run=False):
     iam = session.client("iam")
     instance_profile_name = "NimboInstanceProfile"
@@ -82,6 +86,7 @@ def create_instance_profile(session, role_name, dry_run=False):
     iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=role_name)
 
 
+@handle_boto_client_errors
 def list_instance_profiles(session, dry_run=False):
     iam = session.client("iam")
 
@@ -91,6 +96,7 @@ def list_instance_profiles(session, dry_run=False):
     pprint(response["InstanceProfiles"])
 
 
+@handle_boto_client_errors
 def verify_nimbo_instance_profile(session, dry_run=False):
     iam = session.client("iam")
 
@@ -117,4 +123,4 @@ if __name__ == "__main__":
     group_name = "default"
     #create_security_group(session, group_name)
     #allow_inbound_current_device(session, group_name)
-    create_s3_full_access_ec2_role(session)
+    #create_s3_full_access_ec2_role(session)
