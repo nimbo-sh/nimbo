@@ -10,8 +10,9 @@ def copy_assets(assets):
     dst = os.getcwd()
      
     if "key" in assets:
-        key_name = [p for p in os.listdir(assets_path) if p[-4:] == ".pem"][0]
-        copy(join(assets_path, key_name), dst)
+        key_names = [p for p in os.listdir(assets_path) if p[-4:] == ".pem"]
+        for key_name in key_names:
+            copy(join(assets_path, key_name), dst)
     if "config" in assets:
         copy(join(assets_path, "nimbo-config.yml"), dst)
     if "env" in assets:
@@ -25,7 +26,7 @@ def write_fake_file(path, text):
 
 def set_yaml_value(file, key, value):
     with open(file, "r") as f:
-        config = yaml.load(f)
+        config = yaml.safe_load(f)
 
     config[key] = value
 

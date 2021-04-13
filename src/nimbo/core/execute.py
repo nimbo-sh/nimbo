@@ -151,17 +151,12 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
         full_command = f"{bash_cmd} {instance_id} {job_cmd} | tee {NIMBO_LOG}"
 
     stdout, stderr = subprocess.Popen(f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True).communicate()
-    """
-    retcode = process.poll()
-    if retcode:
-        raise subprocess.CalledProcessError(retcode, process.args,
-                                            output=stdout, stderr=stderr)
-    """
 
 
 def run_job(session, config, job_cmd, dry_run=False):
     if dry_run:
         return {"message": job_cmd + "_dry_run"}
+
     print("Config:")
     pprint(config)
 
@@ -195,13 +190,6 @@ def run_job(session, config, job_cmd, dry_run=False):
 
         if job_cmd == "_nimbo_launch":
             print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
-            """
-            print("Please allow a few seconds for the instance to be ready for ssh.")
-            print(f"If the connection is refused when you run 'nimbo ssh {instance_id}' "
-                  "wait a few seconds and try again.")
-            print(f"If the connection keeps being refused, delete the instance and try again, "
-                  "or refer to https://docs.nimbo.sh/connection-refused.")
-            """
             return {"message": job_cmd + "_success", "instance_id": instance_id}
 
         ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "

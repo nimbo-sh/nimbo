@@ -30,7 +30,7 @@ def load_config():
                                 "You can run 'nimbo generate-config' to create a default config file.")
 
     with open(CONFIG, "r") as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
+        config = yaml.safe_load(f)
     return config
 
 

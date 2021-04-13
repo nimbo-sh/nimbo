@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="nimbo",  # Replace with your own username
-    version="0.1.1",
+    version="0.1.2",
     author="NimboSH, Ltd.",
     author_email="support@nimbo.sh",
     description="Run machine learning jobs on AWS with a single command.",

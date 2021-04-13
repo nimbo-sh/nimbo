@@ -47,6 +47,7 @@ def test_launch():
         assert result.exit_code == 0
 
         set_yaml_value("nimbo-config.yml", "region_name", "us-east-2")
+        set_yaml_value("nimbo-config.yml", "instance_key", "us-east-2-instance-key")
         session, config = get_session_and_config_full_check()
         response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
 
