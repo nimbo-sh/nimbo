@@ -37,25 +37,21 @@ def test_launch():
     with runner.isolated_filesystem():
         copy_assets(["config", "key", "env"])
 
-        session, config = get_session_and_config_full_check()
-        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+        dst = os.getcwd()
+        instance_keys = [p[:-4] for p in os.listdir(dst) if p[-4:] == ".pem"]
 
-        assert response["message"] == "_nimbo_launch_success"
-        instance_id = response["instance_id"]
+        for instance_key in instance_keys:
+            region_name = instance_key[:9]
+            set_yaml_value("nimbo-config.yml", "region_name", region_name) 
+            set_yaml_value("nimbo-config.yml", "instance_key", instance_key)
+            session, config = get_session_and_config_full_check()
+            response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
 
-        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
-        assert result.exit_code == 0
+            assert response["message"] == "_nimbo_launch_success"
+            instance_id = response["instance_id"]
 
-        set_yaml_value("nimbo-config.yml", "region_name", "us-east-2")
-        set_yaml_value("nimbo-config.yml", "instance_key", "us-east-2-instance-key")
-        session, config = get_session_and_config_full_check()
-        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
-
-        assert response["message"] == "_nimbo_launch_success"
-        instance_id = response["instance_id"]
-
-        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
-        assert result.exit_code == 0
+            result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
+            assert result.exit_code == 0
 
 
 def test_spot_launch():
