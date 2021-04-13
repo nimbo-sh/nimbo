@@ -1,22 +1,20 @@
 import os
-from os.path import join, basename, isfile
+import subprocess
 import sys
 import time
-import logging
-import subprocess
-from subprocess import PIPE
 import traceback
-import requests
+from os.path import join
 from pprint import pprint
-from datetime import datetime
-from botocore.exceptions import ClientError
+from subprocess import PIPE
 
-from nimbo.core import storage, utils, access
-from nimbo.core.utils import instance_tags, instance_filters
-from nimbo.core.paths import NIMBO, CONFIG
+from nimbo.core import utils
 from nimbo.core.ami import get_image_id
+from nimbo.core.paths import CONFIG, NIMBO
+from nimbo.core.utils import instance_filters, instance_tags
+from .utils import handle_boto_client_errors
 
 
+@handle_boto_client_errors
 def launch_instance(client, config):
     image = get_image_id(config)
     print(f"Using image {image}")
@@ -86,6 +84,7 @@ def launch_instance(client, config):
     return instance
 
 
+@handle_boto_client_errors
 def wait_for_instance_running(session, config, instance_id):
     status = ""
     while status != "running":
@@ -93,6 +92,7 @@ def wait_for_instance_running(session, config, instance_id):
         status = utils.check_instance_status(session, config, instance_id)
 
 
+@handle_boto_client_errors
 def wait_for_ssh_ready(host):
     print(f"Waiting for instance to be ready for ssh at {host}. "
           "This can take up to 2 minutes... ", end="", flush=True)
@@ -119,6 +119,7 @@ def wait_for_ssh_ready(host):
     print("Ready. (%0.3fs)" % (finish - start))
 
 
+@handle_boto_client_errors
 def sync_code(host, instance_key):
     if ".git" not in os.listdir():
         print("No git repo found. Syncing all the python files as a fallback.")
@@ -137,6 +138,7 @@ def sync_code(host, instance_key):
                          f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
 
 
+@handle_boto_client_errors
 def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, config):
     REMOTE_SCRIPT = join(NIMBO, "scripts", script)
     subprocess.check_output(f"{scp_cmd} {REMOTE_SCRIPT} "
@@ -153,6 +155,7 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
     stdout, stderr = subprocess.Popen(f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True).communicate()
 
 
+@handle_boto_client_errors
 def run_job(session, config, job_cmd, dry_run=False):
     if dry_run:
         return {"message": job_cmd + "_dry_run"}
@@ -233,6 +236,7 @@ def run_job(session, config, job_cmd, dry_run=False):
         return {"message": job_cmd + "_interrupt", "instance_id": instance_id}
 
 
+@handle_boto_client_errors
 def run_access_test(session, config, dry_run=False):
     if dry_run:
         return
@@ -248,18 +252,16 @@ def run_access_test(session, config, dry_run=False):
         subprocess.check_output("echo 'Hellow World' > nimbo-access-test.txt", shell=True)
         command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
+        command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
+        subprocess.check_output(command, shell=True)
         command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
 
-        # List folders in s3 datasets path
-        datasets_path = config["s3_datasets_path"]
-        command = f"aws s3 ls {datasets_path} --profile {profile} --region {region}"
-        subprocess.check_output(command, shell=True)
         print("You have the necessary S3 read/write permissions from your computer \u2713")
 
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print("\nError.")
-        sys.exit()
+        sys.exit(1)
 
     #access.verify_nimbo_instance_profile(session)
     #print("Instance profile 'NimboInstanceProfile' found \u2713")
@@ -332,6 +334,7 @@ def run_access_test(session, config, dry_run=False):
         sys.exit()
 
 
+@handle_boto_client_errors
 def run_commands_on_instance(session, commands, instance_id):
     """Runs commands on remote linux instances
     :param client: a boto/boto3 ssm client
