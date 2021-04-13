@@ -139,3 +139,10 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Pipenv specifics
+Pipfile
+Pipfile.lock
+
+# Intellij
+.idea
