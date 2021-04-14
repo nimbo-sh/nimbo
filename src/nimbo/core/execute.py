@@ -222,18 +222,14 @@ def run_job(session, config, job_cmd, dry_run=False):
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
     except Exception as e:
-        print("\nError.")
-        if not config["persist"]:
-            print(f"Deleting instance {instance_id} (from local)...")
-            utils.delete_instance(session, instance_id)
-        traceback.print_exc()
-        return {"message": job_cmd + "_error", "instance_id": instance_id}
+        if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
+            print(e)
 
-    except KeyboardInterrupt:
         if not config["persist"]:
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
-        return {"message": job_cmd + "_interrupt", "instance_id": instance_id}
+
+        return {"message": job_cmd + "_error", "instance_id": instance_id}
 
 
 def run_access_test(session, config, dry_run=False):
