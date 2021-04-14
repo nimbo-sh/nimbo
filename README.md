@@ -18,7 +18,7 @@ We provide managed AMIs with the latest drivers, with unified naming across all 
 You can find more information at [nimbo.sh](https://nimbo.sh), or read the docs at [docs.nimbo.sh](https://docs.nimbo.sh).
 
 ## Getting started
-Please visit the [Getting started](https://nimbo.sh/getting-started) page in the docs.
+Please visit the [Getting started](https://docs.nimbo.sh/getting-started) page in the docs.
 
 
 ## Examples
