@@ -1,12 +1,9 @@
 import os
-from os.path import join
-import sys
-from shutil import copy
-import pytest
+
 from click.testing import CliRunner
 
 from nimbo.main import *
-from nimbo.tests.utils import copy_assets, write_fake_file, set_yaml_value
+from nimbo.tests.utils import copy_assets, set_yaml_value
 
 
 def test_test_access():

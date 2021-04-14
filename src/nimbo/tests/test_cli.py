@@ -1,14 +1,13 @@
 import os
 from os.path import join
-from shutil import copy, rmtree
-import subprocess
-import pytest
-from click.testing import CliRunner
-from botocore.exceptions import ClientError
 
+import pytest
+from botocore.exceptions import ClientError
+from click.testing import CliRunner
+
+from nimbo.core.config_utils import load_config
 from nimbo.main import cli
-from nimbo.core.config_utils import generate_config, load_config
-from nimbo.tests.utils import copy_assets, write_fake_file, set_yaml_value
+from nimbo.tests.utils import copy_assets, set_yaml_value, write_fake_file
 
 
 def test_generate_config():

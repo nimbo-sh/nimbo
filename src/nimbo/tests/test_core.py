@@ -1,13 +1,8 @@
-import os
-from os.path import join
-from shutil import copy, rmtree
-import subprocess
 import pytest
 from click.testing import CliRunner
-from botocore.exceptions import ClientError
 
-from nimbo.core.config_utils import load_config
 from nimbo.core.ami import get_image_id
+from nimbo.core.config_utils import load_config
 from nimbo.tests.utils import copy_assets
 
 

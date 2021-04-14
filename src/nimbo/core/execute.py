@@ -11,10 +11,8 @@ from nimbo.core import utils
 from nimbo.core.ami import get_image_id
 from nimbo.core.paths import CONFIG, NIMBO
 from nimbo.core.utils import instance_filters, instance_tags
-from .utils import handle_boto_client_errors
 
 
-@handle_boto_client_errors
 def launch_instance(client, config):
     image = get_image_id(config)
     print(f"Using image {image}")
@@ -84,7 +82,6 @@ def launch_instance(client, config):
     return instance
 
 
-@handle_boto_client_errors
 def wait_for_instance_running(session, config, instance_id):
     status = ""
     while status != "running":
@@ -92,7 +89,6 @@ def wait_for_instance_running(session, config, instance_id):
         status = utils.check_instance_status(session, config, instance_id)
 
 
-@handle_boto_client_errors
 def wait_for_ssh_ready(host):
     print(f"Waiting for instance to be ready for ssh at {host}. "
           "This can take up to 2 minutes... ", end="", flush=True)
@@ -119,7 +115,6 @@ def wait_for_ssh_ready(host):
     print("Ready. (%0.3fs)" % (finish - start))
 
 
-@handle_boto_client_errors
 def sync_code(host, instance_key):
     if ".git" not in os.listdir():
         print("No git repo found. Syncing all the python files as a fallback.")
@@ -138,7 +133,6 @@ def sync_code(host, instance_key):
                          f". ubuntu@{host}:/home/ubuntu/project", shell=True).communicate()
 
 
-@handle_boto_client_errors
 def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, config):
     REMOTE_SCRIPT = join(NIMBO, "scripts", script)
     subprocess.check_output(f"{scp_cmd} {REMOTE_SCRIPT} "
@@ -155,7 +149,6 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
     stdout, stderr = subprocess.Popen(f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True).communicate()
 
 
-@handle_boto_client_errors
 def run_job(session, config, job_cmd, dry_run=False):
     if dry_run:
         return {"message": job_cmd + "_dry_run"}
@@ -236,7 +229,6 @@ def run_job(session, config, job_cmd, dry_run=False):
         return {"message": job_cmd + "_interrupt", "instance_id": instance_id}
 
 
-@handle_boto_client_errors
 def run_access_test(session, config, dry_run=False):
     if dry_run:
         return
@@ -334,7 +326,6 @@ def run_access_test(session, config, dry_run=False):
         sys.exit()
 
 
-@handle_boto_client_errors
 def run_commands_on_instance(session, commands, instance_id):
     """Runs commands on remote linux instances
     :param client: a boto/boto3 ssm client
