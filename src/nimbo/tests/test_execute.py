@@ -21,11 +21,15 @@ def test_run_no_code():
     with runner.isolated_filesystem():
         copy_assets(["config", "key", "env"])
 
-        result = runner.invoke(cli, "delete-all-instances", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "delete-all-instances", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
         result = runner.invoke(cli, "run 'python --version'", catch_exceptions=False)
         assert result.exit_code == 0
-        result = runner.invoke(cli, "delete-all-instances", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "delete-all-instances", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
 
@@ -39,7 +43,7 @@ def test_launch():
 
         for instance_key in instance_keys:
             region_name = instance_key[:9]
-            set_yaml_value("nimbo-config.yml", "region_name", region_name) 
+            set_yaml_value("nimbo-config.yml", "region_name", region_name)
             set_yaml_value("nimbo-config.yml", "instance_key", instance_key)
             session, config = get_session_and_config_full_check()
             response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
@@ -47,7 +51,9 @@ def test_launch():
             assert response["message"] == "_nimbo_launch_success"
             instance_id = response["instance_id"]
 
-            result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
+            result = runner.invoke(
+                cli, f"delete-instance {instance_id}", catch_exceptions=False
+            )
             assert result.exit_code == 0
 
 
@@ -63,5 +69,7 @@ def test_spot_launch():
         assert response["message"] == "_nimbo_launch_success"
         instance_id = response["instance_id"]
 
-        result = runner.invoke(cli, f"delete-instance {instance_id}", catch_exceptions=False)
+        result = runner.invoke(
+            cli, f"delete-instance {instance_id}", catch_exceptions=False
+        )
         assert result.exit_code == 0

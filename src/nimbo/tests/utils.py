@@ -9,7 +9,7 @@ def copy_assets(assets):
     curr_folder_path = os.path.dirname(os.path.abspath(__file__))
     assets_path = join(curr_folder_path, "assets")
     dst = os.getcwd()
-     
+
     if "key" in assets:
         key_names = [p for p in os.listdir(assets_path) if p[-4:] == ".pem"]
         for key_name in key_names:
@@ -21,7 +21,7 @@ def copy_assets(assets):
 
 
 def write_fake_file(path, text):
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         f.write(text)
 
 

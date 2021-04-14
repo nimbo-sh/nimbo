@@ -23,7 +23,7 @@ def upload_file(session, file_name, bucket, object_name=None):
         object_name = file_name
 
     # Upload the file
-    s3 = session.client('s3')
+    s3 = session.client("s3")
     try:
         response = s3.upload_file(file_name, bucket, object_name)
     except ClientError as e:
@@ -42,12 +42,11 @@ def create_bucket(session, bucket_name, dry_run):
 
     # Create bucket
     try:
-        s3 = session.client('s3')
-        location = {'LocationConstraint': session.region_name}
-        s3.create_bucket(Bucket=bucket_name,
-                         CreateBucketConfiguration=location)
+        s3 = session.client("s3")
+        location = {"LocationConstraint": session.region_name}
+        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration=location)
     except ClientError as e:
-        if e.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
+        if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
             print("Bucket nimbo-main-bucket already exists.")
         else:
             logging.error(e)
@@ -61,38 +60,30 @@ def create_bucket(session, bucket_name, dry_run):
 def list_buckets(session, bucket_name):
 
     # Retrieve the list of existing buckets
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     response = s3.list_buckets()
 
     # Output the bucket names
-    print('Existing buckets:')
-    for bucket in response['Buckets']:
+    print("Existing buckets:")
+    for bucket in response["Buckets"]:
         print(f'  {bucket["Name"]}')
 
 
 @handle_boto_client_errors
 def list_snapshots(session):
     # Retrieve the list of existing buckets
-    ec2 = session.client('ec2')
+    ec2 = session.client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{
-            'Name': 'tag:created_by',
-            'Values': [
-                'nimbo',
-            ]},
-        ],
-        MaxResults=100,
+        Filters=[{"Name": "tag:created_by", "Values": ["nimbo",]},], MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 
 
 @handle_boto_client_errors
 def check_snapshot_state(session, snapshot_id):
-    ec2 = session.client('ec2')
-    response = ec2.describe_snapshots(
-        SnapshotIds=[snapshot_id]
-    )
+    ec2 = session.client("ec2")
+    response = ec2.describe_snapshots(SnapshotIds=[snapshot_id])
     return response["Snapshots"][0]["State"]
 
 
@@ -115,7 +106,9 @@ def pull(session, config, folder, delete=False):
     else:
         source = config["s3_" + folder + "_path"]
         target = config["local_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"], config["region_name"], delete)
+    sync_folder(
+        session, source, target, config["aws_profile"], config["region_name"], delete
+    )
 
 
 @handle_boto_client_errors
@@ -128,7 +121,9 @@ def push(session, config, folder, delete=False):
     else:
         source = config["local_" + folder + "_path"]
         target = config["s3_" + folder + "_path"]
-    sync_folder(session, source, target, config["aws_profile"], config["region_name"], delete)
+    sync_folder(
+        session, source, target, config["aws_profile"], config["region_name"], delete
+    )
 
 
 @handle_boto_client_errors

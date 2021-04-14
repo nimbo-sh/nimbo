@@ -12,7 +12,10 @@ def paid_required(func):
         if has_paid:
             return func(*args, **kw)
         else:
-            raise PermissionError("This is a paid feature. Please buy or renew your commercial license.") 
+            raise PermissionError(
+                "This is a paid feature. Please buy or renew your commercial license."
+            )
+
     return wrapper
 
 
@@ -23,7 +26,9 @@ def get_session_and_config(required_fields, fields_to_check):
     config_utils.ConfigVerifier(config).verify(required_fields, fields_to_check)
     config_utils.remove_trailing_backslashes(config)
 
-    session = boto3.Session(profile_name=config["aws_profile"], region_name=config["region_name"])
+    session = boto3.Session(
+        profile_name=config["aws_profile"], region_name=config["region_name"]
+    )
     config["user_id"] = session.client("sts").get_caller_identity()["UserId"]
 
     return session, config
@@ -34,11 +39,18 @@ def get_session_and_config_full_check():
 
 
 def get_session_and_config_instance_key():
-    return get_session_and_config(["aws_profile", "region_name", "instance_key"], ["instance_key"])
+    return get_session_and_config(
+        ["aws_profile", "region_name", "instance_key"], ["instance_key"]
+    )
 
 
 def get_session_and_config_storage():
-    check_list = ["s3_datasets_path", "s3_results_path", "local_datasets_path", "local_results_path"]
+    check_list = [
+        "s3_datasets_path",
+        "s3_results_path",
+        "local_datasets_path",
+        "local_results_path",
+    ]
     return get_session_and_config(["aws_profile", "region_name"] + check_list, [])
 
 
