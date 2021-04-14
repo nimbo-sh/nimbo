@@ -5,7 +5,7 @@ s3_results_path: s3://nimbo-test-bucket/different_results
 s3_datasets_path: s3://nimbo-test-bucket/different_datasets
 
 # Device, environment and regions
-aws_profile: nimbo-employee
+aws_profile: default
 region_name: eu-west-1
 instance_type: p2.xlarge
 spot: no
@@ -20,4 +20,4 @@ persist: no
 
 # Permissions and credentials
 security_group: default
-instance_key: employee-instance-key
+instance_key: eu-west-1-juozas

@@ -1,4 +1,5 @@
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -11,6 +12,8 @@ from nimbo.core import utils
 from nimbo.core.ami import get_image_id
 from nimbo.core.paths import CONFIG, NIMBO
 from nimbo.core.utils import instance_filters, instance_tags
+
+SSH_TIMEOUT_S = 120
 
 
 def launch_instance(client, config):
@@ -89,30 +92,35 @@ def wait_for_instance_running(session, config, instance_id):
         status = utils.check_instance_status(session, config, instance_id)
 
 
-def wait_for_ssh_ready(host):
-    print(f"Waiting for instance to be ready for ssh at {host}. "
-          "This can take up to 2 minutes... ", end="", flush=True)
-    start = time.time()
-    host_ready = False
-    wait_time = 0
-    while 1:
-        time.sleep(5)
-        wait_time += 2
-        output, error = subprocess.Popen(f"nc -w 2 {host} 22",
-                                         stdout=PIPE, stderr=PIPE, shell=True).communicate()
+def block_until_ssh_ready(host: str) -> None:
+    print(
+        f"Waiting for instance to be ready for ssh at {host}. "
+        "This can take up to 2 minutes... "
+    )
 
-        if "ssh" in output.decode("utf-8").lower():
+    start = time.monotonic()
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+
+    reconnect_count = 0
+    while reconnect_count < SSH_TIMEOUT_S:
+        error_num = sock.connect_ex((host, 22))
+
+        if error_num == 0:
             break
 
-        if error != b"":
-            raise Exception(error)
+        time.sleep(1)
+        reconnect_count += 1
+    else:
+        raise RuntimeError(
+            "Something went wrong while connecting to the instance.\n"
+            "Please verify your security groups, instance key and "
+            "instance profile, and try again.\n"
+            "More info at docs.nimbo.sh/common-issues#cant-ssh.\n"
+        )
 
-        if wait_time == 60:
-            raise Exception("Something failed when connecting to the instance.\n"
-                            "Please verify your security groups, instance key and instance profile, and try again.\n"
-                            "More info at docs.nimbo.sh/common-issues#cant-ssh.")
-    finish = time.time()
-    print("Ready. (%0.3fs)" % (finish - start))
+    print("Ready. (%0.3fs)" % (time.monotonic() - start))
 
 
 def sync_code(host, instance_key):
@@ -181,8 +189,7 @@ def run_job(session, config, job_cmd, dry_run=False):
         time.sleep(5)
         host = utils.check_instance_host(session, config, instance_id)
 
-        # Wait for the instance to be ready for ssh
-        wait_for_ssh_ready(host)
+        block_until_ssh_ready(host)
 
         if job_cmd == "_nimbo_launch":
             print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
@@ -290,8 +297,7 @@ def run_access_test(session, config, dry_run=False):
         ssh = f"ssh -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20"
         scp = f"scp -i {INSTANCE_KEY} -o 'StrictHostKeyChecking no'"
 
-        # Wait for the instance to be ready for ssh
-        wait_for_ssh_ready(host)
+        block_until_ssh_ready(host)
 
         print("Instance key allows ssh access to remote instance \u2713")
         print("Security group allows ssh access to remote instance \u2713")
@@ -303,27 +309,15 @@ def run_access_test(session, config, dry_run=False):
         print("\nEverything working \u2713")
         print("Instance has been deleted.")
 
-    except subprocess.CalledProcessError as e:
-        print("\nError.")
-        if not config["persist"]:
-            print(f"Deleting instance {instance_id} (from local)...")
-            utils.delete_instance(session, instance_id)
-        sys.exit()
-
     except Exception as e:
-        print("\nError.")
-        if not config["persist"]:
-            print(f"Deleting instance {instance_id} (from local)...")
-            utils.delete_instance(session, instance_id)
-        traceback.print_exc()
-        sys.exit()
+        if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
+            print(e)
 
-    except KeyboardInterrupt:
         if not config["persist"]:
             print(f"Deleting instance {instance_id} (from local)...")
             utils.delete_instance(session, instance_id)
-        traceback.print_exc()
-        sys.exit()
+
+        sys.exit(1)
 
 
 def run_commands_on_instance(session, commands, instance_id):
