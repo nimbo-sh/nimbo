@@ -24,11 +24,15 @@ def test_ssh():
 
         # Test without a key
         with pytest.raises(FileNotFoundError):
-            result = runner.invoke(cli, "ssh i-0be1989edd819b442 --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli, "ssh i-0be1989edd819b442 --dry-run", catch_exceptions=False
+            )
 
         # Test with a key
         copy_assets(["key"])
-        result = runner.invoke(cli, "ssh i-0be1989edd819b442 --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "ssh i-0be1989edd819b442 --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
 
@@ -71,24 +75,38 @@ def test_instance_actions():
         copy_assets(["config"])
 
         try:
-            result = runner.invoke(cli, "check-instance-status i-0be1989edd819b442 --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli,
+                "check-instance-status i-0be1989edd819b442 --dry-run",
+                catch_exceptions=False,
+            )
         except ClientError as e:
-            if 'InvalidInstanceID.NotFound' not in str(e):
+            if "InvalidInstanceID.NotFound" not in str(e):
                 raise
 
         try:
-            result = runner.invoke(cli, "stop-instance i-0be1989edd819b442 --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli,
+                "stop-instance i-0be1989edd819b442 --dry-run",
+                catch_exceptions=False,
+            )
         except ClientError as e:
-            if 'InvalidInstanceID.NotFound' not in str(e):
+            if "InvalidInstanceID.NotFound" not in str(e):
                 raise
 
         try:
-            result = runner.invoke(cli, "delete-instance i-0be1989edd819b442 --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli,
+                "delete-instance i-0be1989edd819b442 --dry-run",
+                catch_exceptions=False,
+            )
         except ClientError as e:
-            if 'InvalidInstanceID.NotFound' not in str(e):
+            if "InvalidInstanceID.NotFound" not in str(e):
                 raise
 
-        result = runner.invoke(cli, "delete-all-instances --dry-run", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "delete-all-instances --dry-run", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
 
@@ -97,13 +115,17 @@ def test_run_job():
     with runner.isolated_filesystem():
         copy_assets(["config", "env", "key"])
 
-        result = runner.invoke(cli, "run 'python --version' --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "run 'python --version' --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
         result = runner.invoke(cli, "launch --dry-run", catch_exceptions=False)
         assert result.exit_code == 0
 
-        result = runner.invoke(cli, "launch-and-setup --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "launch-and-setup --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
         result = runner.invoke(cli, "test-access --dry-run", catch_exceptions=False)
@@ -128,8 +150,8 @@ def test_push_pull():
         for mode in ["datasets", "results"]:
             folder = config[f"local_{mode}_path"]
             file_name = join(folder, "mnist.txt")
-    
-            # Add a dataset to local and push it to S3        
+
+            # Add a dataset to local and push it to S3
             write_fake_file(file_name, "Fake dataset")
             result = runner.invoke(cli, f"push {mode}", catch_exceptions=False)
             assert result.exit_code == 0
@@ -174,7 +196,6 @@ def test_push_pull():
         assert result.exit_code == 0
 
 
-
 def test_instance_profile_and_security_group():
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -182,22 +203,32 @@ def test_instance_profile_and_security_group():
         # Running as nimbo-employee with limited permissions
 
         try:
-            result = runner.invoke(cli, "allow-current-ip default --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli, "allow-current-ip default --dry-run", catch_exceptions=False
+            )
         except ClientError as e:
             if "UnauthorizedOperation" not in str(e):
                 raise
 
         try:
-            result = runner.invoke(cli, "allow-current-ip default --dry-run", catch_exceptions=False)
+            result = runner.invoke(
+                cli, "allow-current-ip default --dry-run", catch_exceptions=False
+            )
         except ClientError as e:
             if "UnauthorizedOperation" not in str(e):
                 raise
 
-        result = runner.invoke(cli, "list-instance-profiles --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "list-instance-profiles --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
-        result = runner.invoke(cli, "create-instance-profile fake_role --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "create-instance-profile fake_role --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
-        result = runner.invoke(cli, "create-instance-profile-and-role --dry-run", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "create-instance-profile-and-role --dry-run", catch_exceptions=False
+        )
         assert result.exit_code == 0

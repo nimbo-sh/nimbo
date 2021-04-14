@@ -1,6 +1,6 @@
 import sys
+
 import boto3
-from pprint import pprint
 
 from nimbo.core.utils import full_region_names
 
@@ -37,6 +37,6 @@ for dest_region in full_region_names.keys():
         Resources=[new_image_id],
         Tags=[
             {"Key": "CreatedBy", "Value": "nimbo"},
-            {"Key": "Type", "Value": "production"}
-        ]
+            {"Key": "Type", "Value": "production"},
+        ],
     )

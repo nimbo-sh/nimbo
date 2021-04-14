@@ -1,7 +1,6 @@
 import click
-import boto3
 
-from nimbo.core import access, utils, storage, execute, config_utils
+from nimbo.core import access, execute, storage, utils
 from nimbo.core.session import *
 
 
@@ -129,8 +128,10 @@ def delete_instance(instance_id, dry_run):
 @click.option("--dry-run", is_flag=True)
 def delete_all_instances(dry_run):
     """Terminates all your instances."""
-    click.confirm("This will delete all your running instances.\n"
-                  "Do you want to continue?", abort=True)
+    click.confirm(
+        "This will delete all your running instances.\n" "Do you want to continue?",
+        abort=True,
+    )
     session, config = get_session_and_config_minimal()
     utils.delete_all_instances(session, config, dry_run)
 
@@ -148,9 +149,14 @@ def create_bucket(bucket_name, dry_run):
 
 
 @cli.command()
-@click.argument("folder", type=click.Choice(["datasets", "results", "logs"]), required=True)
-@click.option("--delete", is_flag=True,
-              help="Deletes any files that exist in the local folder but don't exist in the remote folder.")
+@click.argument(
+    "folder", type=click.Choice(["datasets", "results", "logs"]), required=True
+)
+@click.option(
+    "--delete",
+    is_flag=True,
+    help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
+)
 def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
     session, config = get_session_and_config_storage()
@@ -158,9 +164,14 @@ def push(folder, delete):
 
 
 @cli.command()
-@click.argument("folder", type=click.Choice(["datasets", "results", "logs"]), required=True)
-@click.option("--delete", is_flag=True,
-              help="Deletes any files that exist in the local folder but don't exist in the remote folder.")
+@click.argument(
+    "folder", type=click.Choice(["datasets", "results", "logs"]), required=True
+)
+@click.option(
+    "--delete",
+    is_flag=True,
+    help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
+)
 def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
     session, config = get_session_and_config_storage()
