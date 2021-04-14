@@ -75,9 +75,9 @@ echo "Done."
 # Import datasets and results from the bucket
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH to $LOCAL_DATASETS_PATH..."
-$AWS s3 cp --quiet --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH
+$AWS s3 cp --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/dev/null
 printf "Importing results from $S3_RESULTS_PATH to $LOCAL_RESULTS_PATH..."
-$AWS s3 cp --quiet --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH
+$AWS s3 cp --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/dev/null
 
 echo ""
 echo "================================================="
