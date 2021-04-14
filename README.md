@@ -15,12 +15,18 @@ With Nimbo, using spot instances is as simples as changing a single value on the
 - **Managed Images**
 We provide managed AMIs with the latest drivers, with unified naming across all regions. We will also release AMIs that come preloaded with ImageNet and other large datasets, so that you can simply spin up an instance and start training.
 
-
 You can find more information at [nimbo.sh](https://nimbo.sh), or read the docs at [docs.nimbo.sh](https://docs.nimbo.sh).
 
 ## Getting started
 Please visit the [Getting started](https://nimbo.sh/getting-started) page in the docs.
 
+
+## Examples
+Sample projects can be found at our examples repo, [nimbo-examples](https://github.com/nimbo-sh/nimbo-examples).
+Current examples include:
+- [Finetuning an object segmentation network with Detectron2](https://github.com/nimbo-sh/nimbo-examples/tree/main/detectron)
+- [Training a neural network on MNIST with Pytorch](https://github.com/nimbo-sh/nimbo-examples/tree/main/pytorch-mnist)
+- [Training a neural network on MNIST with Tensorflow, on a spot instance](https://github.com/nimbo-sh/nimbo-examples/tree/main/tensorflow-mnist)
 
 ## Developing
 If you want to make changes to the codebase, you can clone this repo and use `pip install -e .` to install nimbo locally. As you make code changes, your local
