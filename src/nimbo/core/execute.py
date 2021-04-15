@@ -14,15 +14,27 @@ from nimbo.core.paths import CONFIG, NIMBO
 from nimbo.core.utils import instance_filters, instance_tags
 
 SSH_TIMEOUT_S = 120
-
+VALID_DISK_TYPES = ["standard", "io1", "io2", "gp2", "sc1", "st1", "gp3"]
 
 def launch_instance(client, config):
     image = get_image_id(config)
     print(f"Using image {image}")
 
+    ebs_config = {"VolumeSize": config["disk_size"]}
+    if "disk_type" in config:
+        if config["disk_type"] not in VALID_DISK_TYPES:
+            raise ValueError(f"Disk type \"{config['disk_type']}\" not valid.\n"
+                             f"Supported types: {VALID_DISK_TYPES}.")
+        ebs_config["VolumeType"] = config["disk_type"]
+        if config["disk_type"] in ["io1", "io2"] and "disk_iops" not in config:
+            raise ValueError("For disk types io1 or io2, the 'disk_iops' parameter has to be specified.\n"
+                             "Please visit https://docs.nimbo.sh/nimbo-config-file-options for more details.")
+        if "disk_iops" in config:
+            ebs_config["Iops"] = config["disk_iops"]
+
     instance_config = {
         "BlockDeviceMappings": [
-            {"DeviceName": "/dev/sda1", "Ebs": {"VolumeSize": config["disk_size"]}}
+            {"DeviceName": "/dev/sda1", "Ebs": ebs_config}
         ],
         "ImageId": image,
         "InstanceType": config["instance_type"],
