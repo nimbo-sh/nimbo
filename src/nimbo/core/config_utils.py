@@ -116,7 +116,7 @@ def fill_defaults(config):
     # Modifies dictionary in place
     config_defaults = {
         "spot": False,
-        "image": "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2",
+        "image": "ubuntu18-latest-drivers",
         "disk_size": 128,
         "run_in_background": False,
         "persist": False,
