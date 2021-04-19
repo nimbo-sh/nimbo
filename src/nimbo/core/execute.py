@@ -50,23 +50,36 @@ def launch_instance(client, config):
         )
         instance_request = instance["SpotInstanceRequests"][0]
         request_id = instance_request["SpotInstanceRequestId"]
-        print("Spot instance request submitted.")
-        print(
-            "Waiting for the spot instance request to be fulfilled... ",
-            end="",
-            flush=False,
-        )
 
-        status = ""
-        while status != "fulfilled":
-            time.sleep(1)
-            response = client.describe_spot_instance_requests(
-                SpotInstanceRequestIds=[request_id], Filters=instance_filters(config)
+        try:
+            print("Spot instance request submitted.")
+            print(
+                "Waiting for the spot instance request to be fulfilled... ",
+                end="",
+                flush=False,
             )
-            instance_request = response["SpotInstanceRequests"][0]
-            status = instance_request["Status"]["Code"]
-            if status not in ["fulfilled", "pending-evaluation", "pending-fulfillment"]:
-                raise Exception(response["SpotInstanceRequests"][0]["Status"])
+
+            status = ""
+            while status != "fulfilled":
+                time.sleep(1)
+                response = client.describe_spot_instance_requests(
+                    SpotInstanceRequestIds=[request_id],
+                    Filters=instance_filters(config),
+                )
+                instance_request = response["SpotInstanceRequests"][0]
+                status = instance_request["Status"]["Code"]
+                if status not in [
+                    "fulfilled",
+                    "pending-evaluation",
+                    "pending-fulfillment",
+                ]:
+                    raise Exception(response["SpotInstanceRequests"][0]["Status"])
+        except KeyboardInterrupt:
+            response = client.cancel_spot_instance_requests(
+                SpotInstanceRequestIds=[request_id]
+            )
+            print("Cancelled spot instance request.")
+            sys.exit(1)
 
         print("Done.")
         client.create_tags(
