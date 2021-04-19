@@ -1,4 +1,9 @@
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/6595222/115258017-86f68a00-a128-11eb-9530-a60c7b31f61d.png" width="300" height="300">
+</p>
+
 # Nimbo: Run jobs on AWS with a single command
+
 [Nimbo](https://nimbo.sh) is a CLI tool that allows you to run code on AWS as if you were running it locally. Nimbo also provides many useful commands to make it faster to work with AWS, such as easily checking prices, logging onto an instance, or syncing data.
 
 Nimbo drastically simplifies your AWS workflow by taking care of instance, environment, data, and IAM management - no changes to your codebase needed. Since it is independent of your code, you can run any type of job you want
