@@ -162,6 +162,11 @@ def create_bucket(bucket_name, dry_run):
 )
 def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
+    if delete:
+        click.confirm(
+            "This will delete any files that exist in the remote folder but do not exist in the local folder.\n" "Do you want to continue?",
+            abort=True,
+        )
     session, config = get_session_and_config_storage()
     storage.push(session, config, folder, delete)
 
@@ -177,6 +182,11 @@ def push(folder, delete):
 )
 def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
+    if delete:
+        click.confirm(
+            "This will delete any files that exist in the local folder but do not exist in the remote folder.\n" "Do you want to continue?",
+            abort=True,
+        )
     session, config = get_session_and_config_storage()
     storage.pull(session, config, folder, delete)
 
