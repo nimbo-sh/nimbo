@@ -21,17 +21,14 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
         "Operating System :: Unix",
         "Operating System :: MacOS",
-        "Programming Language :: Python :: 3"
+        "Programming Language :: Python :: 3",
     ],
     package_dir={"": "src"},
-    packages=setuptools.find_packages(
-        where="src",
-        exclude=["tests", "ami"]
-    ),
+    packages=setuptools.find_packages(where="src", exclude=["tests", "ami"]),
     package_data={"nimbo": ["scripts/*.sh"]},
     include_package_data=True,
-    entry_points = {
-        'console_scripts': ['nimbo=nimbo.main:cli'],
+    entry_points={
+        "console_scripts": ["nimbo=nimbo.main:cli"],
     },
     python_requires=">=3.6",
     install_requires=[
@@ -39,5 +36,5 @@ setuptools.setup(
         "boto3>=1.17",
         "requests>=2.25",
         "click>=7.0",
-   ],
+    ],
 )

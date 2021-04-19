@@ -171,7 +171,9 @@ def show_active_instances(session, config, dry_run=False):
     ec2 = session.client("ec2")
     try:
         response = ec2.describe_instances(
-            Filters=[{"Name": "instance-state-name", "Values": ["running", "pending"]},]
+            Filters=[
+                {"Name": "instance-state-name", "Values": ["running", "pending"]},
+            ]
             + instance_filters(config),
             DryRun=dry_run,
         )
@@ -255,7 +257,9 @@ def delete_all_instances(session, config, dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 instance_id = inst["InstanceId"]
-                delete_response = ec2.terminate_instances(InstanceIds=[instance_id],)
+                delete_response = ec2.terminate_instances(
+                    InstanceIds=[instance_id],
+                )
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
@@ -269,7 +273,9 @@ def check_instance_host(session, config, instance_id, dry_run=False):
     ec2 = session.client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=instance_filters(config), DryRun=dry_run,
+            InstanceIds=[instance_id],
+            Filters=instance_filters(config),
+            DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:

@@ -75,7 +75,15 @@ def list_snapshots(session):
     ec2 = session.client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{"Name": "tag:created_by", "Values": ["nimbo",]},], MaxResults=100,
+        Filters=[
+            {
+                "Name": "tag:created_by",
+                "Values": [
+                    "nimbo",
+                ],
+            },
+        ],
+        MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 
