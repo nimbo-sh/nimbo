@@ -263,7 +263,7 @@ def run_job(session, config, job_cmd, dry_run=False):
 
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
-    except Exception as e:
+    except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
             print(e)
 
@@ -352,7 +352,7 @@ def run_access_test(session, config, dry_run=False):
         print("\nEverything working \u2713")
         print("Instance has been deleted.")
 
-    except Exception as e:
+    except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
             print(e)
 
