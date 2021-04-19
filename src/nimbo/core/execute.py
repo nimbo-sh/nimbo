@@ -21,7 +21,7 @@ def launch_instance(client):
         ],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,
-        "KeyName": CONFIG.instance_key,
+        "KeyName": os.path.basename(CONFIG.instance_key).rstrip(".pem"),
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [CONFIG.security_group],
         "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
@@ -163,11 +163,6 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script):
 def run_job(job_cmd, dry_run=False):
     if dry_run:
         return {"message": job_cmd + "_dry_run"}
-
-    print("Config:")
-    pprint(CONFIG.dict())
-
-    print("Job command:", job_cmd)
 
     # access.verify_nimbo_instance_profile(session)
 

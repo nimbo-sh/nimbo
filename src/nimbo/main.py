@@ -10,6 +10,7 @@ def cli():
 
 
 @cli.command()
+@utils.assert_required_config(RequiredConfigCase.NONE)
 def generate_config():
     """Creates a base nimbo-config.yml in your current directory.
 

@@ -9,9 +9,15 @@ import botocore.errorfactory
 import requests
 from botocore.exceptions import ClientError
 
-from nimbo.core.globals import (CONFIG, FULL_REGION_NAMES, INSTANCE_GPU_MAP,
-                                NIMBO_CONFIG_FILE, NIMBO_DEFAULT_CONFIG,
-                                RequiredConfigCase, SESSION)
+from nimbo.core.globals import (
+    CONFIG,
+    FULL_REGION_NAMES,
+    INSTANCE_GPU_MAP,
+    NIMBO_CONFIG_FILE,
+    NIMBO_DEFAULT_CONFIG,
+    RequiredConfigCase,
+    SESSION,
+)
 
 
 def ec2_instance_types():
@@ -250,7 +256,7 @@ def ssh(instance_id, dry_run=False):
 def make_instance_tags():
     tags = [
         {"Key": "CreatedBy", "Value": "nimbo"},
-        {"Key": "Owner", "Value": CONFIG.user_id},
+        {"Key": "Owner", "Value": CONFIG._user_id},
     ]
     return tags
 
@@ -329,7 +335,7 @@ def handle_boto_client_errors(func):
 
 
 def generate_config(quiet=False):
-    """ Create an example Nimbo config in project root """
+    """ Create an example Nimbo config in the project root """
 
     with open(NIMBO_CONFIG_FILE, "w") as f:
         f.write(NIMBO_DEFAULT_CONFIG)

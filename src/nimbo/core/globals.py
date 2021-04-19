@@ -1,22 +1,18 @@
 import enum
 import os
 import pathlib
+import re
 import sys
-from typing import Dict, Optional
+from typing import Optional
 
 import boto3
+import botocore.exceptions
+import botocore.session
 import pydantic
 import yaml
 
-# TODO: Check what happens if there's a missing field, or missing value
-# TODO: Check what happens when you have wrong field names
-# TODO: what happens when I have incorrect value for AWS resources
-# TODO: test validators
-# TODO: test absolute pem path
-
-# TODO: before final commit
-# TODO: grep for todo
-# TODO: update docs and generated (ssh_timeout), .pem file extension now needed
+# TODO: generate-config doesn't work
+# TODO: update docs (ssh_timeout) and generated, .pem file extension now needed
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
@@ -90,6 +86,7 @@ INSTANCE_GPU_MAP = {
 
 
 class RequiredConfigCase(enum.Enum):
+    NONE = enum.auto()
     MINIMAL = enum.auto()
     STORAGE = enum.auto()
     INSTANCE = enum.auto()
@@ -97,67 +94,80 @@ class RequiredConfigCase(enum.Enum):
 
 
 class _Config(pydantic.BaseModel):
-    # TODO: pathlib.Path type?
+    class Config:
+        title = "Nimbo configuration"
+        validate_assignment = True
+        extra = "forbid"
+
+    aws_profile: Optional[str] = None
+    region_name: Optional[str] = None
 
     local_datasets_path: Optional[str] = None
     local_results_path: Optional[str] = None
     s3_datasets_path: Optional[str] = None
     s3_results_path: Optional[str] = None
-    aws_profile: str = "default"
-    region_name: str = "eu-west-1"
+
     instance_type: Optional[str] = None
+    image: str = "ubuntu18-latest-drivers"
+    disk_size: Optional[int] = None
     spot: bool = False
-    image: str = "ubuntu18-cuda10.2-cudnn7.6-conda4.9.2"
-    spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = 60
-    disk_size: int = 128
+    spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = None
+    security_group: Optional[str] = None
+    instance_key: Optional[str] = None
+
+    conda_env: Optional[str] = None
     run_in_background: bool = False
     persist: bool = False
-    security_group: str = "default"
-    conda_env: Optional[str] = None
-    instance_key: Optional[str] = None
-    ssh_timeout: pydantic.conint(ge=0) = 120
-    user_id: str = None
 
-    _minimal_required_config: Dict[str, Optional[str]] = pydantic.PrivateAttr(
-        default={"aws_profile": aws_profile, "region_name": region_name}
-    )
-    _storage_required_config: Dict[str, Optional[str]] = pydantic.PrivateAttr(
-        default={
-            "local_results_path": local_results_path,
-            "local_datasets_path": local_datasets_path,
-            "s3_results_path": s3_results_path,
-            "s3_datasets_path": s3_datasets_path,
-        }
-    )
-    _instance_required_config: Dict[str, Optional[str]] = pydantic.PrivateAttr(
-        default={"instance_type": instance_type, "instance_key": instance_key}
-    )
-    _job_required_config: Dict[str, Optional[str]] = pydantic.PrivateAttr(
-        default={"conda_env": conda_env}
-    )
+    ssh_timeout: pydantic.conint(strict=True, ge=0) = 120
+    _user_id: str = pydantic.PrivateAttr(default=None)
 
     def assert_required_config_exists(self, case: RequiredConfigCase) -> None:
         """ Designed to be used with the assert_required_config annotation """
 
-        config = self._minimal_required_config
+        required_config = {}
+
+        minimal_required_config = {
+            "aws_profile": self.aws_profile,
+            "region_name": self.region_name,
+        }
+        storage_required_config = {
+            "local_results_path": self.local_results_path,
+            "local_datasets_path": self.local_datasets_path,
+            "s3_results_path": self.s3_results_path,
+            "s3_datasets_path": self.s3_datasets_path,
+        }
+        instance_required_config = {
+            "instance_type": self.instance_type,
+            "disk_size": self.disk_size,
+            "instance_key": self.instance_key,
+            "security_group": self.security_group,
+        }
+        job_required_config = {"conda_env": self.conda_env}
 
         if case == RequiredConfigCase.STORAGE:
-            config = {**self._minimal_required_config, **self._storage_required_config}
+            required_config = {**minimal_required_config, **storage_required_config}
         if case == RequiredConfigCase.INSTANCE:
-            config = {**self._minimal_required_config, **self._instance_required_config}
+            required_config = {**minimal_required_config, **instance_required_config}
         if case == RequiredConfigCase.JOB:
-            config = {
-                **self._minimal_required_config,
-                **self._storage_required_config,
-                **self._instance_required_config,
-                **self._job_required_config,
+            required_config = {
+                **minimal_required_config,
+                **storage_required_config,
+                **instance_required_config,
+                **job_required_config,
             }
 
-        if unspecified := [key for key, value in config.items() if not value]:
+        if unspecified := [key for key, value in required_config.items() if not value]:
             raise AssertionError(
-                f"For running this command, {', '.join(unspecified)} should"
+                f"For running this command {', '.join(unspecified)} should"
                 f" be specified in {NIMBO_CONFIG_FILE}"
             )
+
+    @pydantic.validator("aws_profile")
+    def _aws_profile_exists(cls, value):
+        if value not in botocore.session.Session().available_profiles:
+            raise ValueError(f"AWS Profile {value} could not be found")
+        return value
 
     @pydantic.validator("conda_env")
     def _conda_env_valid(cls, value):
@@ -190,23 +200,17 @@ class _Config(pydantic.BaseModel):
 
     @pydantic.validator("region_name")
     def _region_name_valid(cls, value):
-        region_names = FULL_REGION_NAMES.keys()
-        if value not in region_names:
-            raise ValueError(f"expected {value} to be one of {region_names}")
-        return value
-
-    @pydantic.validator("local_datasets_path")
-    def _datasets_path_not_outside_project(cls, value):
         if not value:
             return None
 
-        if os.path.isabs(value):
-            raise ValueError("should be a relative path")
-        if ".." in value:
-            raise ValueError("should not be outside of the project directory")
+        region_names = FULL_REGION_NAMES.keys()
+        if value not in region_names:
+            raise ValueError(
+                f"received {value}, expected to be one of {', '.join(region_names)}"
+            )
         return value
 
-    @pydantic.validator("local_results_path")
+    @pydantic.validator("local_results_path", "local_datasets_path")
     def _results_path_not_outside_project(cls, value):
         if not value:
             return None
@@ -215,13 +219,6 @@ class _Config(pydantic.BaseModel):
             raise ValueError("should be a relative path")
         if ".." in value:
             raise ValueError("should not be outside of the project directory")
-        return value
-
-    @pydantic.validator("user_id")
-    def _user_id_not_specified(cls, value):
-        # user_id is set dynamically and should not be specified in the config
-        if value:
-            raise ValueError("field not allowed")
         return value
 
 
@@ -244,13 +241,20 @@ def _load_yaml():
 
 
 try:
+    # TODO: test env
     CONFIG = _Config(**_load_yaml())
 except pydantic.error_wrappers.ValidationError as e:
-    print(e)
+    error_msg = str(e)
+    title_end = error_msg.index("\n", 1)
+    new_title = (
+        f"{len(e.errors())} validation "
+        + f"error{'' if len(e.errors()) == 1 else 's'} in Nimbo config\n"
+    )
+    print(new_title + re.sub(r"\(type=.*\)", "", error_msg[title_end:]))
     sys.exit(1)
 except FileNotFoundError as e:
     print(e)
     sys.exit(1)
 
 SESSION = boto3.Session(profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name)
-CONFIG.user_id = SESSION.client("sts").get_caller_identity()["UserId"]
+CONFIG._user_id = SESSION.client("sts").get_caller_identity()["Arn"]
