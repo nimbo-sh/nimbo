@@ -29,7 +29,7 @@ def get_session_and_config(required_fields, fields_to_check):
     session = boto3.Session(
         profile_name=config["aws_profile"], region_name=config["region_name"]
     )
-    config["user_id"] = session.client("sts").get_caller_identity()["UserId"]
+    config["user_id"] = session.client("sts").get_caller_identity()["Arn"]
 
     return session, config
 
