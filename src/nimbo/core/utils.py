@@ -6,75 +6,24 @@ from pprint import pprint
 
 import botocore
 import botocore.errorfactory
+import requests
 from botocore.exceptions import ClientError
-from pkg_resources import resource_filename
 
-full_region_names = {
-    "af-south-1": "Africa (Cape Town)",
-    "ap-east-1": "Asia Pacific (Hong Kong)",
-    "ap-south-1": "Asia Pacific (Mumbai)",
-    "ap-northeast-3": "Asia Pacific (Osaka)",
-    "ap-northeast-2": "Asia Pacific (Seoul)",
-    "ap-southeast-1": "Asia Pacific (Singapore)",
-    "ap-southeast-2": "Asia Pacific (Sydney)",
-    "ap-northeast-1": "Asia Pacific (Tokyo)",
-    "ca-central-1": "Canada (Central)",
-    "eu-central-1": "EU (Frankfurt)",
-    "eu-west-1": "EU (Ireland)",
-    "eu-west-2": "EU (London)",
-    "eu-south-1": "EU (Milan)",
-    "eu-west-3": "EU (Paris)",
-    "eu-north-1": "EU (Stockholm)",
-    "me-south-1": "Middle East (Bahrain)",
-    "sa-east-1": "South America (Sao Paulo)",
-    "us-east-1": "US East (N. Virginia)",
-    "us-east-2": "US East (Ohio)",
-    "us-west-1": "US West (N. California)",
-    "us-west-2": "US West (Oregon)",
-}
+from nimbo.core.globals import (CONFIG, FULL_REGION_NAMES, INSTANCE_GPU_MAP,
+                                NIMBO_CONFIG_FILE, NIMBO_DEFAULT_CONFIG,
+                                RequiredConfigCase, SESSION)
 
 
-# Each element is [num_gpus, gpu_type, ram, vcpus]
-instance_gpu_map = {
-    "p4d.24xlarge": [8, "A100", 1152, 96],
-    "p3.2xlarge": [1, "V100", 61, 8],
-    "p3.8xlarge": [4, "V100", 244, 32],
-    "p3.16xlarge": [8, "V100", 488, 64],
-    "p3dn.24xlarge": [8, "V100", 768, 96],
-    "p2.xlarge": [1, "K80", 61, 4],
-    "p2.8xlarge": [8, "K80", 488, 32],
-    "p2.16xlarge": [16, "K80", 732, 64],
-    "g4dn.xlarge": [1, "T4", 16, 4],
-    "g4dn.2xlarge": [1, "T4", 32, 8],
-    "g4dn.4xlarge": [1, "T4", 64, 16],
-    "g4dn.8xlarge": [1, "T4", 128, 32],
-    "g4dn.16xlarge": [1, "T4", 256, 64],
-    "g4dn.12xlarge": [4, "T4", 192, 48],
-    "g4dn.metal": [8, "T4", 384, 96],
-}
-
-
-def ec2_instance_types(session):
+def ec2_instance_types():
     """Yield all available EC2 instance types in region <region_name>"""
     describe_args = {}
-    client = session.client("ec2")
+    client = SESSION.client("ec2")
     while True:
         describe_result = client.describe_instance_types(**describe_args)
         yield from [i["InstanceType"] for i in describe_result["InstanceTypes"]]
         if "NextToken" not in describe_result:
             break
         describe_args["NextToken"] = describe_result["NextToken"]
-
-
-def get_full_region_name(region_name):
-    default_region = "EU (Ireland)"
-    endpoint_file = resource_filename("botocore", "data/endpoints.json")
-    try:
-        with open(endpoint_file, "r") as f:
-            data = json.load(f)
-        return data["partitions"][0]["regions"][region_name]["description"]
-    except IOError:
-        return default_region
 
 
 def format_price_string(instance_type, price, gpus, cpus, mem):
@@ -84,19 +33,19 @@ def format_price_string(instance_type, price, gpus, cpus, mem):
     return string
 
 
-def list_gpu_prices(session, dry_run=False):
+def list_gpu_prices(dry_run=False):
     if dry_run:
         return
 
-    instance_types = list(sorted(ec2_instance_types(session)))
+    instance_types = list(sorted(ec2_instance_types()))
     instance_types = [
         inst
         for inst in instance_types
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
-    full_region_name = full_region_names[session.region_name]
+    full_region_name = FULL_REGION_NAMES[SESSION.region_name]
 
-    pricing = session.client("pricing", region_name="us-east-1")
+    pricing = SESSION.client("pricing", region_name="us-east-1")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -126,26 +75,25 @@ def list_gpu_prices(session, dry_run=False):
         currency = list(inst.keys())[0]
         price = float(inst[currency])
 
-        num_gpus, gpu_type, mem, cpus = instance_gpu_map[instance_type]
+        num_gpus, gpu_type, mem, cpus = INSTANCE_GPU_MAP[instance_type]
         string = format_price_string(
             instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem
         )
         print(string)
 
 
-def list_spot_gpu_prices(session, dry_run=False):
+def list_spot_gpu_prices(dry_run=False):
     if dry_run:
         return
 
-    instance_types = list(sorted(ec2_instance_types(session)))
+    instance_types = list(sorted(ec2_instance_types()))
     instance_types = [
         inst
         for inst in instance_types
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
-    full_region_name = full_region_names[session.region_name]
 
-    ec2 = session.client("ec2")
+    ec2 = SESSION.client("ec2")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -160,19 +108,19 @@ def list_spot_gpu_prices(session, dry_run=False):
 
         price = float(response["SpotPriceHistory"][0]["SpotPrice"])
 
-        num_gpus, gpu_type, mem, cpus = instance_gpu_map[instance_type]
+        num_gpus, gpu_type, mem, cpus = INSTANCE_GPU_MAP[instance_type]
         string = format_price_string(
             instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem
         )
         print(string)
 
 
-def show_active_instances(session, config, dry_run=False):
-    ec2 = session.client("ec2")
+def show_active_instances(dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.describe_instances(
-            Filters=[{"Name": "instance-state-name", "Values": ["running", "pending"]},]
-            + instance_filters(config),
+            Filters=[{"Name": "instance-state-name", "Values": ["running", "pending"]}]
+            + make_instance_filters(),
             DryRun=dry_run,
         )
         for reservation in response["Reservations"]:
@@ -190,12 +138,12 @@ def show_active_instances(session, config, dry_run=False):
             raise
 
 
-def show_stopped_instances(session, config, dry_run=False):
-    ec2 = session.client("ec2")
+def show_stopped_instances(dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["stopped", "stopping"]}]
-            + instance_filters(config),
+            + make_instance_filters(),
             DryRun=dry_run,
         )
         for reservation in response["Reservations"]:
@@ -210,11 +158,11 @@ def show_stopped_instances(session, config, dry_run=False):
             raise
 
 
-def check_instance_status(session, config, instance_id, dry_run=False):
-    ec2 = session.client("ec2")
+def check_instance_status(instance_id, dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=instance_filters(config), DryRun=dry_run
+            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run
         )
         status = response["Reservations"][0]["Instances"][0]["State"]["Name"]
         return status
@@ -223,18 +171,18 @@ def check_instance_status(session, config, instance_id, dry_run=False):
             raise
 
 
-def stop_instance(session, instance_id, dry_run=False):
-    ec2 = session.client("ec2")
+def stop_instance(instance_id, dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.stop_instances(InstanceIds=[instance_id], DryRun=dry_run)
         pprint(response)
     except ClientError as e:
-        if not "DryRunOperation" in str(e):
+        if "DryRunOperation" not in str(e):
             raise
 
 
-def delete_instance(session, instance_id, dry_run=False):
-    ec2 = session.client("ec2")
+def delete_instance(instance_id, dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.terminate_instances(InstanceIds=[instance_id], DryRun=dry_run)
         status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
@@ -244,12 +192,12 @@ def delete_instance(session, instance_id, dry_run=False):
             raise
 
 
-def delete_all_instances(session, config, dry_run=False):
-    ec2 = session.client("ec2")
+def delete_all_instances(dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
-            + instance_filters(config),
+            + make_instance_filters(),
             DryRun=dry_run,
         )
         for reservation in response["Reservations"]:
@@ -265,11 +213,11 @@ def delete_all_instances(session, config, dry_run=False):
             raise
 
 
-def check_instance_host(session, config, instance_id, dry_run=False):
-    ec2 = session.client("ec2")
+def check_instance_host(instance_id, dry_run=False):
+    ec2 = SESSION.client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=instance_filters(config), DryRun=dry_run,
+            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:
@@ -279,37 +227,36 @@ def check_instance_host(session, config, instance_id, dry_run=False):
     return host
 
 
-def list_active_buckets(session):
-    s3 = session.client("s3")
+def list_active_buckets():
+    s3 = SESSION.client("s3")
     response = s3.list_buckets()
     pprint(response)
 
 
-def ssh(session, config, instance_id, dry_run=False):
-    host = check_instance_host(session, config, instance_id, dry_run)
+def ssh(instance_id, dry_run=False):
+    host = check_instance_host(instance_id, dry_run)
 
     if dry_run:
         return
 
-    instance_key = config["instance_key"]
     subprocess.Popen(
-        f"ssh -i ./{instance_key}.pem "
+        f"ssh -i {CONFIG.instance_key} "
         f"-o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
         f"ubuntu@{host}",
         shell=True,
     ).communicate()
 
 
-def instance_tags(config):
+def make_instance_tags():
     tags = [
         {"Key": "CreatedBy", "Value": "nimbo"},
-        {"Key": "Owner", "Value": config["user_id"]},
+        {"Key": "Owner", "Value": CONFIG.user_id},
     ]
     return tags
 
 
-def instance_filters(config):
-    tags = instance_tags(config)
+def make_instance_filters():
+    tags = make_instance_tags()
     filters = []
     for tag in tags:
         tag_filter = {"Name": "tag:" + tag["Key"], "Values": [tag["Value"]]}
@@ -317,10 +264,57 @@ def instance_filters(config):
     return filters
 
 
+def get_image_id():
+    if CONFIG.image[:4] == "ami-":
+        image_id = CONFIG.image
+    else:
+        response = requests.get(
+            "https://nimboami-default-rtdb.firebaseio.com/images.json"
+        )
+        catalog = response.json()
+        region = CONFIG.region_name
+        if region in catalog:
+            region_catalog = catalog[region]
+            image_name = CONFIG.image
+            if image_name in region_catalog:
+                image_id = region_catalog[image_name]
+            else:
+                raise ValueError(
+                    f"The image {image_name} was not found in Nimbo's managed image catalog.\n"
+                    "Check https://docs.nimbo.sh/managed-images for a list of managed images."
+                )
+        else:
+            raise ValueError(
+                f"We currently do not support managed images in {region}. Please use another region."
+            )
+
+    return image_id
+
+
+def assert_required_config(case: RequiredConfigCase):
+    """
+    Decorator for ensuring that required config is present
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def decorated(*args, **kwargs):
+            try:
+                CONFIG.assert_required_config_exists(case)
+                return func(*args, **kwargs)
+            except AssertionError as e:
+                print(e)
+                sys.exit(1)
+
+        return decorated
+
+    return decorator
+
+
 def handle_boto_client_errors(func):
     """
     Decorator for all functions that use boto3 where an error is possible.
-    This decorator prints the message returned by AWS and stops Nimbo.
+    In case of error print the message returned by AWS and stop Nimbo.
     """
 
     @functools.wraps(func)
@@ -332,3 +326,13 @@ def handle_boto_client_errors(func):
             sys.exit(1)
 
     return decorated
+
+
+def generate_config(quiet=False):
+    """ Create an example Nimbo config in project root """
+
+    with open(NIMBO_CONFIG_FILE, "w") as f:
+        f.write(NIMBO_DEFAULT_CONFIG)
+
+    if not quiet:
+        print(f"Example config written to {NIMBO_CONFIG_FILE}")

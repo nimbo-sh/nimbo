@@ -2,6 +2,7 @@ import os
 
 from click.testing import CliRunner
 
+from nimbo.core.globals import CONFIG
 from nimbo.main import *
 from nimbo.tests.utils import copy_assets, set_yaml_value
 
@@ -45,8 +46,7 @@ def test_launch():
             region_name = instance_key[:9]
             set_yaml_value("nimbo-config.yml", "region_name", region_name)
             set_yaml_value("nimbo-config.yml", "instance_key", instance_key)
-            session, config = get_session_and_config_full_check()
-            response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+            response = execute.run_job("_nimbo_launch", dry_run=False)
 
             assert response["message"] == "_nimbo_launch_success"
             instance_id = response["instance_id"]
@@ -62,9 +62,9 @@ def test_spot_launch():
     with runner.isolated_filesystem():
         copy_assets(["config", "key", "env"])
 
-        session, config = get_session_and_config_full_check()
-        config["spot"] = True
-        response = execute.run_job(session, config, "_nimbo_launch", dry_run=False)
+        # TODO: does runtime modification work?
+        CONFIG.spot = True
+        response = execute.run_job("_nimbo_launch", dry_run=False)
 
         assert response["message"] == "_nimbo_launch_success"
         instance_id = response["instance_id"]

@@ -5,7 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 from click.testing import CliRunner
 
-from nimbo.core.config_utils import load_config
+from nimbo.core.config import _load_yaml
 from nimbo.main import cli
 from nimbo.tests.utils import copy_assets, set_yaml_value, write_fake_file
 
@@ -24,7 +24,7 @@ def test_ssh():
 
         # Test without a key
         with pytest.raises(FileNotFoundError):
-            result = runner.invoke(
+            runner.invoke(
                 cli, "ssh i-0be1989edd819b442 --dry-run", catch_exceptions=False
             )
 
@@ -75,7 +75,7 @@ def test_instance_actions():
         copy_assets(["config"])
 
         try:
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 "check-instance-status i-0be1989edd819b442 --dry-run",
                 catch_exceptions=False,
@@ -85,7 +85,7 @@ def test_instance_actions():
                 raise
 
         try:
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 "stop-instance i-0be1989edd819b442 --dry-run",
                 catch_exceptions=False,
@@ -95,7 +95,7 @@ def test_instance_actions():
                 raise
 
         try:
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 "delete-instance i-0be1989edd819b442 --dry-run",
                 catch_exceptions=False,
@@ -137,7 +137,7 @@ def test_push_pull():
     with runner.isolated_filesystem():
         copy_assets(["config"])
 
-        config = load_config()
+        config = _load_yaml()
 
         os.mkdir(config["local_datasets_path"])
         os.mkdir(config["local_results_path"])
@@ -203,7 +203,7 @@ def test_instance_profile_and_security_group():
         # Running as nimbo-employee with limited permissions
 
         try:
-            result = runner.invoke(
+            runner.invoke(
                 cli, "allow-current-ip default --dry-run", catch_exceptions=False
             )
         except ClientError as e:
@@ -211,7 +211,7 @@ def test_instance_profile_and_security_group():
                 raise
 
         try:
-            result = runner.invoke(
+            runner.invoke(
                 cli, "allow-current-ip default --dry-run", catch_exceptions=False
             )
         except ClientError as e:

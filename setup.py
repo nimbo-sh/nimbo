@@ -12,32 +12,27 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/seuqaj114/nimbo",
-    project_urls={
-        "Bug Tracker": "https://github.com/seuqaj114/nimbo/issues",
-    },
+    project_urls={"Bug Tracker": "https://github.com/seuqaj114/nimbo/issues",},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: Free for non-commercial use",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Unix",
         "Operating System :: MacOS",
-        "Programming Language :: Python :: 3"
+        "Programming Language :: Python :: 3",
     ],
     package_dir={"": "src"},
-    packages=setuptools.find_packages(
-        where="src",
-        exclude=["tests", "ami"]
-    ),
+    packages=setuptools.find_packages(where="src", exclude=["tests", "ami"]),
     package_data={"nimbo": ["scripts/*.sh"]},
     include_package_data=True,
-    entry_points = {
-        'console_scripts': ['nimbo=nimbo.main:cli'],
-    },
+    entry_points={"console_scripts": ["nimbo=nimbo.main:cli"]},
     python_requires=">=3.6",
     install_requires=[
         "awscli>=1.19<2.0",
         "boto3>=1.17",
         "requests>=2.25",
         "click>=7.0",
-   ],
+        "pyyaml>=5.3.0",
+        "pydantic>=1.7.0",
+    ],
 )

@@ -1,16 +1,16 @@
 import json
 from pprint import pprint
 
-import boto3
 import requests
 
-from .utils import handle_boto_client_errors
+from nimbo.core.globals import SESSION
+from nimbo.core.utils import handle_boto_client_errors
 
 
 @handle_boto_client_errors
-def create_security_group(session, group_name, dry_run=False):
+def create_security_group(group_name, dry_run=False):
 
-    ec2 = session.client("ec2")
+    ec2 = SESSION.client("ec2")
     response = ec2.describe_vpcs()
     vpc_id = response.get("Vpcs", [{}])[0].get("VpcId", "")
 
@@ -28,9 +28,9 @@ def create_security_group(session, group_name, dry_run=False):
 
 
 @handle_boto_client_errors
-def allow_inbound_current_ip(session, group_name, dry_run=False):
+def allow_inbound_current_ip(group_name, dry_run=False):
 
-    ec2 = session.client("ec2")
+    ec2 = SESSION.client("ec2")
 
     # Get the security group id
     response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
@@ -54,8 +54,8 @@ def allow_inbound_current_ip(session, group_name, dry_run=False):
 
 
 @handle_boto_client_errors
-def create_instance_profile_and_role(session, dry_run=False):
-    iam = session.client("iam")
+def create_instance_profile_and_role(dry_run=False):
+    iam = SESSION.client("iam")
     role_name = "NimboS3AndEC2FullAccess"
     instance_profile_name = "NimboInstanceProfile"
 
@@ -69,43 +69,37 @@ def create_instance_profile_and_role(session, dry_run=False):
     }
     if dry_run:
         return
-    role = iam.create_role(
-        RoleName=role_name, AssumeRolePolicyDocument=json.dumps(policy)
-    )
-    response = iam.attach_role_policy(
+    iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(policy))
+    iam.attach_role_policy(
         PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess", RoleName=role_name
     )
-    response = iam.attach_role_policy(
+    iam.attach_role_policy(
         PolicyArn="arn:aws:iam::aws:policy/AmazonEC2FullAccess", RoleName=role_name
     )
 
-    instance_profile = iam.create_instance_profile(
-        InstanceProfileName=instance_profile_name, Path="/"
-    )
+    iam.create_instance_profile(InstanceProfileName=instance_profile_name, Path="/")
     iam.add_role_to_instance_profile(
         InstanceProfileName=instance_profile_name, RoleName=role_name
     )
 
 
 @handle_boto_client_errors
-def create_instance_profile(session, role_name, dry_run=False):
-    iam = session.client("iam")
+def create_instance_profile(role_name, dry_run=False):
+    iam = SESSION.client("iam")
     instance_profile_name = "NimboInstanceProfile"
 
     if dry_run:
         return
 
-    instance_profile = iam.create_instance_profile(
-        InstanceProfileName=instance_profile_name, Path="/"
-    )
+    iam.create_instance_profile(InstanceProfileName=instance_profile_name, Path="/")
     iam.add_role_to_instance_profile(
         InstanceProfileName=instance_profile_name, RoleName=role_name
     )
 
 
 @handle_boto_client_errors
-def list_instance_profiles(session, dry_run=False):
-    iam = session.client("iam")
+def list_instance_profiles(dry_run=False):
+    iam = SESSION.client("iam")
 
     if dry_run:
         return
@@ -114,8 +108,8 @@ def list_instance_profiles(session, dry_run=False):
 
 
 @handle_boto_client_errors
-def verify_nimbo_instance_profile(session, dry_run=False):
-    iam = session.client("iam")
+def verify_nimbo_instance_profile(dry_run=False):
+    iam = SESSION.client("iam")
 
     if dry_run:
         return
@@ -133,13 +127,3 @@ def verify_nimbo_instance_profile(session, dry_run=False):
             "Otherwise, please ask your admin for a role that provides the necessary EC2 and S3 read/write access.\n"
             "For more details please go to docs.nimbo.sh/instance-profiles."
         )
-
-
-if __name__ == "__main__":
-
-    session = boto3.Session(profile_name="nimbo")
-
-    group_name = "default"
-    # create_security_group(session, group_name)
-    # allow_inbound_current_device(session, group_name)
-    # create_s3_full_access_ec2_role(session)
