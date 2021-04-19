@@ -1,5 +1,6 @@
+
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/6595222/115258017-86f68a00-a128-11eb-9530-a60c7b31f61d.png" width="300" height="300">
+  <img src="https://user-images.githubusercontent.com/6595222/115258675-1bf98300-a129-11eb-8ea1-24cdc67d81e8.png" width="480" height="240">
 </p>
 
 # Nimbo: Run jobs on AWS with a single command
