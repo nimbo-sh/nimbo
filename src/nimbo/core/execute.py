@@ -175,11 +175,13 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script, conf
             f"nohup {bash_cmd} {instance_id} {job_cmd} </dev/null >{NIMBO_LOG} 2>&1 &"
         )
     else:
-        full_command = f"{bash_cmd} {instance_id} {job_cmd} | tee {NIMBO_LOG}"
+        full_command = f"{bash_cmd} {instance_id} {job_cmd} >{NIMBO_LOG} 2>&1"
 
-    stdout, stderr = subprocess.Popen(
+    child = subprocess.Popen(
         f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True
-    ).communicate()
+    )
+    child.communicate()
+    return child.returncode
 
 
 def run_job(session, config, job_cmd, dry_run=False):
