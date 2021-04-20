@@ -2,8 +2,9 @@ import os
 
 from click.testing import CliRunner
 
+from nimbo.core import execute
 from nimbo.core.globals import CONFIG
-from nimbo.main import *
+from nimbo.main import cli
 from nimbo.tests.utils import copy_assets, set_yaml_value
 
 

@@ -1,6 +1,6 @@
 import enum
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 import botocore.exceptions
 import botocore.session
@@ -222,13 +222,13 @@ class _NimboConfig(pydantic.BaseModel):
         return value
 
 
-def _load_yaml():
-    if os.path.isfile(_NIMBO_CONFIG_FILE):
-        with open(_NIMBO_CONFIG_FILE, "r") as f:
+def load_yaml_from_file(file: str) -> Dict[str, Any]:
+    if os.path.isfile(file):
+        with open(file, "r") as f:
             return yaml.safe_load(f)
 
     return {}
 
 
 def make_config():
-    return _NimboConfig(**_load_yaml())
+    return _NimboConfig(**load_yaml_from_file(_NIMBO_CONFIG_FILE))

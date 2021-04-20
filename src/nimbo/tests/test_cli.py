@@ -5,7 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 from click.testing import CliRunner
 
-from nimbo.core.config import _load_yaml
+from nimbo.core.globals import CONFIG
 from nimbo.main import cli
 from nimbo.tests.utils import copy_assets, set_yaml_value, write_fake_file
 
@@ -137,18 +137,24 @@ def test_push_pull():
     with runner.isolated_filesystem():
         copy_assets(["config"])
 
-        config = _load_yaml()
-
-        os.mkdir(config["local_datasets_path"])
-        os.mkdir(config["local_results_path"])
-        result = runner.invoke(cli, "push datasets --delete", input="y", catch_exceptions=False)
+        os.mkdir(CONFIG.local_datasets_path)
+        os.mkdir(CONFIG.local_results_path)
+        result = runner.invoke(
+            cli, "push datasets --delete", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
-        result = runner.invoke(cli, "push results --delete", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "push results --delete", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
         # Run the code below for both datasets and results folders
         for mode in ["datasets", "results"]:
-            folder = config[f"local_{mode}_path"]
+            if mode == "datasets":
+                folder = CONFIG.local_datasets_path
+            else:
+                folder = CONFIG.local_results_path
+
             file_name = join(folder, "mnist.txt")
 
             # Add a dataset to local and push it to S3
@@ -164,7 +170,9 @@ def test_push_pull():
 
             # Delete that dataset locally and push --delete to S3
             os.remove(file_name)
-            result = runner.invoke(cli, f"push {mode} --delete", input="y", catch_exceptions=False)
+            result = runner.invoke(
+                cli, f"push {mode} --delete", input="y", catch_exceptions=False
+            )
             assert result.exit_code == 0
 
             # Pull from S3 and check that the dataset is still deleted
@@ -172,7 +180,7 @@ def test_push_pull():
             assert result.exit_code == 0
             assert os.listdir(folder) == []
 
-        logs_folder = join(config["local_results_path"], "nimbo-logs")
+        logs_folder = join(CONFIG.local_results_path, "nimbo-logs")
         os.mkdir(logs_folder)
         file_name = join(logs_folder, "log.txt")
         write_fake_file(file_name, "Fake log")
@@ -189,10 +197,14 @@ def test_push_pull():
         assert os.listdir(logs_folder) == ["log.txt"]
 
         os.remove(file_name)
-        result = runner.invoke(cli, "push logs --delete", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "push logs --delete", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
         os.rmdir(logs_folder)
-        result = runner.invoke(cli, "push results --delete", input="y", catch_exceptions=False)
+        result = runner.invoke(
+            cli, "push results --delete", input="y", catch_exceptions=False
+        )
         assert result.exit_code == 0
 
 

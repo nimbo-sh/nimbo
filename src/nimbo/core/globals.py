@@ -1,3 +1,4 @@
+import os
 import pathlib
 import re
 import sys
@@ -5,7 +6,8 @@ import sys
 import boto3
 import pydantic
 
-from nimbo.core import config
+import nimbo.core.config
+import nimbo.tests.config
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_DEFAULT_CONFIG = """# Data paths
@@ -56,7 +58,11 @@ INSTANCE_GPU_MAP = {
 
 try:
     # TODO: test env
-    CONFIG = config.make_config()
+    if "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test":
+        CONFIG = nimbo.tests.config.make_config()
+    else:
+        CONFIG = nimbo.core.config.make_config()
+
 except pydantic.error_wrappers.ValidationError as e:
     error_msg = str(e)
     title_end = error_msg.index("\n", 1)
