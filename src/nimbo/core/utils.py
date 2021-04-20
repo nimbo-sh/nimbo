@@ -288,7 +288,7 @@ def get_image_id():
             else:
                 raise ValueError(
                     f"The image {image_name} was not found in Nimbo's managed image catalog.\n"
-                    "Check https://docs.nimbo.sh/managed-images for a list of managed images."
+                    "Check https://docs.nimbo.sh/managed-images for the list of managed images."
                 )
         else:
             raise ValueError(
@@ -318,10 +318,10 @@ def assert_required_config(case: RequiredConfigCase):
     return decorator
 
 
-def handle_boto_client_errors(func):
+def handle_errors(func):
     """
-    Decorator for all functions that use boto3 where an error is possible.
-    In case of error print the message returned by AWS and stop Nimbo.
+    Decorator for catching boto3 ClientErrors, ValueError or KeyboardInterrupts.
+    In case of error print the error message and stop Nimbo.
     """
 
     @functools.wraps(func)
@@ -330,6 +330,12 @@ def handle_boto_client_errors(func):
             return func(*args, **kwargs)
         except botocore.errorfactory.ClientError as e:
             print(e.response["Error"]["Message"])
+            sys.exit(1)
+        except ValueError as e:
+            print(e)
+            sys.exit(1)
+        except KeyboardInterrupt:
+            print("Aborting...")
             sys.exit(1)
 
     return decorated

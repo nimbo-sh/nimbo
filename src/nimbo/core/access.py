@@ -4,10 +4,8 @@ from pprint import pprint
 import requests
 
 from nimbo.core.globals import SESSION
-from nimbo.core.utils import handle_boto_client_errors
 
 
-@handle_boto_client_errors
 def create_security_group(group_name, dry_run=False):
 
     ec2 = SESSION.client("ec2")
@@ -27,7 +25,6 @@ def create_security_group(group_name, dry_run=False):
     )
 
 
-@handle_boto_client_errors
 def allow_inbound_current_ip(group_name, dry_run=False):
 
     ec2 = SESSION.client("ec2")
@@ -53,7 +50,6 @@ def allow_inbound_current_ip(group_name, dry_run=False):
     pprint(response)
 
 
-@handle_boto_client_errors
 def create_instance_profile_and_role(dry_run=False):
     iam = SESSION.client("iam")
     role_name = "NimboS3AndEC2FullAccess"
@@ -83,7 +79,6 @@ def create_instance_profile_and_role(dry_run=False):
     )
 
 
-@handle_boto_client_errors
 def create_instance_profile(role_name, dry_run=False):
     iam = SESSION.client("iam")
     instance_profile_name = "NimboInstanceProfile"
@@ -97,7 +92,6 @@ def create_instance_profile(role_name, dry_run=False):
     )
 
 
-@handle_boto_client_errors
 def list_instance_profiles(dry_run=False):
     iam = SESSION.client("iam")
 
@@ -107,7 +101,6 @@ def list_instance_profiles(dry_run=False):
     pprint(response["InstanceProfiles"])
 
 
-@handle_boto_client_errors
 def verify_nimbo_instance_profile(dry_run=False):
     iam = SESSION.client("iam")
 

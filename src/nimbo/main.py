@@ -11,6 +11,7 @@ def cli():
 
 @cli.command()
 @utils.assert_required_config(RequiredConfigCase.NONE)
+@utils.handle_errors
 def generate_config():
     """Creates a base nimbo-config.yml in your current directory.
 
@@ -23,6 +24,7 @@ def generate_config():
 @click.argument("job_cmd")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.JOB)
+@utils.handle_errors
 def run(job_cmd, dry_run):
     """Runs the JOB_CMD command on an EC2 instance.
 
@@ -36,6 +38,7 @@ def run(job_cmd, dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.JOB)
+@utils.handle_errors
 def launch(dry_run):
     """Launches an EC2 instance according to your nimbo-config, without doing any further setup."""
     execute.run_job("_nimbo_launch", dry_run)
@@ -44,6 +47,7 @@ def launch(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.JOB)
+@utils.handle_errors
 def launch_and_setup(dry_run):
     """Launches an EC2 instance with your code, data and environment, without running any job."""
     execute.run_job("_nimbo_launch_and_setup", dry_run)
@@ -52,6 +56,7 @@ def launch_and_setup(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.INSTANCE)
+@utils.handle_errors
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""
     execute.run_access_test(dry_run)
@@ -61,6 +66,7 @@ def test_access(dry_run):
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.INSTANCE)
+@utils.handle_errors
 def ssh(instance_id, dry_run):
     """SSH into an instance by INSTANCE_ID."""
     utils.ssh(instance_id, dry_run)
@@ -69,6 +75,7 @@ def ssh(instance_id, dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def list_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU instances."""
     utils.list_gpu_prices(dry_run)
@@ -77,6 +84,7 @@ def list_gpu_prices(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def list_spot_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU spot instances."""
     utils.list_spot_gpu_prices(dry_run)
@@ -85,6 +93,7 @@ def list_spot_gpu_prices(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def list_active(dry_run):
     """Lists all your active instances."""
     utils.show_active_instances(dry_run)
@@ -93,6 +102,7 @@ def list_active(dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def list_stopped(dry_run):
     """Lists all your stopped instances."""
     utils.show_stopped_instances(dry_run)
@@ -102,6 +112,7 @@ def list_stopped(dry_run):
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def check_instance_status(instance_id, dry_run):
     """Checks the status of an instance by INSTANCE_ID."""
     utils.check_instance_status(instance_id, dry_run)
@@ -111,6 +122,7 @@ def check_instance_status(instance_id, dry_run):
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def stop_instance(instance_id, dry_run):
     """Stops an instance by INSTANCE_ID."""
     utils.stop_instance(instance_id, dry_run)
@@ -120,6 +132,7 @@ def stop_instance(instance_id, dry_run):
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def delete_instance(instance_id, dry_run):
     """Terminates an instance by INSTANCE_ID."""
     utils.delete_instance(instance_id, dry_run)
@@ -128,6 +141,7 @@ def delete_instance(instance_id, dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def delete_all_instances(dry_run):
     """Terminates all your instances."""
     click.confirm(
@@ -141,6 +155,7 @@ def delete_all_instances(dry_run):
 @click.argument("bucket_name")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def create_bucket(bucket_name, dry_run):
     """Create a bucket BUCKET_NAME in S3.
 
@@ -159,6 +174,7 @@ def create_bucket(bucket_name, dry_run):
     help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
 )
 @utils.assert_required_config(RequiredConfigCase.STORAGE)
+@utils.handle_errors
 def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
     storage.push(folder, delete)
@@ -174,6 +190,7 @@ def push(folder, delete):
     help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
 )
 @utils.assert_required_config(RequiredConfigCase.STORAGE)
+@utils.handle_errors
 def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
     storage.pull(folder, delete)
@@ -182,6 +199,7 @@ def pull(folder, delete):
 @cli.command()
 @click.argument("path")
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def ls(path):
     """List the s3 objects in PATH.
 
@@ -194,6 +212,7 @@ def ls(path):
 @click.argument("security_group")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def allow_current_ip(security_group, dry_run):
     """Adds the IP of the current machine to the allowed inbound rules of GROUP.
 
@@ -205,6 +224,7 @@ def allow_current_ip(security_group, dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def list_instance_profiles(dry_run):
     """Lists the instance profiles available in your account."""
     access.list_instance_profiles(dry_run)
@@ -214,6 +234,7 @@ def list_instance_profiles(dry_run):
 @click.argument("role_name")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def create_instance_profile(role_name, dry_run):
     """Creates an instance profile called NimboInstanceProfile with role ROLE_NAME.
 
@@ -225,6 +246,7 @@ def create_instance_profile(role_name, dry_run):
 @cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredConfigCase.MINIMAL)
+@utils.handle_errors
 def create_instance_profile_and_role(dry_run):
     """Creates an instance profile called NimboInstanceProfile and the associated role.
 

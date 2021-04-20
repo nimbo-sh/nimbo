@@ -11,7 +11,6 @@ import botocore.session
 import pydantic
 import yaml
 
-# TODO: update docs (ssh_timeout) and generated, .pem file extension now needed
 # TODO: merge with newest master
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
@@ -38,7 +37,7 @@ persist: no
 
 # Permissions and credentials
 security_group: default
-instance_key: my-ec2-key-pair  # without .pem
+instance_key: my-ec2-key-pair.pem
 """
 
 FULL_REGION_NAMES = {

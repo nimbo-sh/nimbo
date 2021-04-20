@@ -6,10 +6,8 @@ import boto3
 from botocore.exceptions import ClientError
 
 from nimbo.core.globals import CONFIG, SESSION
-from .utils import handle_boto_client_errors
 
 
-@handle_boto_client_errors
 def upload_file(file_name, bucket, object_name=None):
     """Upload a file to an S3 bucket
 
@@ -33,8 +31,7 @@ def upload_file(file_name, bucket, object_name=None):
     return True
 
 
-@handle_boto_client_errors
-def create_bucket(bucket_name, dry_run):
+def create_bucket(bucket_name, dry_run=False):
     """Create an S3 bucket in a specified region
 
     :param bucket_name: Bucket to create
@@ -42,11 +39,12 @@ def create_bucket(bucket_name, dry_run):
     :return: True if bucket created, else False
     """
 
-    # Create bucket
     try:
         s3 = SESSION.client("s3")
         location = {"LocationConstraint": SESSION.region_name}
-        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration=location)
+        s3.create_bucket(
+            Bucket=bucket_name, CreateBucketConfiguration=location, DryRun=dry_run
+        )
     except ClientError as e:
         if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
             print("Bucket nimbo-main-bucket already exists.")
@@ -58,20 +56,15 @@ def create_bucket(bucket_name, dry_run):
     return True
 
 
-@handle_boto_client_errors
-def list_buckets(bucket_name):
-
-    # Retrieve the list of existing buckets
+def list_buckets():
     s3 = boto3.client("s3")
     response = s3.list_buckets()
 
-    # Output the bucket names
     print("Existing buckets:")
     for bucket in response["Buckets"]:
         print(f' {bucket["Name"]}')
 
 
-@handle_boto_client_errors
 def list_snapshots():
     # Retrieve the list of existing buckets
     ec2 = SESSION.client("ec2")
@@ -82,7 +75,6 @@ def list_snapshots():
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 
 
-@handle_boto_client_errors
 def check_snapshot_state(snapshot_id):
     ec2 = SESSION.client("ec2")
     response = ec2.describe_snapshots(SnapshotIds=[snapshot_id])

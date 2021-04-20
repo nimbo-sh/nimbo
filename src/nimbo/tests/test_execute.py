@@ -62,7 +62,6 @@ def test_spot_launch():
     with runner.isolated_filesystem():
         copy_assets(["config", "key", "env"])
 
-        # TODO: does runtime modification work?
         CONFIG.spot = True
         response = execute.run_job("_nimbo_launch", dry_run=False)
 

@@ -4,7 +4,6 @@ import subprocess
 import sys
 import time
 from os.path import join
-from pprint import pprint
 from subprocess import PIPE
 
 from nimbo.core import utils
@@ -28,7 +27,9 @@ def launch_instance(client):
     }
 
     if CONFIG.spot:
-        extra_kwargs = {"BlockDurationMinutes": CONFIG.spot_duration}
+        extra_kwargs = {}
+        if CONFIG.spot_duration:
+            extra_kwargs = {"BlockDurationMinutes": CONFIG.spot_duration}
 
         instance = client.request_spot_instances(
             LaunchSpecification=instance_config,
@@ -235,7 +236,6 @@ def run_access_test(dry_run=False):
     if dry_run:
         return
 
-    # TODO: is this the best way?
     CONFIG.instance_type = "t3.medium"
     CONFIG.run_in_background = False
     CONFIG.persist = False
