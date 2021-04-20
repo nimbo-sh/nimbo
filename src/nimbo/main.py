@@ -1,6 +1,6 @@
 import click
 
-from nimbo.core import access, execute, storage, utils
+from nimbo.core import access, execute, storage, telemetry, utils
 from nimbo.core.globals import RequiredConfigCase
 
 
@@ -30,8 +30,9 @@ def run(job_cmd, dry_run):
 
     JOB_CMD is any command you would run locally.\n
     E.g. \"python runner.py --epochs=10\".\n
-    The command must be between quotes. 
+    The command must be between quotes.
     """
+    telemetry.record_event("run")
     execute.run_job(job_cmd, dry_run)
 
 
@@ -177,6 +178,13 @@ def create_bucket(bucket_name, dry_run):
 @utils.handle_errors
 def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
+
+    if delete:
+        click.confirm(
+            "This will delete any files that exist in the remote folder but do not exist in the local folder.\n"
+            "Do you want to continue?",
+            abort=True,
+        )
     storage.push(folder, delete)
 
 
@@ -193,6 +201,13 @@ def push(folder, delete):
 @utils.handle_errors
 def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
+
+    if delete:
+        click.confirm(
+            "This will delete any files that exist in the local folder but do not exist in the remote folder.\n"
+            "Do you want to continue?",
+            abort=True,
+        )
     storage.pull(folder, delete)
 
 

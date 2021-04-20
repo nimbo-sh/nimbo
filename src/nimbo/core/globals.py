@@ -11,7 +11,7 @@ import botocore.session
 import pydantic
 import yaml
 
-# TODO: merge with newest master
+# TODO: _user_id and telemetry are private attribute that is accessed everywhere
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
@@ -133,8 +133,10 @@ class _Config(pydantic.BaseModel):
     persist: bool = False
 
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 120
+    telemetry: bool = True
 
     _user_id: str = pydantic.PrivateAttr(default=None)
+    _telemetry_url: str = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
     _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
         default=os.path.isfile(NIMBO_CONFIG_FILE)
     )

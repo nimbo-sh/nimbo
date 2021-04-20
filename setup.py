@@ -5,17 +5,17 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="nimbo",  # Replace with your own username
-    version="0.1.3",
+    version="0.1.6",
     author="NimboSH, Ltd.",
     author_email="support@nimbo.sh",
     description="Run machine learning jobs on AWS with a single command.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/seuqaj114/nimbo",
-    project_urls={"Bug Tracker": "https://github.com/seuqaj114/nimbo/issues",},
+    url="https://github.com/nimbo-sh/nimbo",
+    project_urls={"Bug Tracker": "https://github.com/nimbo-sh/nimbo/issues"},
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "License :: Free for non-commercial use",
+        "License :: Free for up to 3 persons (inclusively) per AWS root account",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Unix",
         "Operating System :: MacOS",

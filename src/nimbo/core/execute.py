@@ -22,9 +22,7 @@ def launch_instance(client):
         ebs_config["Iops"] = CONFIG.disk_iops
 
     instance_config = {
-        "BlockDeviceMappings": [
-            {"DeviceName": "/dev/sda1", "Ebs": ebs_config}
-        ],
+        "BlockDeviceMappings": [{"DeviceName": "/dev/sda1", "Ebs": ebs_config}],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,
         "KeyName": os.path.basename(CONFIG.instance_key).rstrip(".pem"),
@@ -50,23 +48,41 @@ def launch_instance(client):
         )
         instance_request = instance["SpotInstanceRequests"][0]
         request_id = instance_request["SpotInstanceRequestId"]
-        print("Spot instance request submitted.")
-        print(
-            "Waiting for the spot instance request to be fulfilled... ",
-            end="",
-            flush=False,
-        )
 
         status = ""
         while status != "fulfilled":
             time.sleep(1)
-            response = client.describe_spot_instance_requests(
-                SpotInstanceRequestIds=[request_id], Filters=utils.make_instance_filters
+            client.describe_spot_instance_requests(
+                SpotInstanceRequestIds=[request_id],
+                Filters=utils.make_instance_filters(),
             )
-            instance_request = response["SpotInstanceRequests"][0]
-            status = instance_request["Status"]["Code"]
-            if status not in ["fulfilled", "pending-evaluation", "pending-fulfillment"]:
-                raise Exception(response["SpotInstanceRequests"][0]["Status"])
+        try:
+            print("Spot instance request submitted.")
+            print(
+                "Waiting for the spot instance request to be fulfilled... ",
+                end="",
+                flush=False,
+            )
+
+            status = ""
+            while status != "fulfilled":
+                time.sleep(1)
+                response = client.describe_spot_instance_requests(
+                    SpotInstanceRequestIds=[request_id],
+                    Filters=utils.make_instance_filters(),
+                )
+                instance_request = response["SpotInstanceRequests"][0]
+                status = instance_request["Status"]["Code"]
+                if status not in [
+                    "fulfilled",
+                    "pending-evaluation",
+                    "pending-fulfillment",
+                ]:
+                    raise Exception(response["SpotInstanceRequests"][0]["Status"])
+        except KeyboardInterrupt:
+            client.cancel_spot_instance_requests(SpotInstanceRequestIds=[request_id])
+            print("Cancelled spot instance request.")
+            sys.exit(1)
 
         print("Done.")
         client.create_tags(
@@ -228,7 +244,7 @@ def run_job(job_cmd, dry_run=False):
 
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
-    except Exception as e:
+    except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
             print(e)
 
@@ -314,7 +330,7 @@ def run_access_test(dry_run=False):
         print("\nEverything working \u2713")
         print("Instance has been deleted.")
 
-    except Exception as e:
+    except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
             print(e)
 
