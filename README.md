@@ -7,7 +7,8 @@
 
 [Nimbo](https://nimbo.sh) is a CLI tool that allows you to run code on AWS as if you were running it locally. It's as simple as:
 
-### nimbo run "python train.py --lr=3e-4"
+### nimbo run "python -u train.py --lr=3e-4"
+<a href="https://asciinema.org/a/408353" target="_blank"><img src="https://asciinema.org/a/408353.svg" height=300 width=300/></a>
 
 It also provides many useful commands to make it faster to work with AWS, such as easily checking prices, logging onto an instance, or syncing data. For example:
 - nimbo list-spot-gpu-prices
