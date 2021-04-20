@@ -66,4 +66,5 @@ You agree to notify NimboSH Ltd. of any facts or circumstances of which you beco
 aware that would make these representations inaccurate in any respect.
 
 ## I agree to all of the above
-- **EXAMPLE** FirstName LastName <firstname.lastname@gmail.com> or <https://github.com/firstname-lastname>
+- **EXAMPLE** FirstName LastName <https://github.com/firstname-lastname> (<firstname.lastname@gmail.com> is optional, github profile link is required)
+- ...
