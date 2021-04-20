@@ -5,9 +5,18 @@
 
 # Nimbo: Run jobs on AWS with a single command
 
-[Nimbo](https://nimbo.sh) is a CLI tool that allows you to run code on AWS as if you were running it locally. Nimbo also provides many useful commands to make it faster to work with AWS, such as easily checking prices, logging onto an instance, or syncing data.
+[Nimbo](https://nimbo.sh) is a CLI tool that allows you to run code on AWS as if you were running it locally. It's as simple as:
 
-Nimbo drastically simplifies your AWS workflow by taking care of instance, environment, data, and IAM management - no changes to your codebase needed. Since it is independent of your code, you can run any type of job you want
+### nimbo run "python train.py --lr=3e-4"
+
+It also provides many useful commands to make it faster to work with AWS, such as easily checking prices, logging onto an instance, or syncing data. For example:
+- nimbo list-spot-gpu-prices
+- nimbo ssh <instance-id>
+- nimbo push datasets
+- nimbo pull logs
+- nimbo delete-all-instances
+
+Nimbo drastically simplifies your AWS workflow by taking care of instance, environment, data, and IAM management - no changes to your codebase needed. Since it is independent of your code, you can run any type of job you want.
 
 ## Key Features
 - **Your Infrastructure:**
@@ -24,8 +33,7 @@ We provide managed AMIs with the latest drivers, with unified naming across all 
 You can find more information at [nimbo.sh](https://nimbo.sh), or read the docs at [docs.nimbo.sh](https://docs.nimbo.sh).
 
 ## Getting started
-Please visit the [Getting started](https://docs.nimbo.sh/getting-started) page in the docs.
-
+Visit https://docs.nimbo.sh/getting-started to get started.
 
 ## Examples
 Sample projects can be found at our examples repo, [nimbo-examples](https://github.com/nimbo-sh/nimbo-examples).
@@ -38,7 +46,7 @@ Current examples include:
 - **Implement `nimbo notebook`:** You will be able to spin up a jupyter lab notebook running on an EC2 instance. Data will be continuously synced with your S3 bucket so that you don't have to worry about doing manual backups. Your local code will be automatically synced with the instance, so you can code locally and test the changes directly on the remote notebook. The notebook will also be synced with your local machine so you don't have to worry about losing your notebook changes when deleting the instance.
 - **Add Docker support:** Right now we assume you are using a conda environment, but many people use docker to run jobs. This feature would allow you to run a command such as `nimbo run "docker-compose up"`, where the docker image would be fetched from DockerHub (or equivalent repository) through a `docker_image` parameter on the `nimbo-config.yml` file.
 - **Add AMIs with preloaded large datasets:** Downloading and storing large datasets like ImageNet is a time consuming process. We will make available AMIs that come with an extra EBS volume mounted on `/datasets`, so that you can use large datasets without worrying about storing them or waiting for them to be fetched from your S3 bucket. Get in touch if you have datasets you would like to see preloaded with the instances. 
-
+- **GCP support:** Use the same commands to run jobs on AWS or GCP. 
 
 
 ## Developing
