@@ -265,7 +265,7 @@ def run_job(session, config, job_cmd, dry_run=False):
 def run_access_test(session, config, dry_run=False):
     if dry_run:
         return
-    config["instance_type"] = "t3.medium"
+    config["instance_type"] = "t3a.nano"
     config["run_in_background"] = False
     config["persist"] = False
 
