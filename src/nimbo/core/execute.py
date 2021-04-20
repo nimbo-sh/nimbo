@@ -14,9 +14,16 @@ def launch_instance(client):
     image = utils.get_image_id()
     print(f"Using image {image}")
 
+    ebs_config = {
+        "VolumeSize": CONFIG.disk_size,
+        "VolumeType": CONFIG.disk_type,
+    }
+    if CONFIG.disk_iops:
+        ebs_config["Iops"] = CONFIG.disk_iops
+
     instance_config = {
         "BlockDeviceMappings": [
-            {"DeviceName": "/dev/sda1", "Ebs": {"VolumeSize": CONFIG.disk_size}}
+            {"DeviceName": "/dev/sda1", "Ebs": ebs_config}
         ],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,

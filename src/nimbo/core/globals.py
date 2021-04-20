@@ -40,6 +40,7 @@ security_group: default
 instance_key: my-ec2-key-pair.pem
 """
 
+
 FULL_REGION_NAMES = {
     "af-south-1": "Africa (Cape Town)",
     "ap-east-1": "Asia Pacific (Hong Kong)",
@@ -84,12 +85,23 @@ INSTANCE_GPU_MAP = {
 }
 
 
-class RequiredConfigCase(enum.Enum):
+class RequiredConfigCase(int, enum.Enum):
     NONE = enum.auto()
     MINIMAL = enum.auto()
     STORAGE = enum.auto()
     INSTANCE = enum.auto()
     JOB = enum.auto()
+
+
+# VALID_DISK_TYPES = ["standard", "io1", "io2", "gp2", "sc1", "st1", "gp3"]
+class DiskType(str, enum.Enum):
+    STANDARD = "standard"
+    IO1 = "io1"
+    IO2 = "io2"
+    GP2 = "gp2"
+    SC1 = "sc1"
+    ST1 = "st1"
+    GP3 = "gp3"
 
 
 class _Config(pydantic.BaseModel):
@@ -109,6 +121,8 @@ class _Config(pydantic.BaseModel):
     instance_type: Optional[str] = None
     image: str = "ubuntu18-latest-drivers"
     disk_size: Optional[int] = None
+    disk_iops: pydantic.conint(ge=0) = None
+    disk_type: DiskType = DiskType.STANDARD
     spot: bool = False
     spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = None
     security_group: Optional[str] = None
@@ -230,6 +244,16 @@ class _Config(pydantic.BaseModel):
             raise ValueError("should be a relative path")
         if ".." in value:
             raise ValueError("should not be outside of the project directory")
+        return value
+
+    @pydantic.validator("disk_type")
+    def _disk_iops_specified_when_needed(cls, value, values):
+        if value in [DiskType.IO1, DiskType.IO2] and not values["disk_iops"]:
+            raise ValueError(
+                "for disk types io1 or io2, the 'disk_iops' parameter has "
+                "to be specified.\nPlease visit "
+                "https://docs.nimbo.sh/nimbo-config-file-options for more details."
+            )
         return value
 
 
