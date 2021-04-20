@@ -11,8 +11,8 @@ import botocore.session
 import pydantic
 import yaml
 
-# TODO: generate-config doesn't work
 # TODO: update docs (ssh_timeout) and generated, .pem file extension now needed
+# TODO: merge with newest master
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
@@ -120,12 +120,24 @@ class _Config(pydantic.BaseModel):
     persist: bool = False
 
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 120
+
     _user_id: str = pydantic.PrivateAttr(default=None)
+    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
+        default=os.path.isfile(NIMBO_CONFIG_FILE)
+    )
 
     def assert_required_config_exists(self, case: RequiredConfigCase) -> None:
         """ Designed to be used with the assert_required_config annotation """
 
         required_config = {}
+
+        if case == RequiredConfigCase.NONE:
+            return
+        elif not self._nimbo_config_file_exists:
+            raise FileNotFoundError(
+                f"Nimbo configuration file '{NIMBO_CONFIG_FILE}' not found.\n"
+                "Run 'nimbo generate-config' to create the default config file."
+            )
 
         minimal_required_config = {
             "aws_profile": self.aws_profile,
@@ -223,21 +235,18 @@ class _Config(pydantic.BaseModel):
 
 
 def _load_yaml():
-    if not os.path.isfile(NIMBO_CONFIG_FILE):
-        raise FileNotFoundError(
-            f"Nimbo configuration file '{NIMBO_CONFIG_FILE}' not found.\n"
-            "Run 'nimbo generate-config' to create the default config file."
-        )
+    if os.path.isfile(NIMBO_CONFIG_FILE):
+        with open(NIMBO_CONFIG_FILE, "r") as f:
+            d = yaml.safe_load(f)
 
-    with open(NIMBO_CONFIG_FILE, "r") as f:
-        d = yaml.safe_load(f)
+            # TODO: this should not be needed, and right now might break some stuff
+            for field in d:
+                if type(d[field]) == str:
+                    d[field] = d[field].rstrip("/")
 
-        # TODO: this should not be needed, and right now can potentially break some stuff
-        for field in d:
-            if type(d[field]) == str:
-                d[field] = d[field].rstrip("/")
+            return d
 
-        return d
+    return {}
 
 
 try:

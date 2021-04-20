@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import subprocess
 import sys
 from pprint import pprint
@@ -336,9 +337,24 @@ def handle_boto_client_errors(func):
 
 def generate_config(quiet=False):
     """ Create an example Nimbo config in the project root """
+    if os.path.isfile(NIMBO_CONFIG_FILE):
+        print(f"{NIMBO_CONFIG_FILE} already exists, do you want to overwrite it?")
+
+        if not get_user_confirmation():
+            print("Leaving Nimbo config in tact")
+            return
 
     with open(NIMBO_CONFIG_FILE, "w") as f:
         f.write(NIMBO_DEFAULT_CONFIG)
 
     if not quiet:
         print(f"Example config written to {NIMBO_CONFIG_FILE}")
+
+
+def get_user_confirmation() -> bool:
+    try:
+        confirmation = input("Type Y for yes or N for no - ")
+        return confirmation.lower() == "y" or confirmation.lower() == "yes"
+    except BaseException as e:
+        print(e)
+        print("Aborting...")
