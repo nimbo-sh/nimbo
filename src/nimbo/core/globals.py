@@ -11,6 +11,8 @@ import botocore.session
 import pydantic
 import yaml
 
+ENVIRONMENT = "normal"
+
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
 NIMBO_DEFAULT_CONFIG = """# Data paths
@@ -261,14 +263,7 @@ class _Config(pydantic.BaseModel):
 def _load_yaml():
     if os.path.isfile(NIMBO_CONFIG_FILE):
         with open(NIMBO_CONFIG_FILE, "r") as f:
-            d = yaml.safe_load(f)
-
-            # TODO: this should not be needed, and right now might break some stuff
-            for field in d:
-                if type(d[field]) == str:
-                    d[field] = d[field].rstrip("/")
-
-            return d
+            return yaml.safe_load(f)
 
     return {}
 
