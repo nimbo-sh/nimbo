@@ -41,6 +41,7 @@ def launch_instance(client, config):
         "KeyName": config["instance_key"],
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [config["security_group"]],
+        "InstanceInitiatedShutdownBehavior": "terminate",
         "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
     }
 
