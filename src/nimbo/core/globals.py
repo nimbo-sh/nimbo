@@ -11,8 +11,6 @@ import botocore.session
 import pydantic
 import yaml
 
-# TODO: _user_id and telemetry are private attribute that is accessed everywhere
-
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
 NIMBO_DEFAULT_CONFIG = """# Data paths
@@ -135,8 +133,9 @@ class _Config(pydantic.BaseModel):
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 120
     telemetry: bool = True
 
-    _user_id: str = pydantic.PrivateAttr(default=None)
-    _telemetry_url: str = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
+    # The following are used internally
+    user_id: Optional[str] = None
+    telemetry_url: str = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
     _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
         default=os.path.isfile(NIMBO_CONFIG_FILE)
     )
@@ -291,4 +290,4 @@ except FileNotFoundError as e:
     sys.exit(1)
 
 SESSION = boto3.Session(profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name)
-CONFIG._user_id = SESSION.client("sts").get_caller_identity()["Arn"]
+CONFIG.user_id = SESSION.client("sts").get_caller_identity()["Arn"]

@@ -257,7 +257,7 @@ def ssh(instance_id, dry_run=False):
 def make_instance_tags():
     tags = [
         {"Key": "CreatedBy", "Value": "nimbo"},
-        {"Key": "Owner", "Value": CONFIG._user_id},
+        {"Key": "Owner", "Value": CONFIG.user_id},
     ]
     return tags
 
