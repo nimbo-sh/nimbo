@@ -245,9 +245,11 @@ def run_job(session, config, job_cmd, dry_run=False):
         sync_code(host, INSTANCE_KEY)
 
         # Run remote_setup script on instance
-        run_remote_script(
+        rc = run_remote_script(
             ssh, scp, host, instance_id, job_cmd, "remote_setup.sh", config
         )
+        if rc != 0:
+            raise RuntimeError("Something went wrong")
 
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
@@ -334,11 +336,13 @@ def run_access_test(session, config, dry_run=False):
         subprocess.check_output(
             f"{scp} {CONFIG} " f"ubuntu@{host}:/home/ubuntu/", shell=True
         )
-        run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh", config)
-        print("The instance profile has the required S3 and EC2 permissions \u2713")
-
-        print("\nEverything working \u2713")
-        print("Instance has been deleted.")
+        rc = run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh", config)
+        if rc == 0:
+            print("The instance profile has the required permissions \u2713")
+            print("\nEverything working \u2713")
+            print("Instance has been deleted.")
+        else:
+            raise RuntimeError("Something went wrong: return code was ", rc)
 
     except Exception as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
