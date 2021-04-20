@@ -2,7 +2,7 @@ import sys
 
 import boto3
 
-from nimbo.core.globals import FULL_REGION_NAMES
+from nimbo.core.globals import CONFIG
 
 image_id = sys.argv[1]
 
@@ -18,7 +18,7 @@ response = ec2.describe_images(
 )
 image = response["Images"][0]
 
-for dest_region in FULL_REGION_NAMES.keys():
+for dest_region in CONFIG.full_region_names.keys():
     if dest_region == base_region:
         continue
     print(dest_region)

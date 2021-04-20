@@ -10,13 +10,11 @@ import botocore.errorfactory
 import requests
 from botocore.exceptions import ClientError
 
+from nimbo.core.config import RequiredCase
 from nimbo.core.globals import (
     CONFIG,
-    FULL_REGION_NAMES,
     INSTANCE_GPU_MAP,
-    NIMBO_CONFIG_FILE,
     NIMBO_DEFAULT_CONFIG,
-    RequiredConfigCase,
     SESSION,
 )
 
@@ -50,7 +48,7 @@ def list_gpu_prices(dry_run=False):
         for inst in instance_types
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
-    full_region_name = FULL_REGION_NAMES[SESSION.region_name]
+    full_region_name = CONFIG.full_region_names[SESSION.region_name]
 
     pricing = SESSION.client("pricing", region_name="us-east-1")
 
@@ -298,7 +296,7 @@ def get_image_id():
     return image_id
 
 
-def assert_required_config(case: RequiredConfigCase):
+def assert_required_config(case: RequiredCase):
     """
     Decorator for ensuring that required config is present
     """
@@ -343,18 +341,20 @@ def handle_errors(func):
 
 def generate_config(quiet=False):
     """ Create an example Nimbo config in the project root """
-    if os.path.isfile(NIMBO_CONFIG_FILE):
-        print(f"{NIMBO_CONFIG_FILE} already exists, do you want to overwrite it?")
+    if os.path.isfile(CONFIG.nimbo_config_file):
+        print(
+            f"{CONFIG.nimbo_config_file} already exists, do you want to overwrite it?"
+        )
 
         if not get_user_confirmation():
             print("Leaving Nimbo config in tact")
             return
 
-    with open(NIMBO_CONFIG_FILE, "w") as f:
+    with open(CONFIG.nimbo_config_file, "w") as f:
         f.write(NIMBO_DEFAULT_CONFIG)
 
     if not quiet:
-        print(f"Example config written to {NIMBO_CONFIG_FILE}")
+        print(f"Example config written to {CONFIG.nimbo_config_file}")
 
 
 def get_user_confirmation() -> bool:

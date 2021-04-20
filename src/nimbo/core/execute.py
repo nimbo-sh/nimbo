@@ -7,7 +7,7 @@ from os.path import join
 from subprocess import PIPE
 
 from nimbo.core import utils
-from nimbo.core.globals import CONFIG, NIMBO_CONFIG_FILE, NIMBO_ROOT, SESSION
+from nimbo.core.globals import CONFIG, NIMBO_ROOT, SESSION
 
 
 def launch_instance(client):
@@ -229,7 +229,7 @@ def run_job(job_cmd, dry_run=False):
         # Create project folder and send env and config files there
         subprocess.check_output(f"{ssh} ubuntu@{host} " f"mkdir project", shell=True)
         subprocess.check_output(
-            f"{scp} {local_env} {NIMBO_CONFIG_FILE} "
+            f"{scp} {local_env} {CONFIG.nimbo_config_file} "
             f"ubuntu@{host}:/home/ubuntu/project/",
             shell=True,
         )
@@ -322,7 +322,8 @@ def run_access_test(dry_run=False):
         print("Instance key allows ssh access to remote instance \u2713")
         print("Security group allows ssh access to remote instance \u2713")
         subprocess.check_output(
-            f"{scp} {NIMBO_CONFIG_FILE} " f"ubuntu@{host}:/home/ubuntu/", shell=True
+            f"{scp} {CONFIG.nimbo_config_file} " f"ubuntu@{host}:/home/ubuntu/",
+            shell=True,
         )
         run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh")
         print("The instance profile has the required S3 and EC2 permissions \u2713")
