@@ -56,7 +56,7 @@ def launch_and_setup(dry_run):
 
 @cli.command()
 @click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.INSTANCE)
+@utils.assert_required_config(RequiredCase.INSTANCE, RequiredCase.STORAGE)
 @utils.handle_errors
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""

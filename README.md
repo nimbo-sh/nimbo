@@ -46,8 +46,18 @@ If you want to make changes to the codebase, you can clone this repo and use `pi
 nimbo installation will automatically update
 
 ### Running Tests
-In order to run the tests you have to change the `aws_profile`, `security_group`, and `instance_key` parameters in the `tests/assets/nimbo-config.yml` file to your own values.
-After that, you can use `pytest` to run the tests:
+
+Create two instance keys, one for `eu-west-1` and one for `us-east-2`. The keys should
+begin with the zone name, e.g. `eu-west-1-dave.pem`. Do not forget to `chmod 400` the
+created keys. Place these keys in `src/nimbo/tests/assets`. 
+
+Create a `nimbo-config.yml` file in `src/nimbo/tests/assets` with only `aws_profile`
+and `security_group` fields set.
+
+Make sure that the `security_group` that you put in test `nimbo-config.yml` allows
+your IP for all regions, otherwise, the tests will fail.
+
+Use `pytest` to run the tests
 ```bash
 pytest -x
 ```

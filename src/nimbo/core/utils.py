@@ -15,14 +15,15 @@ from nimbo.core.globals import (
     CONFIG,
     INSTANCE_GPU_MAP,
     NIMBO_DEFAULT_CONFIG,
-    SESSION,
+    get_session,
+    is_test_environment,
 )
 
 
 def ec2_instance_types():
     """Yield all available EC2 instance types in region <region_name>"""
     describe_args = {}
-    client = SESSION.client("ec2")
+    client = get_session().client("ec2")
     while True:
         describe_result = client.describe_instance_types(**describe_args)
         yield from [i["InstanceType"] for i in describe_result["InstanceTypes"]]
@@ -48,9 +49,9 @@ def list_gpu_prices(dry_run=False):
         for inst in instance_types
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
-    full_region_name = CONFIG.full_region_names[SESSION.region_name]
+    full_region_name = CONFIG.full_region_names[get_session().region_name]
 
-    pricing = SESSION.client("pricing", region_name="us-east-1")
+    pricing = get_session().client("pricing", region_name="us-east-1")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -98,7 +99,7 @@ def list_spot_gpu_prices(dry_run=False):
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
 
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -121,7 +122,7 @@ def list_spot_gpu_prices(dry_run=False):
 
 
 def show_active_instances(dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running", "pending"]}]
@@ -144,7 +145,7 @@ def show_active_instances(dry_run=False):
 
 
 def show_stopped_instances(dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["stopped", "stopping"]}]
@@ -164,7 +165,7 @@ def show_stopped_instances(dry_run=False):
 
 
 def check_instance_status(instance_id, dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run
@@ -177,7 +178,7 @@ def check_instance_status(instance_id, dry_run=False):
 
 
 def stop_instance(instance_id, dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.stop_instances(InstanceIds=[instance_id], DryRun=dry_run)
         pprint(response)
@@ -187,7 +188,7 @@ def stop_instance(instance_id, dry_run=False):
 
 
 def delete_instance(instance_id, dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.terminate_instances(InstanceIds=[instance_id], DryRun=dry_run)
         status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
@@ -198,7 +199,7 @@ def delete_instance(instance_id, dry_run=False):
 
 
 def delete_all_instances(dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
@@ -219,7 +220,7 @@ def delete_all_instances(dry_run=False):
 
 
 def check_instance_host(instance_id, dry_run=False):
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
@@ -233,7 +234,7 @@ def check_instance_host(instance_id, dry_run=False):
 
 
 def list_active_buckets():
-    s3 = SESSION.client("s3")
+    s3 = get_session().client("s3")
     response = s3.list_buckets()
     pprint(response)
 
@@ -253,11 +254,10 @@ def ssh(instance_id, dry_run=False):
 
 
 def make_instance_tags():
-    tags = [
+    return [
         {"Key": "CreatedBy", "Value": "nimbo"},
         {"Key": "Owner", "Value": CONFIG.user_id},
     ]
-    return tags
 
 
 def make_instance_filters():
@@ -296,7 +296,7 @@ def get_image_id():
     return image_id
 
 
-def assert_required_config(case: RequiredCase):
+def assert_required_config(*cases: RequiredCase):
     """
     Decorator for ensuring that required config is present
     """
@@ -305,7 +305,7 @@ def assert_required_config(case: RequiredCase):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
             try:
-                CONFIG.assert_required_config_exists(case)
+                CONFIG.assert_required_config_exists(*cases)
                 return func(*args, **kwargs)
             except AssertionError as e:
                 print(e)
@@ -324,29 +324,33 @@ def handle_errors(func):
 
     @functools.wraps(func)
     def decorated(*args, **kwargs):
-        try:
+        if is_test_environment():
             return func(*args, **kwargs)
-        except botocore.errorfactory.ClientError as e:
-            print(e.response["Error"]["Message"])
-            sys.exit(1)
-        except ValueError as e:
-            print(e)
-            sys.exit(1)
-        except KeyboardInterrupt:
-            print("Aborting...")
-            sys.exit(1)
+        else:
+            try:
+                return func(*args, **kwargs)
+            except botocore.errorfactory.ClientError as e:
+                print(e.response["Error"]["Message"])
+                sys.exit(1)
+            except ValueError as e:
+                print(e)
+                sys.exit(1)
+            except KeyboardInterrupt:
+                print("Aborting...")
+                sys.exit(1)
 
     return decorated
 
 
-def generate_config(quiet=False):
+def generate_config(quiet=False) -> None:
     """ Create an example Nimbo config in the project root """
+
     if os.path.isfile(CONFIG.nimbo_config_file):
         print(
             f"{CONFIG.nimbo_config_file} already exists, do you want to overwrite it?"
         )
 
-        if not get_user_confirmation():
+        if not _get_user_confirmation():
             print("Leaving Nimbo config in tact")
             return
 
@@ -357,7 +361,7 @@ def generate_config(quiet=False):
         print(f"Example config written to {CONFIG.nimbo_config_file}")
 
 
-def get_user_confirmation() -> bool:
+def _get_user_confirmation() -> bool:
     try:
         confirmation = input("Type Y for yes or N for no - ")
         return confirmation.lower() == "y" or confirmation.lower() == "yes"

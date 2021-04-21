@@ -1,3 +1,4 @@
+import functools
 import os
 import pathlib
 import re
@@ -56,9 +57,13 @@ INSTANCE_GPU_MAP = {
 }
 
 
+@functools.lru_cache
+def is_test_environment():
+    return "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test"
+
+
 try:
-    # TODO: test env
-    if "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test":
+    if is_test_environment():
         CONFIG = nimbo.tests.config.make_config()
     else:
         CONFIG = nimbo.core.config.make_config()
@@ -76,5 +81,19 @@ except FileNotFoundError as e:
     print(e)
     sys.exit(1)
 
-SESSION = boto3.Session(profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name)
-CONFIG.user_id = SESSION.client("sts").get_caller_identity()["Arn"]
+
+_SESSION = boto3.Session(
+    profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name
+)
+CONFIG.user_id = _SESSION.client("sts").get_caller_identity()["Arn"]
+
+
+def get_session() -> boto3.Session:
+    if is_test_environment():
+        return (
+            lambda: boto3.Session(
+                profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name
+            )
+        )()
+    else:
+        return _SESSION

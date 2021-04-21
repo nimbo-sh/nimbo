@@ -1,6 +1,6 @@
 import enum
 import os
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional, Set
 
 import botocore.exceptions
 import botocore.session
@@ -44,15 +44,30 @@ class _DiskType(str, enum.Enum):
     GP3 = "gp3"
 
 
-class RequiredCase(int, enum.Enum):
-    NONE = enum.auto()
-    MINIMAL = enum.auto()
-    STORAGE = enum.auto()
-    INSTANCE = enum.auto()
-    JOB = enum.auto()
+class RequiredCase(str, enum.Enum):
+    # First digit is a unique ID, other digits are the IDs of dependencies
+    NONE = "0"
+    MINIMAL = "10"
+    STORAGE = "210"
+    INSTANCE = "310"
+    JOB = "43210"
+
+    @classmethod
+    def decompose(cls, *cases: "RequiredCase") -> Set["RequiredCase"]:
+        """ Gets all cases that compose each case and the case itself """
+
+        decomposed = set()
+
+        for case in cases:
+            for c in RequiredCase:
+                if c[0] in case.value:
+                    decomposed.add(c)
+
+        # noinspection PyTypeChecker
+        return decomposed
 
 
-class _NimboConfig(pydantic.BaseModel):
+class NimboConfig(pydantic.BaseModel):
     class Config:
         title = "Nimbo configuration"
         validate_assignment = True
@@ -80,7 +95,7 @@ class _NimboConfig(pydantic.BaseModel):
     run_in_background: bool = False
     persist: bool = False
 
-    ssh_timeout: pydantic.conint(strict=True, ge=0) = 120
+    ssh_timeout: pydantic.conint(strict=True, ge=0) = 180
     telemetry: bool = True
 
     # The following are defined internally
@@ -92,12 +107,12 @@ class _NimboConfig(pydantic.BaseModel):
     telemetry_url: str = _TELEMETRY_URL
     full_region_names: Dict[str, str] = _FULL_REGION_NAMES
 
-    def assert_required_config_exists(self, case: RequiredCase) -> None:
+    def assert_required_config_exists(self, *cases: RequiredCase) -> None:
         """ Designed to be used with the assert_required_config annotation """
 
-        required_config = {}
+        cases = RequiredCase.decompose(*cases)
 
-        if case == RequiredCase.NONE:
+        if len(cases) == 1 and RequiredCase.NONE in cases:
             return
         elif not self._nimbo_config_file_exists:
             raise FileNotFoundError(
@@ -105,37 +120,26 @@ class _NimboConfig(pydantic.BaseModel):
                 "Run 'nimbo generate-config' to create the default config file."
             )
 
-        minimal_required_config = {
-            "aws_profile": self.aws_profile,
-            "region_name": self.region_name,
-        }
-        storage_required_config = {
-            "local_results_path": self.local_results_path,
-            "local_datasets_path": self.local_datasets_path,
-            "s3_results_path": self.s3_results_path,
-            "s3_datasets_path": self.s3_datasets_path,
-        }
-        instance_required_config = {
-            "instance_type": self.instance_type,
-            "disk_size": self.disk_size,
-            "instance_key": self.instance_key,
-            "security_group": self.security_group,
-        }
-        job_required_config = {"conda_env": self.conda_env}
+        required_config = {}
 
-        if case == RequiredCase.STORAGE:
-            required_config = {**minimal_required_config, **storage_required_config}
-        if case == RequiredCase.INSTANCE:
-            required_config = {**minimal_required_config, **instance_required_config}
-        if case == RequiredCase.JOB:
-            required_config = {
-                **minimal_required_config,
-                **storage_required_config,
-                **instance_required_config,
-                **job_required_config,
-            }
+        if RequiredCase.MINIMAL in cases:
+            required_config["aws_profile"] = self.aws_profile
+            required_config["region_name"] = self.region_name
+        if RequiredCase.STORAGE in cases:
+            required_config["local_results_path"] = self.local_results_path
+            required_config["local_datasets_path"] = self.local_datasets_path
+            required_config["s3_results_path"] = self.s3_results_path
+            required_config["s3_datasets_path"] = self.s3_datasets_path
+        if RequiredCase.INSTANCE in cases:
+            required_config["instance_type"] = self.instance_type
+            required_config["disk_size"] = self.disk_size
+            required_config["instance_key"] = self.instance_key
+            required_config["security_group"] = self.security_group
+        if RequiredCase.JOB in cases:
+            required_config["conda_env"] = self.conda_env
 
-        if unspecified := [key for key, value in required_config.items() if not value]:
+        unspecified = [key for key, value in required_config.items() if not value]
+        if unspecified:
             raise AssertionError(
                 f"For running this command {', '.join(unspecified)} should"
                 f" be specified in {self.nimbo_config_file}"
@@ -221,6 +225,21 @@ class _NimboConfig(pydantic.BaseModel):
             raise ValueError("overriding telemetry url is forbidden")
         return value
 
+    def save_initial_state(self):
+        raise NotImplementedError(
+            "save_initial_state is only available for NimboTestConfig"
+        )
+
+    def reset_required_config(self) -> None:
+        raise NotImplementedError(
+            "reset_required_config is only available for NimboTestConfig"
+        )
+
+    def inject_required_config(self, *cases: RequiredCase) -> None:
+        raise NotImplementedError(
+            "inject_required_config is only available for NimboTestConfig"
+        )
+
 
 def load_yaml_from_file(file: str) -> Dict[str, Any]:
     if os.path.isfile(file):
@@ -230,5 +249,5 @@ def load_yaml_from_file(file: str) -> Dict[str, Any]:
     return {}
 
 
-def make_config():
-    return _NimboConfig(**load_yaml_from_file(_NIMBO_CONFIG_FILE))
+def make_config() -> NimboConfig:
+    return NimboConfig(**load_yaml_from_file(_NIMBO_CONFIG_FILE))

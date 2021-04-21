@@ -7,7 +7,7 @@ from os.path import join
 from subprocess import PIPE
 
 from nimbo.core import utils
-from nimbo.core.globals import CONFIG, NIMBO_ROOT, SESSION
+from nimbo.core.globals import CONFIG, NIMBO_ROOT, get_session
 
 
 def launch_instance(client):
@@ -49,13 +49,6 @@ def launch_instance(client):
         instance_request = instance["SpotInstanceRequests"][0]
         request_id = instance_request["SpotInstanceRequestId"]
 
-        status = ""
-        while status != "fulfilled":
-            time.sleep(1)
-            client.describe_spot_instance_requests(
-                SpotInstanceRequestIds=[request_id],
-                Filters=utils.make_instance_filters(),
-            )
         try:
             print("Spot instance request submitted.")
             print(
@@ -66,7 +59,7 @@ def launch_instance(client):
 
             status = ""
             while status != "fulfilled":
-                time.sleep(1)
+                time.sleep(2)
                 response = client.describe_spot_instance_requests(
                     SpotInstanceRequestIds=[request_id],
                     Filters=utils.make_instance_filters(),
@@ -192,7 +185,7 @@ def run_job(job_cmd, dry_run=False):
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
 
     start_t = time.monotonic()
 
@@ -291,7 +284,7 @@ def run_access_test(dry_run=False):
 
     # Launch instance with new volume for anaconda
     print("Launching test instance... ", end="", flush=True)
-    ec2 = SESSION.client("ec2")
+    ec2 = get_session().client("ec2")
 
     instance = launch_instance(ec2)
     instance_id = instance["InstanceId"]
@@ -349,7 +342,7 @@ def run_commands_on_instance(commands, instance_ids):
     :return: the response from the send_command function (check the boto3 docs for ssm client.send_command() )
     """
 
-    client = SESSION.client("ssm")
+    client = get_session().client("ssm")
     resp = client.send_command(
         DocumentName="AWS-RunShellScript",  # One of AWS' preconfigured documents
         Parameters={"commands": commands},
