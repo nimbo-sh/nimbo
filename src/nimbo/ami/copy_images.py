@@ -2,7 +2,7 @@ import sys
 
 import boto3
 
-from nimbo.core.globals import CONFIG
+from nimbo import CONFIG
 
 image_id = sys.argv[1]
 

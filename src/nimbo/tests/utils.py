@@ -41,7 +41,7 @@ def isolated_filesystem(*cases: RequiredCase):
 
     def decorator(func):
         @functools.wraps(func)
-        def decorated(*args, **kwargs):
+        def decorated():
             runner = CliRunner()
             with runner.isolated_filesystem():
                 _setup_for_case(*cases)

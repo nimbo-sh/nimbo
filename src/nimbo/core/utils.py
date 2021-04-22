@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
 from nimbo.core.environment import is_test_environment
-from nimbo.core.statics import INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG, FULL_REGION_NAMES
+from nimbo.core.statics import FULL_REGION_NAMES, INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG
 
 
 def ec2_instance_types():
@@ -38,8 +38,6 @@ def format_price_string(instance_type, price, gpus, cpus, mem):
 def list_gpu_prices(dry_run=False):
     if dry_run:
         return
-
-    session = CONFIG.get_session()
 
     instance_types = list(sorted(ec2_instance_types()))
     instance_types = [
@@ -207,9 +205,7 @@ def delete_all_instances(dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 instance_id = inst["InstanceId"]
-                delete_response = ec2.terminate_instances(
-                    InstanceIds=[instance_id],
-                )
+                delete_response = ec2.terminate_instances(InstanceIds=[instance_id],)
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
@@ -223,9 +219,7 @@ def check_instance_host(instance_id, dry_run=False):
     ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id],
-            Filters=make_instance_filters(),
-            DryRun=dry_run,
+            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:
@@ -287,12 +281,15 @@ def get_image_id():
                 image_id = region_catalog[image_name]
             else:
                 raise ValueError(
-                    f"The image {image_name} was not found in Nimbo's managed image catalog.\n"
-                    "Check https://docs.nimbo.sh/managed-images for the list of managed images."
+                    f"The image {image_name} was not found in the"
+                    " image catalog managed by Nimbo.\n"
+                    "Check https://docs.nimbo.sh/managed-images"
+                    " for the list of managed images."
                 )
         else:
             raise ValueError(
-                f"We currently do not support managed images in {region}. Please use another region."
+                f"Currently, Nimbo does not support managed images in {region}."
+                " Please use another region."
             )
 
     return image_id
@@ -310,6 +307,10 @@ def assert_required_config(*cases: RequiredCase):
                 CONFIG.assert_required_config_exists(*cases)
                 return func(*args, **kwargs)
             except AssertionError as e:
+                print(e)
+                sys.exit(1)
+            except FileNotFoundError as e:
+                # Happens when nimbo config file is not found
                 print(e)
                 sys.exit(1)
 

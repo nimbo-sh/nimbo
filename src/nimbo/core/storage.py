@@ -2,7 +2,6 @@ import logging
 import subprocess
 from os.path import join
 
-import boto3
 from botocore.exceptions import ClientError
 
 from nimbo import CONFIG
@@ -22,7 +21,7 @@ def upload_file(file_name, bucket, object_name=None):
         object_name = file_name
 
     # Upload the file
-    s3 = get_session().client("s3")
+    s3 = CONFIG.get_session().client("s3")
     try:
         s3.upload_file(file_name, bucket, object_name)
     except ClientError as e:
@@ -71,8 +70,7 @@ def list_snapshots():
     ec2 = CONFIG.get_session().client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}],
-        MaxResults=100,
+        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}], MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 
@@ -91,6 +89,7 @@ def sync_folder(source, target, profile, region, delete=False):
     subprocess.Popen(command, shell=True).communicate()
 
 
+# noinspection DuplicatedCode
 def pull(folder, delete=False):
     assert folder in ["datasets", "results", "logs"]
 
@@ -108,6 +107,7 @@ def pull(folder, delete=False):
     sync_folder(source, target, CONFIG.aws_profile, CONFIG.region_name, delete)
 
 
+# noinspection DuplicatedCode
 def push(folder, delete=False):
     assert folder in ["datasets", "results", "logs"]
 

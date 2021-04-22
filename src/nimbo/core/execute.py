@@ -211,7 +211,10 @@ def run_job(job_cmd, dry_run=False):
             print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
             return {"message": job_cmd + "_success", "instance_id": instance_id}
 
-        ssh = f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20 "
+        ssh = (
+            f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
+            " -o ServerAliveInterval=20 "
+        )
         scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
         local_env = "local_env.yml"
@@ -266,11 +269,17 @@ def run_access_test(dry_run=False):
         subprocess.check_output(
             "echo 'Hello World' > nimbo-access-test.txt", shell=True
         )
-        command = f"aws s3 cp nimbo-access-test.txt {results_path} --profile {profile} --region {region}"
+        command = (
+            f"aws s3 cp nimbo-access-test.txt {results_path}"
+            " --profile {profile} --region {region}"
+        )
         subprocess.check_output(command, shell=True)
         command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
-        command = f"aws s3 rm {results_path}/nimbo-access-test.txt --profile {profile} --region {region}"
+        command = (
+            f"aws s3 rm {results_path}/nimbo-access-test.txt"
+            "--profile {profile} --region {region}"
+        )
         subprocess.check_output(command, shell=True)
 
         print(
@@ -309,7 +318,10 @@ def run_access_test(dry_run=False):
 
         time.sleep(5)
         host = utils.check_instance_host(instance_id)
-        ssh = f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no' -o ServerAliveInterval=20"
+        ssh = (
+            f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
+            "-o ServerAliveInterval=20"
+        )
         scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
         block_until_ssh_ready(host)
@@ -340,12 +352,14 @@ def run_access_test(dry_run=False):
 def run_commands_on_instance(commands, instance_ids):
     """Runs commands on remote linux instances
     :param commands: a list of strings, each one a command to execute on the instances
-    :param instance_ids: a list of instance_id strings, of the instances on which to execute the command
-    :return: the response from the send_command function (check the boto3 docs for ssm client.send_command() )
+    :param instance_ids: a list of instance_id strings, of the instances on which
+                         to execute the command
+    :return: the response from the send_command function (check the boto3 docs
+             for ssm client.send_command() )
     """
 
-    client = get_session().client("ssm")
-    resp = client.send_command(
+    ssm = CONFIG.get_session().client("ssm")
+    resp = ssm.send_command(
         DocumentName="AWS-RunShellScript",  # One of AWS' preconfigured documents
         Parameters={"commands": commands},
         InstanceIds=instance_ids,

@@ -12,7 +12,7 @@ def record_event(cmd):
         return
     else:
         if not CONFIG.user_id:
-            raise ValueError("CONIFG.user_id is undefined.")
+            raise ValueError("CONFIG.user_id is undefined.")
 
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")

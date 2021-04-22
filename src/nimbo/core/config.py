@@ -9,7 +9,7 @@ import botocore.session
 import pydantic
 import yaml
 
-from nimbo.core.statics import FULL_REGION_NAMES, TELEMETRY_URL, NIMBO_CONFIG_FILE
+from nimbo.core.statics import FULL_REGION_NAMES, NIMBO_CONFIG_FILE, TELEMETRY_URL
 
 
 class _DiskType(str, enum.Enum):
@@ -145,71 +145,67 @@ class NimboConfig(pydantic.BaseModel):
         if RequiredCase.JOB in cases:
             bad_fields["conda_env"] = self._conda_env_valid()
 
-        bad_fields = [(key, error) for key, error in bad_fields.items() if error != ""]
+        bad_fields = [(key, error) for key, error in bad_fields.items() if error]
 
         if bad_fields:
             print(
-                f"{len(bad_fields)} error{'' if len(bad_fields) == 1 else 's'} in the config file:\n"
+                f"{len(bad_fields)} error{'' if len(bad_fields) == 1 else 's'} "
+                f"in {NIMBO_CONFIG_FILE}\n"
             )
             for key, error in bad_fields:
                 print(key)
-                print(f"\t{error}")
+                print(f"  {error}")
             sys.exit(1)
 
-    def _aws_profile_exists(self) -> str:
+    def _aws_profile_exists(self) -> Optional[str]:
         if self.aws_profile not in botocore.session.Session().available_profiles:
-            return f"AWS Profile {value} could not be found"
-        return ""
+            return f"AWS Profile '{self.aws_profile}' could not be found"
 
-    def _conda_env_valid(self) -> str:
+    def _conda_env_valid(self) -> Optional[str]:
         if os.path.isabs(self.conda_env):
             return "conda_env should be a relative path"
         if ".." in self.conda_env:
             return "conda_env should not be outside of the project directory"
         if not os.path.isfile(self.conda_env):
             return f"file '{self.conda_env}' does not exist in the project directory"
-        return ""
 
-    def _instance_key_valid(self) -> str:
+    def _instance_key_valid(self) -> Optional[str]:
         if not os.path.isfile(self.instance_key):
             return f"file '{self.instance_key}' does not exist"
 
         permission = str(oct(os.stat(self.instance_key).st_mode))[-3:]
-        if permission[1] == 0 and permission[2] == 0:
+        if permission[1:] != "00":
             return (
                 f"run 'chmod 400 {self.instance_key}' so that only you can read the key"
             )
 
-        return ""
-
-    def _region_name_valid(self) -> str:
+    def _region_name_valid(self) -> Optional[str]:
         region_names = FULL_REGION_NAMES.keys()
         if self.region_name not in region_names:
-            return f"unknown region '{self.region_name}', expected to be one of {', '.join(region_names)}"
-        return ""
+            return (
+                f"unknown region '{self.region_name}', "
+                f"expected to be one of {', '.join(region_names)}"
+            )
 
-    def _local_results_not_outside_project(self) -> str:
+    def _local_results_not_outside_project(self) -> Optional[str]:
         if os.path.isabs(self.local_results_path):
             return "local_results_path should be a relative path"
         if ".." in self.local_results_path:
             return "local_results_path should not be outside of the project directory"
-        return ""
 
-    def _local_datasets_not_outside_project(self) -> str:
+    def _local_datasets_not_outside_project(self) -> Optional[str]:
         if os.path.isabs(self.local_datasets_path):
             return "local_datasets_path should be a relative path"
         if ".." in self.local_datasets_path:
             return "local_datasets_path should not be outside of the project directory"
-        return ""
 
-    def _disk_iops_specified_when_needed(self) -> str:
+    def _disk_iops_specified_when_needed(self) -> Optional[str]:
         if self.disk_type in [_DiskType.IO1, _DiskType.IO2] and not self.disk_iops:
             return (
                 "for disk types io1 or io2, the 'disk_iops' parameter has "
                 "to be specified.\nPlease visit "
                 "https://docs.nimbo.sh/nimbo-config-file-options for more details."
             )
-        return ""
 
     @pydantic.validator("nimbo_config_file")
     def _nimbo_config_file_unchanged(cls, value):
@@ -223,7 +219,7 @@ class NimboConfig(pydantic.BaseModel):
             raise ValueError("overriding telemetry url is forbidden")
         return value
 
-    def save_initial_state(self):
+    def save_initial_state(self) -> None:
         raise NotImplementedError(
             "save_initial_state is only available for NimboTestConfig"
         )

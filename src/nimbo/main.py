@@ -40,7 +40,10 @@ def run(job_cmd, dry_run):
 @utils.assert_required_config(RequiredCase.JOB)
 @utils.handle_errors
 def launch(dry_run):
-    """Launches an EC2 instance according to your nimbo-config, without doing any further setup."""
+    """
+    Launches an EC2 instance according to your nimbo-config,
+    without doing any further setup.
+    """
     execute.run_job("_nimbo_launch", dry_run)
 
 
@@ -49,7 +52,10 @@ def launch(dry_run):
 @utils.assert_required_config(RequiredCase.JOB)
 @utils.handle_errors
 def launch_and_setup(dry_run):
-    """Launches an EC2 instance with your code, data and environment, without running any job."""
+    """
+    Launches an EC2 instance with your code, data and environment,
+    without running any job.
+    """
     execute.run_job("_nimbo_launch_and_setup", dry_run)
 
 
@@ -157,7 +163,8 @@ def delete_all_instances(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def create_bucket(bucket_name, dry_run):
-    """Create a bucket BUCKET_NAME in S3.
+    """
+    Create a bucket BUCKET_NAME in S3.
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
@@ -171,7 +178,10 @@ def create_bucket(bucket_name, dry_run):
 @click.option(
     "--delete",
     is_flag=True,
-    help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
+    help="""
+      Deletes any files that exist in the local folder
+      but don't exist in the remote folder.
+    """,
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
@@ -180,7 +190,8 @@ def push(folder, delete):
 
     if delete:
         click.confirm(
-            "This will delete any files that exist in the remote folder but do not exist in the local folder.\n"
+            "This will delete any files that exist in the remote "
+            "folder but do not exist in the local folder.\n"
             "Do you want to continue?",
             abort=True,
         )
@@ -194,7 +205,10 @@ def push(folder, delete):
 @click.option(
     "--delete",
     is_flag=True,
-    help="Deletes any files that exist in the local folder but don't exist in the remote folder.",
+    help="""
+      Deletes any files that exist in the local
+      folder but don't exist in the remote folder.
+    """,
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
@@ -203,7 +217,8 @@ def pull(folder, delete):
 
     if delete:
         click.confirm(
-            "This will delete any files that exist in the local folder but do not exist in the remote folder.\n"
+            "This will delete any files that exist in the local "
+            "folder but do not exist in the remote folder.\n"
             "Do you want to continue?",
             abort=True,
         )

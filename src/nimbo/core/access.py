@@ -1,4 +1,5 @@
 import json
+import textwrap
 from pprint import pprint
 
 import requests
@@ -110,13 +111,20 @@ def verify_nimbo_instance_profile(dry_run=False):
     response = iam.list_instance_profiles()
     instance_profiles = response["InstanceProfiles"]
     instance_profile_names = [p["InstanceProfileName"] for p in instance_profiles]
-    if "NimboInstanceProfile" not in instance_profile_names:
+    if "NimboInstanceProfiles" not in instance_profile_names:
         raise Exception(
-            "Instance profile 'NimboInstanceProfile' not found.\n"
-            "An instance profile is necessary to give your instance access to EC2 and S3 resources.\n"
-            "You can create an instance profile using 'nimbo create_instance_profile <role_name>'.\n"
-            "If you are a root user, you can simply run 'nimbo create_instance_profile_and_role', "
-            "and nimbo will create the necessary role policies and instance profile for you.\n"
-            "Otherwise, please ask your admin for a role that provides the necessary EC2 and S3 read/write access.\n"
-            "For more details please go to docs.nimbo.sh/instance-profiles."
+            textwrap.dedent(
+                """Instance profile 'NimboInstanceProfile' not found.
+
+                An instance profile is necessary to give your instance access
+                to EC2 and S3 resources. You can create an instance profile using
+                'nimbo create_instance_profile <role_name>'. If you are a root user,
+                you can simply run 'nimbo create_instance_profile_and_role', and
+                nimbo will create the necessary role policies and instance profile
+                for you. Otherwise, please ask your admin for a role that provides
+                the necessary EC2 and S3 read/write access.
+
+                For more details please go to docs.nimbo.sh/instance-profiles."
+                """
+            )
         )
