@@ -6,8 +6,9 @@ import time
 from os.path import join
 from subprocess import PIPE
 
-from nimbo.core import utils
-from nimbo.core.globals import CONFIG, NIMBO_ROOT, get_session
+from nimbo import CONFIG
+from nimbo.core import telemetry, utils
+from nimbo.core.statics import NIMBO_ROOT
 
 
 def launch_instance(client):
@@ -185,7 +186,8 @@ def run_job(job_cmd, dry_run=False):
 
     # Launch instance with new volume for anaconda
     print("Launching instance... ", end="", flush=True)
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
+    telemetry.record_event("run")
 
     start_t = time.monotonic()
 
@@ -284,7 +286,7 @@ def run_access_test(dry_run=False):
 
     # Launch instance with new volume for anaconda
     print("Launching test instance... ", end="", flush=True)
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
 
     instance = launch_instance(ec2)
     instance_id = instance["InstanceId"]

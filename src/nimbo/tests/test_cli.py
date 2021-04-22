@@ -5,9 +5,9 @@ import pytest
 from botocore.exceptions import ClientError
 from click.testing import CliRunner
 
-from nimbo.core.config import RequiredCase
-from nimbo.core.globals import CONFIG
+from nimbo import CONFIG
 from nimbo.main import cli
+from nimbo.core.config import RequiredCase
 from nimbo.tests.utils import isolated_filesystem, make_file
 
 
@@ -77,7 +77,9 @@ def test_instance_actions(runner: CliRunner):
 
     try:
         runner.invoke(
-            cli, "stop-instance i-0be1989edd819b442 --dry-run", catch_exceptions=False,
+            cli,
+            "stop-instance i-0be1989edd819b442 --dry-run",
+            catch_exceptions=False,
         )
     except ClientError as e:
         if "InvalidInstanceID.NotFound" not in str(e):
@@ -203,7 +205,9 @@ def test_instance_profile_and_security_group(runner: CliRunner):
     assert result.exit_code == 0
 
     result = runner.invoke(
-        cli, "create-instance-profile mock_role --dry-run", catch_exceptions=False,
+        cli,
+        "create-instance-profile mock_role --dry-run",
+        catch_exceptions=False,
     )
     assert result.exit_code == 0
 

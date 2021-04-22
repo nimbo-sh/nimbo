@@ -5,8 +5,8 @@ import shutil
 
 from click.testing import CliRunner
 
+from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.core.globals import CONFIG
 from nimbo.tests.config import ASSETS_PATH, CONDA_ENV, NIMBO_CONFIG_FILE
 
 

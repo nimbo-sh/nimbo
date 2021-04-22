@@ -1,16 +1,10 @@
-import functools
-import os
 import pathlib
-import re
-import sys
 
-import boto3
-import pydantic
-
-import nimbo.core.config
-import nimbo.tests.config
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
+NIMBO_CONFIG_FILE = "nimbo-config.yml"
+TELEMETRY_URL = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
+
 NIMBO_DEFAULT_CONFIG = """# Data paths
 local_datasets_path: my-datasets-folder  # relative to project root
 local_results_path: my-results-folder    # relative to project root
@@ -57,43 +51,26 @@ INSTANCE_GPU_MAP = {
 }
 
 
-@functools.lru_cache
-def is_test_environment():
-    return "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test"
-
-
-try:
-    if is_test_environment():
-        CONFIG = nimbo.tests.config.make_config()
-    else:
-        CONFIG = nimbo.core.config.make_config()
-
-except pydantic.error_wrappers.ValidationError as e:
-    error_msg = str(e)
-    title_end = error_msg.index("\n", 1)
-    new_title = (
-        f"{len(e.errors())} validation "
-        + f"error{'' if len(e.errors()) == 1 else 's'} in Nimbo config\n"
-    )
-    print(new_title + re.sub(r"\(type=.*\)", "", error_msg[title_end:]))
-    sys.exit(1)
-except FileNotFoundError as e:
-    print(e)
-    sys.exit(1)
-
-
-_SESSION = boto3.Session(
-    profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name
-)
-CONFIG.user_id = _SESSION.client("sts").get_caller_identity()["Arn"]
-
-
-def get_session() -> boto3.Session:
-    if is_test_environment():
-        return (
-            lambda: boto3.Session(
-                profile_name=CONFIG.aws_profile, region_name=CONFIG.region_name
-            )
-        )()
-    else:
-        return _SESSION
+FULL_REGION_NAMES = {
+    "af-south-1": "Africa (Cape Town)",
+    "ap-east-1": "Asia Pacific (Hong Kong)",
+    "ap-south-1": "Asia Pacific (Mumbai)",
+    "ap-northeast-3": "Asia Pacific (Osaka)",
+    "ap-northeast-2": "Asia Pacific (Seoul)",
+    "ap-southeast-1": "Asia Pacific (Singapore)",
+    "ap-southeast-2": "Asia Pacific (Sydney)",
+    "ap-northeast-1": "Asia Pacific (Tokyo)",
+    "ca-central-1": "Canada (Central)",
+    "eu-central-1": "EU (Frankfurt)",
+    "eu-west-1": "EU (Ireland)",
+    "eu-west-2": "EU (London)",
+    "eu-south-1": "EU (Milan)",
+    "eu-west-3": "EU (Paris)",
+    "eu-north-1": "EU (Stockholm)",
+    "me-south-1": "Middle East (Bahrain)",
+    "sa-east-1": "South America (Sao Paulo)",
+    "us-east-1": "US East (N. Virginia)",
+    "us-east-2": "US East (Ohio)",
+    "us-west-1": "US West (N. California)",
+    "us-west-2": "US West (Oregon)",
+}

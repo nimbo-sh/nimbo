@@ -2,8 +2,8 @@ import pydantic
 import pytest
 from click.testing import CliRunner
 
+from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.core.globals import CONFIG
 from nimbo.core.utils import get_image_id
 from nimbo.tests.utils import isolated_filesystem
 
@@ -30,8 +30,9 @@ def test_get_image_id(runner: CliRunner):
     CONFIG.region_name = "us-east-2"
     get_image_id()
 
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(ValueError):
         CONFIG.region_name = "us-et-2"
+        get_image_id()
 
     CONFIG.image = "ami-198571934781039"
     CONFIG.region_name = reference_region

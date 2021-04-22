@@ -3,10 +3,11 @@ import os
 import pytest
 from click.testing import CliRunner
 
-from nimbo.core import execute
-from nimbo.core.config import RequiredCase
-from nimbo.core.globals import CONFIG
+from nimbo import CONFIG
 from nimbo.main import cli
+from nimbo.core import execute
+from nimbo.core.statics import FULL_REGION_NAMES
+from nimbo.core.config import RequiredCase
 from nimbo.tests.utils import isolated_filesystem
 
 
@@ -41,7 +42,7 @@ def test_launch(runner: CliRunner):
     instance_keys = [p for p in os.listdir(dst) if p[-4:] == ".pem"]
 
     for instance_key in instance_keys:
-        for region_name in CONFIG.full_region_names.keys():
+        for region_name in FULL_REGION_NAMES.keys():
             if instance_key.startswith(region_name):
                 CONFIG.region_name = region_name
                 break

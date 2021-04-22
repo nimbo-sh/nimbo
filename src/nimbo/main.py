@@ -1,6 +1,6 @@
 import click
 
-from nimbo.core import access, execute, storage, telemetry, utils
+from nimbo.core import access, execute, storage, utils
 from nimbo.core.config import RequiredCase
 
 
@@ -32,7 +32,6 @@ def run(job_cmd, dry_run):
     E.g. \"python runner.py --epochs=10\".\n
     The command must be between quotes.
     """
-    telemetry.record_event("run")
     execute.run_job(job_cmd, dry_run)
 
 

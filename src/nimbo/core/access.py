@@ -3,12 +3,12 @@ from pprint import pprint
 
 import requests
 
-from nimbo.core.globals import get_session
+from nimbo import CONFIG
 
 
 def create_security_group(group_name, dry_run=False):
 
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     response = ec2.describe_vpcs()
     vpc_id = response.get("Vpcs", [{}])[0].get("VpcId", "")
 
@@ -27,7 +27,7 @@ def create_security_group(group_name, dry_run=False):
 
 def allow_inbound_current_ip(group_name, dry_run=False):
 
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
 
     # Get the security group id
     response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
@@ -51,7 +51,7 @@ def allow_inbound_current_ip(group_name, dry_run=False):
 
 
 def create_instance_profile_and_role(dry_run=False):
-    iam = get_session().client("iam")
+    iam = CONFIG.get_session().client("iam")
     role_name = "NimboS3AndEC2FullAccess"
     instance_profile_name = "NimboInstanceProfile"
 
@@ -80,7 +80,7 @@ def create_instance_profile_and_role(dry_run=False):
 
 
 def create_instance_profile(role_name, dry_run=False):
-    iam = get_session().client("iam")
+    iam = CONFIG.get_session().client("iam")
     instance_profile_name = "NimboInstanceProfile"
 
     if dry_run:
@@ -93,7 +93,7 @@ def create_instance_profile(role_name, dry_run=False):
 
 
 def list_instance_profiles(dry_run=False):
-    iam = get_session().client("iam")
+    iam = CONFIG.get_session().client("iam")
 
     if dry_run:
         return
@@ -102,7 +102,7 @@ def list_instance_profiles(dry_run=False):
 
 
 def verify_nimbo_instance_profile(dry_run=False):
-    iam = get_session().client("iam")
+    iam = CONFIG.get_session().client("iam")
 
     if dry_run:
         return

@@ -10,20 +10,16 @@ import botocore.errorfactory
 import requests
 from botocore.exceptions import ClientError
 
+from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.core.globals import (
-    CONFIG,
-    INSTANCE_GPU_MAP,
-    NIMBO_DEFAULT_CONFIG,
-    get_session,
-    is_test_environment,
-)
+from nimbo.core.environment import is_test_environment
+from nimbo.core.statics import INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG, FULL_REGION_NAMES
 
 
 def ec2_instance_types():
-    """Yield all available EC2 instance types in region <region_name>"""
+    """Yield all available EC2 instance types in region CONFIG.region_name"""
     describe_args = {}
-    client = get_session().client("ec2")
+    client = CONFIG.get_session().client("ec2")
     while True:
         describe_result = client.describe_instance_types(**describe_args)
         yield from [i["InstanceType"] for i in describe_result["InstanceTypes"]]
@@ -43,15 +39,17 @@ def list_gpu_prices(dry_run=False):
     if dry_run:
         return
 
+    session = CONFIG.get_session()
+
     instance_types = list(sorted(ec2_instance_types()))
     instance_types = [
         inst
         for inst in instance_types
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
-    full_region_name = CONFIG.full_region_names[get_session().region_name]
+    full_region_name = FULL_REGION_NAMES[CONFIG.region_name]
 
-    pricing = get_session().client("pricing", region_name="us-east-1")
+    pricing = CONFIG.get_session().client("pricing", region_name="us-east-1")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -99,7 +97,7 @@ def list_spot_gpu_prices(dry_run=False):
         if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
     ]
 
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
 
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
@@ -122,7 +120,7 @@ def list_spot_gpu_prices(dry_run=False):
 
 
 def show_active_instances(dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running", "pending"]}]
@@ -145,7 +143,7 @@ def show_active_instances(dry_run=False):
 
 
 def show_stopped_instances(dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["stopped", "stopping"]}]
@@ -165,7 +163,7 @@ def show_stopped_instances(dry_run=False):
 
 
 def check_instance_status(instance_id, dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run
@@ -178,7 +176,7 @@ def check_instance_status(instance_id, dry_run=False):
 
 
 def stop_instance(instance_id, dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.stop_instances(InstanceIds=[instance_id], DryRun=dry_run)
         pprint(response)
@@ -188,7 +186,7 @@ def stop_instance(instance_id, dry_run=False):
 
 
 def delete_instance(instance_id, dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.terminate_instances(InstanceIds=[instance_id], DryRun=dry_run)
         status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
@@ -199,7 +197,7 @@ def delete_instance(instance_id, dry_run=False):
 
 
 def delete_all_instances(dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
             Filters=[{"Name": "instance-state-name", "Values": ["running"]}]
@@ -209,7 +207,9 @@ def delete_all_instances(dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 instance_id = inst["InstanceId"]
-                delete_response = ec2.terminate_instances(InstanceIds=[instance_id],)
+                delete_response = ec2.terminate_instances(
+                    InstanceIds=[instance_id],
+                )
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
@@ -220,10 +220,12 @@ def delete_all_instances(dry_run=False):
 
 
 def check_instance_host(instance_id, dry_run=False):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
+            InstanceIds=[instance_id],
+            Filters=make_instance_filters(),
+            DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:
@@ -234,7 +236,7 @@ def check_instance_host(instance_id, dry_run=False):
 
 
 def list_active_buckets():
-    s3 = get_session().client("s3")
+    s3 = CONFIG.get_session().client("s3")
     response = s3.list_buckets()
     pprint(response)
 
@@ -351,7 +353,7 @@ def generate_config(quiet=False) -> None:
         )
 
         if not _get_user_confirmation():
-            print("Leaving Nimbo config in tact")
+            print("Leaving Nimbo config intact")
             return
 
     with open(CONFIG.nimbo_config_file, "w") as f:

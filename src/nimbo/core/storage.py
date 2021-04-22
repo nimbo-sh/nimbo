@@ -5,7 +5,7 @@ from os.path import join
 import boto3
 from botocore.exceptions import ClientError
 
-from nimbo.core.globals import CONFIG, get_session
+from nimbo import CONFIG
 
 
 def upload_file(file_name, bucket, object_name=None):
@@ -40,8 +40,9 @@ def create_bucket(bucket_name, dry_run=False):
     """
 
     try:
-        s3 = get_session().client("s3")
-        location = {"LocationConstraint": get_session().region_name}
+        session = CONFIG.get_session()
+        s3 = session.client("s3")
+        location = {"LocationConstraint": session.region_name}
         s3.create_bucket(
             Bucket=bucket_name, CreateBucketConfiguration=location, DryRun=dry_run
         )
@@ -57,7 +58,7 @@ def create_bucket(bucket_name, dry_run=False):
 
 
 def list_buckets():
-    s3 = boto3.client("s3")
+    s3 = CONFIG.get_session().client("s3")
     response = s3.list_buckets()
 
     print("Existing buckets:")
@@ -67,16 +68,17 @@ def list_buckets():
 
 def list_snapshots():
     # Retrieve the list of existing buckets
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}], MaxResults=100,
+        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}],
+        MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 
 
 def check_snapshot_state(snapshot_id):
-    ec2 = get_session().client("ec2")
+    ec2 = CONFIG.get_session().client("ec2")
     response = ec2.describe_snapshots(SnapshotIds=[snapshot_id])
     return response["Snapshots"][0]["State"]
 
