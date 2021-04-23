@@ -139,7 +139,7 @@ def sync_code(host):
         print("Please consider using git to track the files to sync.")
         subprocess.Popen(
             f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "
-            f"--include '*/' --include '*.py' --exclude '*' "
+            f"--include '*/' --include '*.py' --include '*.sh' --exclude '*' "
             f". ubuntu@{host}:/home/ubuntu/project",
             shell=True,
         ).communicate()
