@@ -1,18 +1,24 @@
-import os
 import json
-import requests
 from datetime import datetime
 
+import requests
 
-def record_event(cmd, config):
-    user_id = config["user_id"]
+from nimbo import CONFIG
+
+
+# noinspection PyBroadException
+def record_event(cmd):
+    if not CONFIG.telemetry:
+        return
+    else:
+        if not CONFIG.user_id:
+            raise ValueError("CONFIG.user_id is undefined.")
 
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
 
-    url = f"https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
-    data = {"user_id": user_id, "cmd": "run", "date": date_time}
+    data = {"user_id": CONFIG.user_id, "cmd": cmd, "date": date_time}
     try:
-        r = requests.post(url, data=json.dumps(data), timeout=2)
-    except:
+        requests.post(CONFIG.telemetry_url, data=json.dumps(data), timeout=2)
+    except BaseException:
         pass

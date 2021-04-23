@@ -4,11 +4,11 @@ import boto3
 import firebase_admin
 from firebase_admin import credentials, db
 
-from nimbo.core.paths import NIMBO
-from nimbo.core.utils import full_region_names
+from nimbo import CONFIG
+from nimbo.core.statics import NIMBO_ROOT
 
 cred = credentials.Certificate(
-    NIMBO + "/ami/credentials/nimboami-firebase-adminsdk-yxyfy-6d01f1d35f.json"
+    NIMBO_ROOT + "/ami/credentials/nimboami-firebase-adminsdk-yxyfy-6d01f1d35f.json"
 )
 firebase_admin.initialize_app(
     cred, options={"databaseURL": "https://nimboami-default-rtdb.firebaseio.com"}
@@ -16,7 +16,7 @@ firebase_admin.initialize_app(
 image_db = db.reference("images")
 
 image_catalog = {}
-for dest_region in full_region_names.keys():
+for dest_region in CONFIG.full_region_names.keys():
     print(dest_region)
     session = boto3.Session(profile_name="nimbo", region_name=dest_region)
     ec2 = session.client("ec2")

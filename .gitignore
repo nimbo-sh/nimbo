@@ -1,5 +1,6 @@
 data/
 *.pem
+**/nimbo-config.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -146,5 +147,3 @@ Pipfile.lock
 
 # Intellij
 .idea
-
-nimbo-config.yml
