@@ -44,9 +44,10 @@ Current examples include:
 
 ## Product roadmap
 - **Implement `nimbo notebook`:** You will be able to spin up a jupyter lab notebook running on an EC2 instance. Data will be continuously synced with your S3 bucket so that you don't have to worry about doing manual backups. Your local code will be automatically synced with the instance, so you can code locally and test the changes directly on the remote notebook. The notebook will also be synced with your local machine so you don't have to worry about losing your notebook changes when deleting the instance.
+- **GCP support:** Use the same commands to run jobs on AWS or GCP.
+- **Deployment:** Deploy ML models to AWS/GCP with a single command. Automatically create an API endpoint for providing video/audio/text and getting results from your model back.
 - **Add Docker support:** Right now we assume you are using a conda environment, but many people use docker to run jobs. This feature would allow you to run a command such as `nimbo run "docker-compose up"`, where the docker image would be fetched from DockerHub (or equivalent repository) through a `docker_image` parameter on the `nimbo-config.yml` file.
 - **Add AMIs with preloaded large datasets:** Downloading and storing large datasets like ImageNet is a time consuming process. We will make available AMIs that come with an extra EBS volume mounted on `/datasets`, so that you can use large datasets without worrying about storing them or waiting for them to be fetched from your S3 bucket. Get in touch if you have datasets you would like to see preloaded with the instances. 
-- **GCP support:** Use the same commands to run jobs on AWS or GCP. 
 
 ## Developing
 If you want to make changes to the codebase, you can clone this repo and use `pip install -e .` to install nimbo locally. As you make code changes, your local
