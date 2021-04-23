@@ -42,9 +42,9 @@ LOCAL_LOG=/home/ubuntu/nimbo-log.txt
 echo "Will save logs to $S3_LOG_PATH"
 
 while true; do 
-    $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH
-    $AWS s3 sync --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH
-    sleep 3
+    $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH > /dev/null 2>&1
+    $AWS s3 sync --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH > /dev/null 2>&1
+    sleep 5
 done &
 
 mkdir -p $LOCAL_DATASETS_PATH
@@ -76,7 +76,7 @@ echo "Done."
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH to $LOCAL_DATASETS_PATH..."
 $AWS s3 cp --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/dev/null
-printf "Importing results from $S3_RESULTS_PATH to $LOCAL_RESULTS_PATH..."
+echo "Importing results from $S3_RESULTS_PATH to $LOCAL_RESULTS_PATH..."
 $AWS s3 cp --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/dev/null
 
 echo ""

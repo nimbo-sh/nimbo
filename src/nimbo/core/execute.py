@@ -270,15 +270,15 @@ def run_access_test(dry_run=False):
             "echo 'Hello World' > nimbo-access-test.txt", shell=True
         )
         command = (
-            f"aws s3 cp nimbo-access-test.txt {results_path}"
-            " --profile {profile} --region {region}"
+            f"aws s3 cp nimbo-access-test.txt {results_path} "
+            f" --profile {profile} --region {region}"
         )
         subprocess.check_output(command, shell=True)
         command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
         subprocess.check_output(command, shell=True)
         command = (
-            f"aws s3 rm {results_path}/nimbo-access-test.txt"
-            "--profile {profile} --region {region}"
+            f"aws s3 rm {results_path}/nimbo-access-test.txt "
+            f"--profile {profile} --region {region}"
         )
         subprocess.check_output(command, shell=True)
 
