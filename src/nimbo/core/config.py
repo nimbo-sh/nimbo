@@ -62,7 +62,7 @@ class NimboConfig(pydantic.BaseModel):
     image: str = "ubuntu18-latest-drivers"
     disk_size: Optional[int] = None
     disk_iops: pydantic.conint(ge=0) = None
-    disk_type: _DiskType = _DiskType.STANDARD
+    disk_type: _DiskType = _DiskType.GP2
     spot: bool = False
     spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = None
     security_group: Optional[str] = None
