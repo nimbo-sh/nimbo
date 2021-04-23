@@ -257,7 +257,7 @@ def run_access_test(dry_run=False):
     if dry_run:
         return
 
-    CONFIG.instance_type = "t3.medium"
+    CONFIG.instance_type = "t2.medium"
     CONFIG.run_in_background = False
     CONFIG.persist = False
 
