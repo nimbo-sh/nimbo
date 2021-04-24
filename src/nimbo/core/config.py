@@ -50,6 +50,9 @@ class NimboConfig(pydantic.BaseModel):
         title = "Nimbo configuration"
         extra = "forbid"
 
+    # TODO
+    provider: str = "aws"
+
     aws_profile: Optional[str] = None
     region_name: Optional[str] = None
 

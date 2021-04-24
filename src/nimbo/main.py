@@ -3,6 +3,8 @@ import click
 from nimbo.core import access, execute, storage, utils
 from nimbo.core.config import RequiredCase
 
+from nimbo.core.cloud_provider import Cloud
+
 
 @click.group(context_settings=dict(max_content_width=150))
 def cli():
