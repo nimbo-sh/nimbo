@@ -8,7 +8,7 @@ from subprocess import PIPE
 
 from nimbo import CONFIG
 from nimbo.core import telemetry, utils
-from nimbo.core.statics import NIMBO_ROOT
+from nimbo.core.constants import NIMBO_ROOT
 
 
 def launch_instance(client):

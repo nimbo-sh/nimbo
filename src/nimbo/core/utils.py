@@ -12,8 +12,12 @@ from botocore.exceptions import ClientError
 
 from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.core.environment import is_test_environment
-from nimbo.core.statics import FULL_REGION_NAMES, INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG
+from nimbo.core.constants import (
+    FULL_REGION_NAMES,
+    INSTANCE_GPU_MAP,
+    IS_TEST_ENV,
+    NIMBO_DEFAULT_CONFIG,
+)
 
 
 def ec2_instance_types():
@@ -327,7 +331,7 @@ def handle_errors(func):
 
     @functools.wraps(func)
     def decorated(*args, **kwargs):
-        if is_test_environment():
+        if IS_TEST_ENV:
             return func(*args, **kwargs)
         else:
             try:

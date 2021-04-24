@@ -9,7 +9,7 @@ import botocore.session
 import pydantic
 import yaml
 
-from nimbo.core.statics import FULL_REGION_NAMES, NIMBO_CONFIG_FILE, TELEMETRY_URL
+from nimbo.core.constants import FULL_REGION_NAMES, NIMBO_CONFIG_FILE, TELEMETRY_URL
 
 
 class _DiskType(str, enum.Enum):

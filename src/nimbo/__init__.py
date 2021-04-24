@@ -6,13 +6,13 @@ import pydantic
 
 import nimbo.core.config
 import nimbo.tests.config
-from nimbo.core.environment import is_test_environment
+from nimbo.core.constants import IS_TEST_ENV
 
 version = pkg_resources.get_distribution("nimbo").version
 
 
 try:
-    if is_test_environment():
+    if IS_TEST_ENV:
         CONFIG = nimbo.tests.config.make_config()
     else:
         CONFIG = nimbo.core.config.make_config()

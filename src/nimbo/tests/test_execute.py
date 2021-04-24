@@ -6,7 +6,7 @@ from click.testing import CliRunner
 from nimbo import CONFIG
 from nimbo.main import cli
 from nimbo.core import execute
-from nimbo.core.statics import FULL_REGION_NAMES
+from nimbo.core.constants import FULL_REGION_NAMES
 from nimbo.core.config import RequiredCase
 from nimbo.tests.utils import isolated_filesystem
 

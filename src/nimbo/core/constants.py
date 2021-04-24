@@ -1,5 +1,7 @@
 import pathlib
+import os
 
+IS_TEST_ENV = "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test"
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
