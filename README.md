@@ -50,8 +50,11 @@ Current examples include:
 - **Add AMIs with preloaded large datasets:** Downloading and storing large datasets like ImageNet is a time consuming process. We will make available AMIs that come with an extra EBS volume mounted on `/datasets`, so that you can use large datasets without worrying about storing them or waiting for them to be fetched from your S3 bucket. Get in touch if you have datasets you would like to see preloaded with the instances. 
 
 ## Developing
-If you want to make changes to the codebase, you can clone this repo and use `pip install -e .` to install nimbo locally. As you make code changes, your local
-nimbo installation will automatically update
+
+If you want to make changes to the codebase, you can clone this repo and
+1. `pip install -e .` to install nimbo locally. As you make code changes, your local
+nimbo installation will automatically update.
+2. `pip install -r requirements/dev.txt` for installing all dependencies for development.
 
 ### Running Tests
 
