@@ -1,6 +1,7 @@
 import logging
 import subprocess
 from os.path import join
+from rich import print
 
 from botocore.exceptions import ClientError
 

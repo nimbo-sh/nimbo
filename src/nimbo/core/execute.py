@@ -5,15 +5,17 @@ import sys
 import time
 from os.path import join
 from subprocess import PIPE
+from rich import print
 
 from nimbo import CONFIG
 from nimbo.core import telemetry, utils
 from nimbo.core.statics import NIMBO_ROOT
+from nimbo.core.strings import arrow, bold, warning, error
 
 
 def launch_instance(client):
     image = utils.get_image_id()
-    print(f"Using image {image}")
+    print(bold(f"{arrow} Launching instance with image {image}... "), end="", flush=True)
 
     ebs_config = {
         "VolumeSize": CONFIG.disk_size,
@@ -78,7 +80,7 @@ def launch_instance(client):
             print("Cancelled spot instance request.")
             sys.exit(1)
 
-        print("Done.")
+        print(bold("Done."))
         client.create_tags(
             Resources=[instance_request["InstanceId"]], Tags=utils.make_instance_tags()
         )
@@ -103,10 +105,10 @@ def wait_for_instance_running(instance_id):
 
 
 def block_until_ssh_ready(host: str) -> None:
-    print(
-        f"Waiting for instance to be ready for ssh at {host}. "
+    print(bold(
+        f"{arrow} Waiting for instance to be ready for ssh at {host}. "
         "This can take up to 2 minutes... "
-    )
+    ))
 
     start = time.monotonic()
 
@@ -130,13 +132,13 @@ def block_until_ssh_ready(host: str) -> None:
             "More info at docs.nimbo.sh/common-issues#cant-ssh.\n"
         )
 
-    print("Ready. (%0.3fs)" % (time.monotonic() - start))
+    print(bold(f"{arrow} Ready. (%0.3f s)" % (time.monotonic() - start)))
 
 
 def sync_code(host):
     if ".git" not in os.listdir():
-        print("No git repo found. Syncing all the python files as a fallback.")
-        print("Please consider using git to track the files to sync.")
+        print(bold(warning("No git repo found. Syncing all the python and bash files as a fallback.")))
+        print(bold(warning("Please consider using git to track the files to sync.")))
         subprocess.Popen(
             f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "
             f"--include '*/' --include '*.py' --include '*.sh' --exclude '*' "
@@ -185,7 +187,6 @@ def run_job(job_cmd, dry_run=False):
     # access.verify_nimbo_instance_profile(session)
 
     # Launch instance with new volume for anaconda
-    print("Launching instance... ", end="", flush=True)
     ec2 = CONFIG.get_session().client("ec2")
     telemetry.record_event("run")
 
@@ -198,8 +199,8 @@ def run_job(job_cmd, dry_run=False):
         # Wait for the instance to be running
         wait_for_instance_running(instance_id)
         end_t = time.monotonic()
-        print(f"Instance running. ({round((end_t-start_t), 2)}s)")
-        print(f"InstanceId: {instance_id}")
+        print(bold(f"Instance running. ({round((end_t-start_t), 2)} s)"))
+        print(bold(f"{arrow} InstanceId: [green]{instance_id}[/green]"))
         print()
 
         time.sleep(5)
@@ -222,7 +223,8 @@ def run_job(job_cmd, dry_run=False):
         subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
 
         # Send conda env yaml and setup scripts to instance
-        print("\nSyncing conda, config, and setup files...")
+        print()
+        print(bold(f"{arrow} Syncing conda, config, and setup files..."))
 
         # Create project folder and send env and config files there
         subprocess.check_output(f"{ssh} ubuntu@{host} " f"mkdir project", shell=True)
@@ -234,9 +236,11 @@ def run_job(job_cmd, dry_run=False):
         subprocess.check_output(f"rm {local_env}", shell=True)
 
         # Sync code with instance
-        print("\nSyncing code...")
+        print()
+        print(bold(f"{arrow} Syncing code..."))
         sync_code(host)
 
+        print(bold(f"{arrow} Switching to the instance code..."))
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh")
 
@@ -244,10 +248,10 @@ def run_job(job_cmd, dry_run=False):
 
     except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
-            print(e)
+            print(red(e))
 
         if not CONFIG.persist:
-            print(f"Deleting instance {instance_id} (from local)...")
+            print(bold(red(f"Deleting instance {instance_id} (from local)... ")))
             utils.delete_instance(instance_id)
 
         return {"message": job_cmd + "_error", "instance_id": instance_id}
@@ -340,10 +344,10 @@ def run_access_test(dry_run=False):
 
     except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:
-            print(e)
+            print(red(e))
 
         if not CONFIG.persist:
-            print(f"Deleting instance {instance_id} (from local)...")
+            print(red(f"Deleting instance {instance_id} (from local)..."))
             utils.delete_instance(instance_id)
 
         sys.exit(1)

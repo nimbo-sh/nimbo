@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from pprint import pprint
+from rich import print
 
 import botocore
 import botocore.errorfactory
@@ -14,6 +15,7 @@ from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
 from nimbo.core.environment import is_test_environment
 from nimbo.core.statics import FULL_REGION_NAMES, INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG
+from nimbo.core.strings import bold
 
 
 def ec2_instance_types():
@@ -29,7 +31,7 @@ def ec2_instance_types():
 
 
 def format_price_string(instance_type, price, gpus, cpus, mem):
-    string = "{0: <16} {1: <15} {2: <10} {3: <5} {4:<7}".format(
+    string = "\t{0: <16} {1: <15} {2: <10} {3: <5} {4:<7}".format(
         instance_type, price, gpus, cpus, mem
     )
     return string
@@ -52,7 +54,8 @@ def list_gpu_prices(dry_run=False):
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
     )
-    print(string)
+    print()
+    print(bold(string))
 
     for instance_type in instance_types:
         response = pricing.get_products(
@@ -82,7 +85,7 @@ def list_gpu_prices(dry_run=False):
             instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem
         )
         print(string)
-
+    print()
 
 def list_spot_gpu_prices(dry_run=False):
     if dry_run:
@@ -188,7 +191,7 @@ def delete_instance(instance_id, dry_run=False):
     try:
         response = ec2.terminate_instances(InstanceIds=[instance_id], DryRun=dry_run)
         status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
-        print(f"Instance {instance_id}: {status}")
+        print(bold(f"Instance [green]{instance_id}[/green]: {status}"))
     except ClientError as e:
         if "DryRunOperation" not in str(e):
             raise
@@ -209,7 +212,7 @@ def delete_all_instances(dry_run=False):
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
-                print(f"Instance {instance_id}: {status}")
+                print(bold(f"Instance [green]{instance_id}[/green]: {status}"))
     except ClientError as e:
         if "DryRunOperation" not in str(e):
             raise
