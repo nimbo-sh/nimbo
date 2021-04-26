@@ -2,7 +2,7 @@ import abc
 import os
 import random
 import string
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 import pydantic
 
@@ -14,7 +14,7 @@ from nimbo.core.config import (
     load_yaml_from_file,
 )
 
-# TODO: support multiple config files
+# TODO: support multiple config files, refactor test infrastructure
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
 CONDA_ENV = "env.yml"
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
@@ -28,9 +28,11 @@ S3_DATASETS_PATH = f"s3://nimbo-test-bucket/{_random_string_of_len(20)}"
 S3_RESULTS_PATH = f"s3://nimbo-test-bucket/{_random_string_of_len(20)}"
 
 
-class BaseTestConfig(pydantic.BaseModel, abc.ABC):
-    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
+class CommonTestConfigMixin(abc.ABC, pydantic.BaseModel):
+    # Can't use pydantic.PrivateAttr here as pydantic complains about overlap later
+    # user_id and _initial_state fields defined here to prevent undefined warnings
+    user_id: Optional[str] = None
+    _initial_state: Dict[str, Any] = {}
 
     def save_initial_state(self):
         self._initial_state = self.dict()
@@ -53,7 +55,10 @@ class BaseTestConfig(pydantic.BaseModel, abc.ABC):
         ...
 
 
-class AwsTestConfig(BaseTestConfig, AwsConfig):
+class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
+    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
+    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
+
     def inject_required_config(self, *cases: RequiredCase) -> None:
         cases = RequiredCase.decompose(*cases)
 
@@ -82,7 +87,10 @@ class AwsTestConfig(BaseTestConfig, AwsConfig):
                 return file
 
 
-class GcpTestConfig(BaseTestConfig, GcpConfig):
+class GcpTestConfig(CommonTestConfigMixin, GcpConfig):
+    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
+    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
+
     def inject_required_config(self, *cases: RequiredCase) -> None:
         pass
 

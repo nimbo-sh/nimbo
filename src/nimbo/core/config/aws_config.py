@@ -38,9 +38,6 @@ class AwsConfig(BaseConfig):
     security_group: Optional[str] = None
     instance_key: Optional[str] = None
 
-    # The following are defined internally
-    user_id: Optional[str] = None
-
     def get_session(self) -> boto3.Session:
         session = boto3.Session(
             profile_name=self.aws_profile, region_name=self.region_name

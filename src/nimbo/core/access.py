@@ -26,31 +26,6 @@ def create_security_group(group_name, dry_run=False):
     )
 
 
-def allow_inbound_current_ip(group_name, dry_run=False):
-
-    ec2 = CONFIG.get_session().client("ec2")
-
-    # Get the security group id
-    response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
-    security_group_id = response["SecurityGroups"][0]["GroupId"]
-
-    my_public_ip = requests.get("https://checkip.amazonaws.com").text.strip()
-
-    response = ec2.authorize_security_group_ingress(
-        GroupId=security_group_id,
-        IpPermissions=[
-            {
-                "IpProtocol": "tcp",
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpRanges": [{"CidrIp": f"{my_public_ip}/16"}],
-            }
-        ],
-    )
-    print("Ingress Successfully Set")
-    pprint(response)
-
-
 def create_instance_profile_and_role(dry_run=False):
     iam = CONFIG.get_session().client("iam")
     role_name = "NimboS3AndEC2FullAccess"

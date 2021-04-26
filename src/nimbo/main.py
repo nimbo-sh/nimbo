@@ -249,7 +249,7 @@ def allow_current_ip(security_group, dry_run):
 
     GROUP is the security group to which the inbound rule will be added.
     """
-    access.allow_inbound_current_ip(security_group, dry_run)
+    access.allow_ingress_current_ip(security_group, dry_run)
 
 
 @cli.command()

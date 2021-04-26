@@ -32,8 +32,8 @@ class RequiredCase(str, enum.Enum):
 
 
 class CloudProvider(str, enum.Enum):
-    AWS = "aws"
-    GCP = "gcp"
+    AWS = "AWS"
+    GCP = "GCP"
 
 
 class BaseConfig(pydantic.BaseModel):
@@ -41,7 +41,7 @@ class BaseConfig(pydantic.BaseModel):
         title = "Nimbo configuration"
         extra = "forbid"
 
-    provider: CloudProvider
+    provider: Optional[CloudProvider] = None
 
     local_datasets_path: Optional[str] = None
     local_results_path: Optional[str] = None
@@ -55,6 +55,7 @@ class BaseConfig(pydantic.BaseModel):
 
     # The following are defined internally
     nimbo_config_file: str = NIMBO_CONFIG_FILE
+    user_id: Optional[str] = None
     _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
         default=os.path.isfile(NIMBO_CONFIG_FILE)
     )
