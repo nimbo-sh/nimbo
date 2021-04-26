@@ -1,15 +1,14 @@
 import enum
 import os
 import sys
-from typing import Any, Dict, Optional, Set
+from typing import Optional
 
 import boto3
-import botocore.exceptions
-import botocore.session
+import botocore
 import pydantic
-import yaml
 
-from nimbo.core.constants import FULL_REGION_NAMES, NIMBO_CONFIG_FILE, TELEMETRY_URL
+from nimbo.core.config.common import BaseConfig, RequiredCase
+from nimbo.core.constants import FULL_REGION_NAMES, NIMBO_CONFIG_FILE
 
 
 class _DiskType(str, enum.Enum):
@@ -22,42 +21,10 @@ class _DiskType(str, enum.Enum):
     GP3 = "gp3"
 
 
-class RequiredCase(str, enum.Enum):
-    # First digit is a unique ID, other digits are the IDs of dependencies
-    NONE = "0"
-    MINIMAL = "10"
-    STORAGE = "210"
-    INSTANCE = "310"
-    JOB = "43210"
-
-    @classmethod
-    def decompose(cls, *cases: "RequiredCase") -> Set["RequiredCase"]:
-        """ Gets all cases that compose each case and the case itself """
-
-        decomposed = set()
-
-        for case in cases:
-            for c in RequiredCase:
-                if c[0] in case.value:
-                    decomposed.add(c)
-
-        # noinspection PyTypeChecker
-        return decomposed
-
-
-class NimboConfig(pydantic.BaseModel):
-    class Config:
-        title = "Nimbo configuration"
-        extra = "forbid"
-
-    # TODO
-    provider: str = "aws"
-
+class AwsConfig(BaseConfig):
     aws_profile: Optional[str] = None
     region_name: Optional[str] = None
 
-    local_datasets_path: Optional[str] = None
-    local_results_path: Optional[str] = None
     s3_datasets_path: Optional[str] = None
     s3_results_path: Optional[str] = None
 
@@ -71,20 +38,8 @@ class NimboConfig(pydantic.BaseModel):
     security_group: Optional[str] = None
     instance_key: Optional[str] = None
 
-    conda_env: Optional[str] = None
-    run_in_background: bool = False
-    persist: bool = False
-
-    ssh_timeout: pydantic.conint(strict=True, ge=0) = 180
-    telemetry: bool = True
-
     # The following are defined internally
-    nimbo_config_file: str = NIMBO_CONFIG_FILE
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
-        default=os.path.isfile(NIMBO_CONFIG_FILE)
-    )
     user_id: Optional[str] = None
-    telemetry_url: str = TELEMETRY_URL
 
     def get_session(self) -> boto3.Session:
         session = boto3.Session(
@@ -190,18 +145,6 @@ class NimboConfig(pydantic.BaseModel):
                 f"expected to be one of {', '.join(region_names)}"
             )
 
-    def _local_results_not_outside_project(self) -> Optional[str]:
-        if os.path.isabs(self.local_results_path):
-            return "local_results_path should be a relative path"
-        if ".." in self.local_results_path:
-            return "local_results_path should not be outside of the project directory"
-
-    def _local_datasets_not_outside_project(self) -> Optional[str]:
-        if os.path.isabs(self.local_datasets_path):
-            return "local_datasets_path should be a relative path"
-        if ".." in self.local_datasets_path:
-            return "local_datasets_path should not be outside of the project directory"
-
     def _disk_iops_specified_when_needed(self) -> Optional[str]:
         if self.disk_type in [_DiskType.IO1, _DiskType.IO2] and not self.disk_iops:
             return (
@@ -209,42 +152,3 @@ class NimboConfig(pydantic.BaseModel):
                 "to be specified.\nPlease visit "
                 "https://docs.nimbo.sh/nimbo-config-file-options for more details."
             )
-
-    @pydantic.validator("nimbo_config_file")
-    def _nimbo_config_file_unchanged(cls, value):
-        if value != NIMBO_CONFIG_FILE:
-            raise ValueError("overriding nimbo config file name is forbidden")
-        return value
-
-    @pydantic.validator("telemetry_url")
-    def _nimbo_telemetry_url_unchanged(cls, value):
-        if value != TELEMETRY_URL:
-            raise ValueError("overriding telemetry url is forbidden")
-        return value
-
-    def save_initial_state(self) -> None:
-        raise NotImplementedError(
-            "save_initial_state is only available for NimboTestConfig"
-        )
-
-    def reset_required_config(self) -> None:
-        raise NotImplementedError(
-            "reset_required_config is only available for NimboTestConfig"
-        )
-
-    def inject_required_config(self, *cases: RequiredCase) -> None:
-        raise NotImplementedError(
-            "inject_required_config is only available for NimboTestConfig"
-        )
-
-
-def load_yaml_from_file(file: str) -> Dict[str, Any]:
-    if os.path.isfile(file):
-        with open(file, "r") as f:
-            return yaml.safe_load(f)
-
-    return {}
-
-
-def make_config() -> NimboConfig:
-    return NimboConfig(**load_yaml_from_file(NIMBO_CONFIG_FILE))
