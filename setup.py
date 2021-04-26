@@ -15,7 +15,6 @@ setuptools.setup(
     project_urls={"Bug Tracker": "https://github.com/nimbo-sh/nimbo/issues"},
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "License :: Free for up to 3 persons (inclusively) per AWS root account",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Unix",
         "Operating System :: MacOS",
