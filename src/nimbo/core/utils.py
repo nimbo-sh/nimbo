@@ -117,6 +117,36 @@ def list_spot_gpu_prices(dry_run=False):
         print(string)
 
 
+def get_cost(granularity):
+    if granularity == "monthly":
+        dateutil.relativedelta.relativedelta(months=6)
+
+    r = client.get_cost_and_usage(
+        TimePeriod={"End": "2021-04-23", "Start": "2021-04-20"},
+        Granularity=granularity.upper(),
+        Filter={
+            "And": [
+                {
+                    "Not": {
+                        "Dimensions": {
+                            "Key": "RECORD_TYPE",
+                            "Values": ["Credit", "Refund"],
+                        }
+                    }
+                },
+                {
+                    "Dimensions": {
+                        "Key": "SERVICE",
+                        "Values": ["Amazon Elastic Compute Cloud - Compute"],
+                    }
+                },
+            ]
+        },
+        Metrics=["UnblendedCost"],
+        GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+    )["ResultsByTime"]
+
+
 def show_active_instances(dry_run=False):
     ec2 = CONFIG.get_session().client("ec2")
     try:
