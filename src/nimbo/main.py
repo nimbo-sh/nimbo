@@ -103,7 +103,7 @@ def list_spot_gpu_prices(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def spending(qty, timescale, dry_run):
-    """Shows daily/monthly spending summary for your account.
+    """Shows daily/monthly spending summary. Costs without credits or refunds applied.
 
     QTY is the number of days/months you want to see, starting from the current date.\n
     For example:\n
