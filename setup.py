@@ -34,6 +34,6 @@ setuptools.setup(
         "click>=7.0",
         "pyyaml>=5.3.0",
         "pydantic>=1.7.0",
-        "rich>=10.1.0"
+        "rich>=10.1.0",
     ],
 )

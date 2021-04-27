@@ -1,11 +1,11 @@
 import logging
 import subprocess
 from os.path import join
-from rich import print
 
 from botocore.exceptions import ClientError
 
 from nimbo import CONFIG
+from nimbo.core.print import print
 
 
 def upload_file(file_name, bucket, object_name=None):
@@ -71,7 +71,8 @@ def list_snapshots():
     ec2 = CONFIG.get_session().client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}], MaxResults=100,
+        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}],
+        MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 

@@ -4,7 +4,6 @@ import os
 import subprocess
 import sys
 from pprint import pprint
-from rich import print
 
 import botocore
 import botocore.errorfactory
@@ -15,7 +14,7 @@ from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
 from nimbo.core.environment import is_test_environment
 from nimbo.core.statics import FULL_REGION_NAMES, INSTANCE_GPU_MAP, NIMBO_DEFAULT_CONFIG
-from nimbo.core.strings import bold
+from nimbo.core.print import print, print_header
 
 
 def ec2_instance_types():
@@ -55,7 +54,7 @@ def list_gpu_prices(dry_run=False):
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
     )
     print()
-    print(bold(string))
+    print(string, style="bold")
 
     for instance_type in instance_types:
         response = pricing.get_products(
@@ -87,6 +86,7 @@ def list_gpu_prices(dry_run=False):
         print(string)
     print()
 
+
 def list_spot_gpu_prices(dry_run=False):
     if dry_run:
         return
@@ -103,7 +103,8 @@ def list_spot_gpu_prices(dry_run=False):
     string = format_price_string(
         "InstanceType", "Price ($/hour)", "GPUs", "CPUs", "Mem (Gb)"
     )
-    print(string)
+    print()
+    print(string, style="bold")
 
     for instance_type in instance_types:
         response = ec2.describe_spot_price_history(
@@ -118,6 +119,7 @@ def list_spot_gpu_prices(dry_run=False):
             instance_type, round(price, 2), f"{num_gpus} x {gpu_type}", cpus, mem
         )
         print(string)
+    print()
 
 
 def show_active_instances(dry_run=False):
@@ -131,7 +133,7 @@ def show_active_instances(dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 print(
-                    f"Id: {inst['InstanceId']}\n"
+                    f"Id: [bright_green]{inst['InstanceId']}[/bright_green]\n"
                     f"Status: {inst['State']['Name']}\n"
                     f"Launch Time: {inst['LaunchTime']}\n"
                     f"InstanceType: {inst['InstanceType']}\n"
@@ -191,7 +193,7 @@ def delete_instance(instance_id, dry_run=False):
     try:
         response = ec2.terminate_instances(InstanceIds=[instance_id], DryRun=dry_run)
         status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
-        print(bold(f"Instance [green]{instance_id}[/green]: {status}"))
+        print_header(f"Instance [green]{instance_id}[/green]: {status}")
     except ClientError as e:
         if "DryRunOperation" not in str(e):
             raise
@@ -208,11 +210,13 @@ def delete_all_instances(dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 instance_id = inst["InstanceId"]
-                delete_response = ec2.terminate_instances(InstanceIds=[instance_id],)
+                delete_response = ec2.terminate_instances(
+                    InstanceIds=[instance_id],
+                )
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
-                print(bold(f"Instance [green]{instance_id}[/green]: {status}"))
+                print_header(f"Instance [green]{instance_id}[/green]: {status}")
     except ClientError as e:
         if "DryRunOperation" not in str(e):
             raise
@@ -222,7 +226,9 @@ def check_instance_host(instance_id, dry_run=False):
     ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
+            InstanceIds=[instance_id],
+            Filters=make_instance_filters(),
+            DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:
