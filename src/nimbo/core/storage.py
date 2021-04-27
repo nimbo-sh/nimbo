@@ -7,6 +7,30 @@ from botocore.exceptions import ClientError
 from nimbo import CONFIG
 
 
+def s3_cp_command(source, target, delete=False):
+    command = f"aws s3 cp {source} {target} " \
+              f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+              
+    if delete:
+        command += " --delete"
+
+    if CONFIG.encryption:
+        command += f" --sse {CONFIG.encryption}"
+    return command
+
+
+def s3_sync_command(source, target):
+    command = f"aws s3 sync {source} {target} " \
+              f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+
+    if delete:
+        command += " --delete"
+
+    if CONFIG.encryption:
+        command += f" --sse {CONFIG.encryption}"
+    return command
+
+
 def upload_file(file_name, bucket, object_name=None):
     """Upload a file to an S3 bucket
 
@@ -81,10 +105,8 @@ def check_snapshot_state(snapshot_id):
     return response["Snapshots"][0]["State"]
 
 
-def sync_folder(source, target, profile, region, delete=False):
-    command = f"aws s3 sync {source} {target} --profile {profile} --region {region}"
-    if delete:
-        command = command + " --delete"
+def sync_folder(source, target, delete=False):
+    command = s3_sync_command(source, target, delete)
     print(f"\nRunning command: {command}\n")
     subprocess.Popen(command, shell=True).communicate()
 
@@ -104,7 +126,7 @@ def pull(folder, delete=False):
             source = CONFIG.s3_datasets_path
             target = CONFIG.local_datasets_path
 
-    sync_folder(source, target, CONFIG.aws_profile, CONFIG.region_name, delete)
+    sync_folder(source, target, delete)
 
 
 # noinspection DuplicatedCode
@@ -122,7 +144,7 @@ def push(folder, delete=False):
             source = CONFIG.local_datasets_path
             target = CONFIG.s3_datasets_path
 
-    sync_folder(source, target, CONFIG.aws_profile, CONFIG.region_name, delete)
+    sync_folder(source, target, delete)
 
 
 def ls(path):

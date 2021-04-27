@@ -21,11 +21,18 @@ LOCAL_DATASETS_PATH="$(grep 'local_datasets_path:' $CONFIG | awk '{print $2}')"
 LOCAL_RESULTS_PATH="$(grep 'local_results_path:' $CONFIG | awk '{print $2}')"
 S3_DATASETS_PATH="$(grep 's3_datasets_path:' $CONFIG | awk '{print $2}')"
 S3_RESULTS_PATH="$(grep 's3_results_path:' $CONFIG | awk '{print $2}')"
+ENCRYPTION="$(grep 'encryption:' $CONFIG | awk '{print $2}')"
+
+if [ -z "${ENCRYPTION}" ]; then
+    S3CP="$AWS s3 cp"
+else
+    S3CP="$AWS s3 cp --sse $ENCRYPTION"
+fi
 
 echo 'Hello World' > empty.txt
-$AWS s3 cp empty.txt $S3_DATASETS_PATH
+$S3CP empty.txt $S3_DATASETS_PATH
 $AWS s3 rm $S3_DATASETS_PATH/empty.txt
-$AWS s3 cp empty.txt $S3_RESULTS_PATH
+$S3CP empty.txt $S3_RESULTS_PATH
 $AWS s3 rm $S3_RESULTS_PATH/empty.txt
 
 do_cleanup; exit

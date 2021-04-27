@@ -22,6 +22,11 @@ class _DiskType(str, enum.Enum):
     GP3 = "gp3"
 
 
+class _Encryption(str, enum.Enum):
+    AES256 = "AES256"
+    AWSKMS = "aws:kms"
+
+
 class RequiredCase(str, enum.Enum):
     # First digit is a unique ID, other digits are the IDs of dependencies
     NONE = "0"
@@ -57,6 +62,7 @@ class NimboConfig(pydantic.BaseModel):
     local_results_path: Optional[str] = None
     s3_datasets_path: Optional[str] = None
     s3_results_path: Optional[str] = None
+    encryption: _Encryption = None
 
     instance_type: Optional[str] = None
     image: str = "ubuntu18-latest-drivers"
