@@ -437,7 +437,7 @@ def handle_errors(func):
             try:
                 return func(*args, **kwargs)
             except botocore.errorfactory.ClientError as e:
-                print(e.response["Error"]["Message"])
+                print(e)
                 sys.exit(1)
             except ValueError as e:
                 print(e)
