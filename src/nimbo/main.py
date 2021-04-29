@@ -1,6 +1,6 @@
 import click
 
-from nimbo.core import access, execute, storage, utils
+from nimbo.core import execute, storage, utils
 from nimbo.core.config import RequiredCase
 
 from nimbo.core.cloud_provider import Cloud
@@ -249,16 +249,7 @@ def allow_current_ip(security_group, dry_run):
 
     GROUP is the security group to which the inbound rule will be added.
     """
-    access.allow_ingress_current_ip(security_group, dry_run)
-
-
-@cli.command()
-@click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.MINIMAL)
-@utils.handle_errors
-def list_instance_profiles(dry_run):
-    """Lists the instance profiles available in your account."""
-    access.list_instance_profiles(dry_run)
+    Cloud.allow_ingress_current_ip(security_group, dry_run)
 
 
 @cli.command()
@@ -271,7 +262,7 @@ def create_instance_profile(role_name, dry_run):
 
     ROLE_NAME is the role to associate with the instance profile.
     """
-    access.create_instance_profile(role_name, dry_run)
+    Cloud.setup_as_user(role_name, dry_run)
 
 
 @cli.command()
@@ -284,4 +275,4 @@ def create_instance_profile_and_role(dry_run):
     The role created has full EC2 and S3 access.\n
     Only recommended for individual accounts with root access.
     """
-    access.create_instance_profile_and_role(dry_run)
+    Cloud.setup_as_admin(dry_run)
