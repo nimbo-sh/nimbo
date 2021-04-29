@@ -71,7 +71,7 @@ def create_bucket(bucket_name, dry_run=False):
         s3 = session.client("s3")
         location = {"LocationConstraint": session.region_name}
         s3.create_bucket(
-            Bucket=bucket_name, CreateBucketConfiguration=location, DryRun=dry_run
+            Bucket=bucket_name, CreateBucketConfiguration=location
         )
     except ClientError as e:
         if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
