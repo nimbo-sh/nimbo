@@ -1,9 +1,8 @@
 import click
 
-from nimbo.core import execute, storage, utils
-from nimbo.core.config import RequiredCase
-
+from nimbo.core import execute, utils
 from nimbo.core.cloud_provider import Cloud
+from nimbo.core.config import RequiredCase
 
 
 @click.group(context_settings=dict(max_content_width=150))
@@ -170,7 +169,7 @@ def create_bucket(bucket_name, dry_run):
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
-    storage.create_bucket(bucket_name, dry_run)
+    Cloud.create_bucket(bucket_name, dry_run)
 
 
 @cli.command()
@@ -187,7 +186,7 @@ def create_bucket(bucket_name, dry_run):
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def push(folder, delete):
+def push(directory, delete):
     """Push your local datasets/results folder onto S3."""
 
     if delete:
@@ -197,7 +196,7 @@ def push(folder, delete):
             "Do you want to continue?",
             abort=True,
         )
-    storage.push(folder, delete)
+    Cloud.push(directory, delete)
 
 
 @cli.command()
@@ -214,7 +213,7 @@ def push(folder, delete):
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def pull(folder, delete):
+def pull(directory, delete):
     """Pull the S3 datasets/results folder into your local computer."""
 
     if delete:
@@ -224,7 +223,7 @@ def pull(folder, delete):
             "Do you want to continue?",
             abort=True,
         )
-    storage.pull(folder, delete)
+    Cloud.pull(directory, delete)
 
 
 @cli.command()
@@ -236,7 +235,7 @@ def ls(path):
 
     PATH is an s3 path of the form s3://bucket-name/my/files/path.
     """
-    storage.ls(path)
+    Cloud.ls(path)
 
 
 @cli.command()

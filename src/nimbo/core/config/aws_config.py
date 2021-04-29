@@ -5,6 +5,7 @@ from typing import Optional
 
 import boto3
 import botocore
+import botocore.session
 import pydantic
 
 from nimbo.core.config.common import BaseConfig, RequiredCase

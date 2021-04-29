@@ -1,6 +1,5 @@
 import json
 import pprint
-import textwrap
 
 import requests
 
@@ -19,7 +18,6 @@ class AwsPermissions(Permissions):
 
         my_public_ip = requests.get("https://checkip.amazonaws.com").text.strip()
 
-        # TODO: config option for CIDR range
         response = ec2.authorize_security_group_ingress(
             GroupId=security_group_id,
             IpPermissions=[
@@ -93,53 +91,3 @@ class AwsPermissions(Permissions):
         iam.add_role_to_instance_profile(
             InstanceProfileName=instance_profile_name, RoleName=role_name
         )
-
-    @staticmethod
-    def create_security_group(group_name: str, dry_run=False):
-        # TODO: not used
-
-        ec2 = CONFIG.get_session().client("ec2")
-        response = ec2.describe_vpcs()
-        vpc_id = response.get("Vpcs", [{}])[0].get("VpcId", "")
-
-        response = ec2.create_security_group(
-            GroupName=group_name,
-            Description="Base VPC security group for Nimbo jobs.",
-            VpcId=vpc_id,
-            DryRun=dry_run,
-        )
-
-        security_group_id = response["GroupId"]
-        print(
-            f"Security Group {group_name} (id={security_group_id}) Created in vpc {vpc_id}."
-        )
-
-    @staticmethod
-    def verify_nimbo_instance_profile(dry_run=False):
-        # TODO: not used
-
-        iam = CONFIG.get_session().client("iam")
-
-        if dry_run:
-            return
-
-        response = iam.list_instance_profiles()
-        instance_profiles = response["InstanceProfiles"]
-        instance_profile_names = [p["InstanceProfileName"] for p in instance_profiles]
-        if "NimboInstanceProfiles" not in instance_profile_names:
-            raise Exception(
-                textwrap.dedent(
-                    """Instance profile 'NimboInstanceProfile' not found.
-
-                    An instance profile is necessary to give your instance access
-                    to EC2 and S3 resources. You can create an instance profile using
-                    'nimbo create_instance_profile <role_name>'. If you are a root user,
-                    you can simply run 'nimbo create_instance_profile_and_role', and
-                    nimbo will create the necessary role policies and instance profile
-                    for you. Otherwise, please ask your admin for a role that provides
-                    the necessary EC2 and S3 read/write access.
-
-                    For more details please go to docs.nimbo.sh/instance-profiles."
-                    """
-                )
-            )
