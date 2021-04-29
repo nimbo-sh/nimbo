@@ -3,6 +3,7 @@ import pathlib
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
+NIMBO_VARS = "/tmp/nimbo_vars"
 TELEMETRY_URL = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
 
 NIMBO_DEFAULT_CONFIG = """# Data paths

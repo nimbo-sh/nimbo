@@ -10,7 +10,7 @@ from pathlib import Path
 from nimbo import CONFIG
 from nimbo.core import telemetry, utils
 from nimbo.core.storage import s3_cp_command, s3_sync_command
-from nimbo.core.statics import NIMBO_ROOT
+from nimbo.core.statics import NIMBO_ROOT, NIMBO_VARS
 
 
 def launch_instance(client):
@@ -33,16 +33,6 @@ def launch_instance(client):
         "SecurityGroups": [CONFIG.security_group],
         "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
     }
-
-    user_data = ['#!/bin/bash', 
-                f'echo "S3_DATASETS_PATH={CONFIG.s3_datasets_path}" >> /etc/environment',
-                f'echo "S3_RESULTS_PATH={CONFIG.s3_results_path}" >> /etc/environment',
-                f'echo "LOCAL_DATASETS_PATH={CONFIG.local_datasets_path}" >> /etc/environment',
-                f'echo "LOCAL_RESULTS_PATH={CONFIG.local_results_path}" >> /etc/environment']
-    if CONFIG.encryption:
-        user_data.append(f'echo "ENCRYPTION={CONFIG.encryption}" >> /etc/environment')
-
-    instance_config["UserData"] = "\n".join(user_data)
 
     if CONFIG.spot:
         extra_kwargs = {}
@@ -105,6 +95,19 @@ def launch_instance(client):
         instance = instance["Instances"][0]
 
     return instance
+
+
+def write_nimbo_vars():
+    var_list = [
+        f"S3_DATASETS_PATH={CONFIG.s3_datasets_path}",
+        f"S3_RESULTS_PATH={CONFIG.s3_results_path}",
+        f"LOCAL_DATASETS_PATH={CONFIG.local_datasets_path}",
+        f"LOCAL_RESULTS_PATH={CONFIG.local_results_path}",
+    ]
+    if CONFIG.encryption:
+        var_list.append(f"ENCRYPTION={CONFIG.encryption}")
+    with open(NIMBO_VARS, "w") as f:
+        f.write("\n".join(var_list))
 
 
 def wait_for_instance_running(instance_id):
@@ -229,21 +232,22 @@ def run_job(job_cmd, dry_run=False):
         )
         scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
-        local_env = "local_env.yml"
+        local_env = "/tmp/local_env.yml"
         user_conda_yml = CONFIG.conda_env
-        subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
+        # TODO: Replace this with shutil
+        subprocess.check_output(f"cp {user_conda_yml} {local_env}", shell=True)
 
         # Send conda env yaml and setup scripts to instance
         print("\nSyncing conda, config, and setup files...")
+        write_nimbo_vars()
 
         # Create project folder and send env and config files there
         subprocess.check_output(f"{ssh} ubuntu@{host} mkdir project", shell=True)
         subprocess.check_output(
-            f"{scp} {local_env} {CONFIG.nimbo_config_file} "
-            f"ubuntu@{host}:/home/ubuntu/project/",
+            f"{scp} {local_env} {CONFIG.nimbo_config_file} {NIMBO_VARS}"
+            f" ubuntu@{host}:/home/ubuntu/project/",
             shell=True,
         )
-        subprocess.check_output(f"rm {local_env}", shell=True)
 
         # Sync code with instance
         print("\nSyncing code...")
@@ -269,7 +273,7 @@ def run_access_test(dry_run=False):
     if dry_run:
         return
 
-    CONFIG.instance_type = "t2.medium"
+    CONFIG.instance_type = "t3.medium"
     CONFIG.run_in_background = False
     CONFIG.persist = False
 
@@ -278,7 +282,7 @@ def run_access_test(dry_run=False):
         profile = CONFIG.aws_profile
         region = CONFIG.region_name
         results_path = CONFIG.s3_results_path
-        
+
         subprocess.check_output(
             "echo 'Hello World' > nimbo-access-test.txt", shell=True
         )
@@ -340,8 +344,11 @@ def run_access_test(dry_run=False):
 
         print("Instance key allows ssh access to remote instance \u2713")
         print("Security group allows ssh access to remote instance \u2713")
+
+        write_nimbo_vars()
+
         subprocess.check_output(
-            f"{scp} {CONFIG.nimbo_config_file} ubuntu@{host}:/home/ubuntu/",
+            f"{scp} {CONFIG.nimbo_config_file} {NIMBO_VARS} ubuntu@{host}:/home/ubuntu/",
             shell=True,
         )
         run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh")

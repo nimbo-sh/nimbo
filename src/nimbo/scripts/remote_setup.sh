@@ -29,6 +29,7 @@ CONDASH=$CONDA_PATH/etc/profile.d/conda.sh
 cd $PROJ_DIR
 
 CONFIG=nimbo-config.yml
+source ./nimbo_vars
 
 if [ -z "${ENCRYPTION}" ]; then
     S3CP="$AWS s3 cp"

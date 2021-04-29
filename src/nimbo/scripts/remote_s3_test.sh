@@ -16,6 +16,7 @@ echo "Running test script..."
 
 AWS=/usr/local/bin/aws
 CONFIG=nimbo-config.yml
+source ./nimbo_vars
 
 if [ -z "${ENCRYPTION}" ]; then
     S3CP="$AWS s3 cp"
