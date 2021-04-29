@@ -19,7 +19,7 @@ def s3_cp_command(source, target, delete=False):
     return command
 
 
-def s3_sync_command(source, target):
+def s3_sync_command(source, target, delete=False):
     command = f"aws s3 sync {source} {target} " \
               f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
 

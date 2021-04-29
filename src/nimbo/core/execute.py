@@ -5,6 +5,7 @@ import sys
 import time
 from os.path import join
 from subprocess import PIPE
+from pathlib import Path
 
 from nimbo import CONFIG
 from nimbo.core import telemetry, utils
@@ -27,7 +28,7 @@ def launch_instance(client):
         "BlockDeviceMappings": [{"DeviceName": "/dev/sda1", "Ebs": ebs_config}],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,
-        "KeyName": os.path.basename(CONFIG.instance_key).rstrip(".pem"),
+        "KeyName": Path(CONFIG.instance_key).stem,
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [CONFIG.security_group],
         "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
