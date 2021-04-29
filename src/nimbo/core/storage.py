@@ -8,9 +8,11 @@ from nimbo import CONFIG
 
 
 def s3_cp_command(source, target, delete=False):
-    command = f"aws s3 cp {source} {target} " \
-              f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
-              
+    command = (
+        f"aws s3 cp {source} {target} "
+        f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+    )
+
     if delete:
         command += " --delete"
 
@@ -20,8 +22,10 @@ def s3_cp_command(source, target, delete=False):
 
 
 def s3_sync_command(source, target, delete=False):
-    command = f"aws s3 sync {source} {target} " \
-              f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+    command = (
+        f"aws s3 sync {source} {target} "
+        f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+    )
 
     if delete:
         command += " --delete"
@@ -94,7 +98,8 @@ def list_snapshots():
     ec2 = CONFIG.get_session().client("ec2")
 
     response = ec2.describe_snapshots(
-        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}], MaxResults=100,
+        Filters=[{"Name": "tag:created_by", "Values": ["nimbo"]}],
+        MaxResults=100,
     )
     return list(sorted(response["Snapshots"], key=lambda x: x["StartTime"]))
 

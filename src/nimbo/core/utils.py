@@ -309,7 +309,9 @@ def delete_all_instances(dry_run=False):
         for reservation in response["Reservations"]:
             for inst in reservation["Instances"]:
                 instance_id = inst["InstanceId"]
-                delete_response = ec2.terminate_instances(InstanceIds=[instance_id],)
+                delete_response = ec2.terminate_instances(
+                    InstanceIds=[instance_id],
+                )
                 status = delete_response["TerminatingInstances"][0]["CurrentState"][
                     "Name"
                 ]
@@ -323,7 +325,9 @@ def check_instance_host(instance_id, dry_run=False):
     ec2 = CONFIG.get_session().client("ec2")
     try:
         response = ec2.describe_instances(
-            InstanceIds=[instance_id], Filters=make_instance_filters(), DryRun=dry_run,
+            InstanceIds=[instance_id],
+            Filters=make_instance_filters(),
+            DryRun=dry_run,
         )
         host = response["Reservations"][0]["Instances"][0]["PublicIpAddress"]
     except ClientError as e:
