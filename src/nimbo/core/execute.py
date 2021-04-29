@@ -34,6 +34,16 @@ def launch_instance(client):
         "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
     }
 
+    user_data = ['#!/bin/bash', 
+                f'echo "S3_DATASETS_PATH={CONFIG.s3_datasets_path}" >> /etc/environment',
+                f'echo "S3_RESULTS_PATH={CONFIG.s3_results_path}" >> /etc/environment',
+                f'echo "LOCAL_DATASETS_PATH={CONFIG.local_datasets_path}" >> /etc/environment',
+                f'echo "LOCAL_RESULTS_PATH={CONFIG.local_results_path}" >> /etc/environment']
+    if CONFIG.encryption:
+        user_data.append(f'echo "ENCRYPTION={CONFIG.encryption}" >> /etc/environment')
+
+    instance_config["UserData"] = "\n".join(user_data)
+
     if CONFIG.spot:
         extra_kwargs = {}
         if CONFIG.spot_duration:
@@ -163,7 +173,7 @@ def sync_code(host):
 def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script):
     remote_script = join(NIMBO_ROOT, "scripts", script)
     subprocess.check_output(
-        f"{scp_cmd} {remote_script} " f"ubuntu@{host}:/home/ubuntu/", shell=True
+        f"{scp_cmd} {remote_script} ubuntu@{host}:/home/ubuntu/", shell=True
     )
 
     nimbo_log = "/home/ubuntu/nimbo-log.txt"
@@ -227,7 +237,7 @@ def run_job(job_cmd, dry_run=False):
         print("\nSyncing conda, config, and setup files...")
 
         # Create project folder and send env and config files there
-        subprocess.check_output(f"{ssh} ubuntu@{host} " f"mkdir project", shell=True)
+        subprocess.check_output(f"{ssh} ubuntu@{host} mkdir project", shell=True)
         subprocess.check_output(
             f"{scp} {local_env} {CONFIG.nimbo_config_file} "
             f"ubuntu@{host}:/home/ubuntu/project/",

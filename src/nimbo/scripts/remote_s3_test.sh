@@ -17,12 +17,6 @@ echo "Running test script..."
 AWS=/usr/local/bin/aws
 CONFIG=nimbo-config.yml
 
-LOCAL_DATASETS_PATH="$(grep 'local_datasets_path:' $CONFIG | awk '{print $2}')"
-LOCAL_RESULTS_PATH="$(grep 'local_results_path:' $CONFIG | awk '{print $2}')"
-S3_DATASETS_PATH="$(grep 's3_datasets_path:' $CONFIG | awk '{print $2}')"
-S3_RESULTS_PATH="$(grep 's3_results_path:' $CONFIG | awk '{print $2}')"
-ENCRYPTION="$(grep 'encryption:' $CONFIG | awk '{print $2}')"
-
 if [ -z "${ENCRYPTION}" ]; then
     S3CP="$AWS s3 cp"
 else
