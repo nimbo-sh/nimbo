@@ -54,7 +54,7 @@ def upload_file(file_name, bucket, object_name=None):
     try:
         s3.upload_file(file_name, bucket, object_name)
     except ClientError as e:
-        logging.error(e)
+        print(e, style="error")
         return False
     return True
 
@@ -76,9 +76,9 @@ def create_bucket(bucket_name, dry_run=False):
         )
     except ClientError as e:
         if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
-            print("Bucket nimbo-main-bucket already exists.")
+            print("Bucket nimbo-main-bucket already exists.", style="warning")
         else:
-            logging.error(e)
+            print(e, style="error")
         return False
 
     print("Bucket %s created." % bucket_name)
@@ -113,7 +113,7 @@ def check_snapshot_state(snapshot_id):
 
 def sync_folder(source, target, delete=False):
     command = s3_sync_command(source, target, delete)
-    print(f"\nRunning command: {command}\n")
+    print(f"Running command: {command}")
     subprocess.Popen(command, shell=True).communicate()
 
 

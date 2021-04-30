@@ -11,6 +11,8 @@ console = Console(
             "repr.eui64": "",
             "repr.ipv4": "",
             "repr.ipv6": "",
+            "repr.filename": "",
+            "repr.path": "",
             "error": "bold red",
             "warning": "bold magenta",
         }

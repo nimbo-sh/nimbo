@@ -30,4 +30,9 @@ $AWS s3 rm $S3_DATASETS_PATH/empty.txt
 $S3CP empty.txt $S3_RESULTS_PATH
 $AWS s3 rm $S3_RESULTS_PATH/empty.txt
 
+
+printf "The instance profile has the required S3 and EC2 permissions \xE2\x9C\x94\n"
+
+printf "Everything working \xE2\x9C\x94\n"
+
 do_cleanup; exit

@@ -303,15 +303,15 @@ def run_access_test(dry_run=False):
             "You have the necessary S3 read/write permissions from your computer \u2713"
         )
 
-    except subprocess.CalledProcessError:
-        print("\nError.", style="error")
+    except subprocess.CalledProcessError as e:
+        print(e, style="error")
         sys.exit(1)
 
     # access.verify_nimbo_instance_profile(session)
     # print("Instance profile 'NimboInstanceProfile' found \u2713")
 
     # Launch instance with new volume for anaconda
-    print("Launching test instance... ", end="", flush=True)
+    print("Launching test instance... ")
     ec2 = CONFIG.get_session().client("ec2")
 
     instance = launch_instance(ec2)
@@ -353,10 +353,6 @@ def run_access_test(dry_run=False):
             shell=True,
         )
         run_remote_script(ssh, scp, host, instance_id, "", "remote_s3_test.sh")
-        print("The instance profile has the required S3 and EC2 permissions \u2713")
-
-        print("\nEverything working \u2713")
-        print("Instance has been deleted.")
 
     except BaseException as e:
         if type(e) != KeyboardInterrupt and type(e) != subprocess.CalledProcessError:

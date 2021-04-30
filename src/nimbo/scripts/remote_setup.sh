@@ -52,12 +52,12 @@ mkdir -p $LOCAL_RESULTS_PATH
 
 mkdir -p $CONDA_PATH
 
+
 while true; do 
-    $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH > /dev/null 2>&1
-    $S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH > /dev/null 2>&1
+    $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >/tmp/nimbo-s3-logs 2>&1
+    $S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >/tmp/nimbo-s3-logs 2>&1
     sleep 5
 done &
-
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
@@ -82,9 +82,9 @@ echo "Done."
 # Import datasets and results from the bucket
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH to $LOCAL_DATASETS_PATH..."
-$S3CP --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/dev/null
+$S3CP --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/tmp/nimbo-s3-logs
 echo "Importing results from $S3_RESULTS_PATH to $LOCAL_RESULTS_PATH..."
-$S3CP --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/dev/null
+$S3CP --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/tmp/nimbo-s3-logs
 
 echo ""
 echo "================================================="
