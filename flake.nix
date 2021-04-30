@@ -1,4 +1,4 @@
-
+{
   description = "Nimbo development shell";
   nixConfig.bash-prompt = "[nimbo-dev-shell]$ ";
   inputs = { flake-utils.url = "github:numtide/flake-utils"; };
