@@ -18,7 +18,7 @@ def runner():
 
 @isolated_filesystem(RequiredCase.NONE)
 def test_generate_config(runner: CliRunner):
-    result = runner.invoke(cli, ["generate-config"], catch_exceptions=False)
+    result = runner.invoke(cli, "generate-config", catch_exceptions=False)
     assert result.exit_code == 0, result.exception
 
 

@@ -3,13 +3,14 @@ import pathlib
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
+NIMBO_VARS = "/tmp/nimbo_vars"
 TELEMETRY_URL = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
 
 NIMBO_DEFAULT_CONFIG = """# Data paths
-local_datasets_path: my-datasets-folder  # relative to project root
-local_results_path: my-results-folder    # relative to project root
-s3_datasets_path: s3://my-bucket/my-project/some-datasets-folder
-s3_results_path: s3://my-bucket/my-project/some-results-folder
+local_datasets_path: your-datasets-folder  # relative to project root
+local_results_path: your-results-folder    # relative to project root
+s3_datasets_path: s3://your-bucket/your-project/example-datasets-folder
+s3_results_path: s3://your-bucket/your-project/example-results-folder
 
 # Device, environment and regions
 aws_profile: default
@@ -18,16 +19,16 @@ instance_type: p2.xlarge
 spot: no
 
 image: ubuntu18-latest-drivers
-disk_size: 128
-conda_env: my-conda-file.yml
+disk_size: 128  # In GB
+conda_env: your-env-file.yml  # denotes project root
 
 # Job options
 run_in_background: no
-persist: no
+persist: no  # whether instance persists when the job finishes or on error
 
 # Permissions and credentials
 security_group: default
-instance_key: my-ec2-key-pair.pem
+instance_key: your-ec2-key-pair.pem  # can be an absolute path
 """
 
 
