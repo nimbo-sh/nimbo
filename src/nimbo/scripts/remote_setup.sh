@@ -47,16 +47,17 @@ S3_LOG_PATH=$S3_RESULTS_PATH/nimbo-logs/$S3_LOG_NAME
 LOCAL_LOG=/home/ubuntu/nimbo-log.txt
 echo "Will save logs to $S3_LOG_PATH"
 
+mkdir -p $LOCAL_DATASETS_PATH
+mkdir -p $LOCAL_RESULTS_PATH
+
+mkdir -p $CONDA_PATH
+
 while true; do 
     $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH > /dev/null 2>&1
     $S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH > /dev/null 2>&1
     sleep 5
 done &
 
-mkdir -p $LOCAL_DATASETS_PATH
-mkdir -p $LOCAL_RESULTS_PATH
-
-mkdir -p $CONDA_PATH
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
