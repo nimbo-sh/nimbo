@@ -244,8 +244,11 @@ class NimboConfig(pydantic.BaseModel):
 def load_yaml_from_file(file: str) -> Dict[str, Any]:
     if os.path.isfile(file):
         with open(file, "r") as f:
-            return yaml.safe_load(f)
-
+            config_yaml = yaml.safe_load(f)
+        for key, val in config_yaml.items():
+            if isinstance(val, str) and val.startswith("$"):
+                config_yaml[key] = os.environ.get(val[1:])
+        return config_yaml
     return {}
 
 
