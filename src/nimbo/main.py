@@ -1,6 +1,6 @@
 import click
 
-from nimbo.core import execute, utils
+from nimbo.core import utils
 from nimbo.core.cloud_provider import Cloud
 from nimbo.core.config import RequiredCase
 
@@ -33,7 +33,7 @@ def run(job_cmd, dry_run):
     E.g. \"python runner.py --epochs=10\".\n
     The command must be between quotes.
     """
-    execute.run_job(job_cmd, dry_run)
+    Cloud.run(job_cmd, dry_run)
 
 
 @cli.command()
@@ -45,7 +45,7 @@ def launch(dry_run):
     Launches an EC2 instance according to your nimbo-config,
     without doing any further setup.
     """
-    execute.run_job("_nimbo_launch", dry_run)
+    Cloud.run("_nimbo_launch", dry_run)
 
 
 @cli.command()
@@ -57,7 +57,7 @@ def launch_and_setup(dry_run):
     Launches an EC2 instance with your code, data and environment,
     without running any job.
     """
-    execute.run_job("_nimbo_launch_and_setup", dry_run)
+    Cloud.run("_nimbo_launch_and_setup", dry_run)
 
 
 @cli.command()
@@ -66,7 +66,7 @@ def launch_and_setup(dry_run):
 @utils.handle_errors
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""
-    execute.run_access_test(dry_run)
+    Cloud.run_access_test(dry_run)
 
 
 @cli.command()
@@ -76,7 +76,7 @@ def test_access(dry_run):
 @utils.handle_errors
 def ssh(instance_id, dry_run):
     """SSH into an instance by INSTANCE_ID."""
-    utils.ssh(instance_id, dry_run)
+    Cloud.ssh(instance_id, dry_run)
 
 
 @cli.command()
@@ -85,7 +85,7 @@ def ssh(instance_id, dry_run):
 @utils.handle_errors
 def list_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU instances."""
-    utils.list_gpu_prices(dry_run)
+    Cloud.ls_gpu_prices(dry_run)
 
 
 @cli.command()
@@ -94,7 +94,7 @@ def list_gpu_prices(dry_run):
 @utils.handle_errors
 def list_spot_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU spot instances."""
-    utils.list_spot_gpu_prices(dry_run)
+    Cloud.ls_spot_gpu_prices(dry_run)
 
 
 @cli.command()
@@ -103,7 +103,7 @@ def list_spot_gpu_prices(dry_run):
 @utils.handle_errors
 def list_active(dry_run):
     """Lists all your active instances."""
-    utils.show_active_instances(dry_run)
+    Cloud.ls_active_instances(dry_run)
 
 
 @cli.command()
@@ -112,7 +112,7 @@ def list_active(dry_run):
 @utils.handle_errors
 def list_stopped(dry_run):
     """Lists all your stopped instances."""
-    utils.show_stopped_instances(dry_run)
+    Cloud.ls_stopped_instances(dry_run)
 
 
 @cli.command()
@@ -122,7 +122,7 @@ def list_stopped(dry_run):
 @utils.handle_errors
 def check_instance_status(instance_id, dry_run):
     """Checks the status of an instance by INSTANCE_ID."""
-    utils.check_instance_status(instance_id, dry_run)
+    print(Cloud.get_instance_status(instance_id, dry_run))
 
 
 @cli.command()
@@ -132,7 +132,7 @@ def check_instance_status(instance_id, dry_run):
 @utils.handle_errors
 def stop_instance(instance_id, dry_run):
     """Stops an instance by INSTANCE_ID."""
-    utils.stop_instance(instance_id, dry_run)
+    Cloud.stop_instance(instance_id, dry_run)
 
 
 @cli.command()
@@ -142,7 +142,7 @@ def stop_instance(instance_id, dry_run):
 @utils.handle_errors
 def delete_instance(instance_id, dry_run):
     """Terminates an instance by INSTANCE_ID."""
-    utils.delete_instance(instance_id, dry_run)
+    Cloud.delete_instance(instance_id, dry_run)
 
 
 @cli.command()
@@ -155,7 +155,7 @@ def delete_all_instances(dry_run):
         "This will delete all your running instances.\n" "Do you want to continue?",
         abort=True,
     )
-    utils.delete_all_instances(dry_run)
+    Cloud.delete_all_instances(dry_run)
 
 
 @cli.command()
@@ -217,6 +217,7 @@ def pull(directory, delete):
     """Pull the S3 datasets/results folder into your local computer."""
 
     if delete:
+        # TODO: right now this is probably throwing a stacktrace
         click.confirm(
             "This will delete any files that exist in the local "
             "folder but do not exist in the remote folder.\n"

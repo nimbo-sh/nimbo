@@ -42,7 +42,7 @@ class BaseConfig(pydantic.BaseModel):
         extra = "forbid"
 
     # TODO: this is not checked for
-    provider: Optional[CloudProvider] = None
+    provider: CloudProvider = None
 
     local_datasets_path: Optional[str] = None
     local_results_path: Optional[str] = None
