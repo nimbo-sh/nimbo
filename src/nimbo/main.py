@@ -169,7 +169,7 @@ def create_bucket(bucket_name, dry_run):
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
-    Cloud.create_bucket(bucket_name, dry_run)
+    Cloud.mk_bucket(bucket_name, dry_run)
 
 
 @cli.command()
@@ -217,7 +217,6 @@ def pull(directory, delete):
     """Pull the S3 datasets/results folder into your local computer."""
 
     if delete:
-        # TODO: right now this is probably throwing a stacktrace
         click.confirm(
             "This will delete any files that exist in the local "
             "folder but do not exist in the remote folder.\n"

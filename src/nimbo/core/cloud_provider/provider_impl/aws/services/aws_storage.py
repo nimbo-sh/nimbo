@@ -58,9 +58,7 @@ class AwsStorage(Storage):
         subprocess.Popen(command, shell=True).communicate()
 
     @staticmethod
-    def mk_bucket(bucket_name: str, dry_run=False) -> bool:
-        # TODO: return value
-
+    def mk_bucket(bucket_name: str, dry_run=False) -> None:
         """Create an S3 bucket in a specified region
 
         :param bucket_name: Bucket to create
@@ -80,10 +78,9 @@ class AwsStorage(Storage):
                 print("Bucket nimbo-main-bucket already exists.")
             else:
                 print(e)
-            return False
+                return
 
         print("Bucket %s created." % bucket_name)
-        return True
 
     @staticmethod
     def ls_buckets() -> None:

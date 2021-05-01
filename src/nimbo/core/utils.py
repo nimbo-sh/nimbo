@@ -68,7 +68,6 @@ def generate_config(quiet=False) -> None:
     """ Create an example Nimbo config in the project root """
 
     if os.path.isfile(CONFIG.nimbo_config_file):
-        # TODO: test this
         should_overwrite = click.confirm(
             f"{CONFIG.nimbo_config_file} already exists, do you want to overwrite it?"
         )
