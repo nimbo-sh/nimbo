@@ -12,12 +12,6 @@ class AwsUtils(Utils):
         if dry_run:
             return
 
-        instance_types = list(sorted(AwsUtils._ec2_instance_types()))
-        instance_types = [
-            inst
-            for inst in instance_types
-            if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
-        ]
         full_region_name = FULL_REGION_NAMES[CONFIG.region_name]
 
         pricing = CONFIG.get_session().client("pricing", region_name="us-east-1")
@@ -27,7 +21,7 @@ class AwsUtils(Utils):
         )
         print(string)
 
-        for instance_type in instance_types:
+        for instance_type in AwsUtils._instance_types():
             response = pricing.get_products(
                 ServiceCode="AmazonEC2",
                 MaxResults=100,
@@ -73,13 +67,6 @@ class AwsUtils(Utils):
         if dry_run:
             return
 
-        instance_types = list(sorted(AwsUtils._ec2_instance_types()))
-        instance_types = [
-            inst
-            for inst in instance_types
-            if inst[:2] in ["p2", "p3", "p4"] or inst[:3] in ["g4d"]
-        ]
-
         ec2 = CONFIG.get_session().client("ec2")
 
         string = AwsUtils._format_price_string(
@@ -87,7 +74,7 @@ class AwsUtils(Utils):
         )
         print(string)
 
-        for instance_type in instance_types:
+        for instance_type in AwsUtils._instance_types():
             response = ec2.describe_spot_price_history(
                 InstanceTypes=[instance_type],
                 Filters=[{"Name": "product-description", "Values": ["Linux/UNIX"]}],
@@ -102,16 +89,25 @@ class AwsUtils(Utils):
             print(string)
 
     @staticmethod
-    def _ec2_instance_types() -> Generator[str, None, None]:
-        """Yield all available EC2 instance types in region CONFIG.region_name"""
+    def _instance_types() -> Generator[str, None, None]:
+        """Yield all relevant EC2 instance types in region CONFIG.region_name"""
+
         describe_args = {}
         client = CONFIG.get_session().client("ec2")
-        while True:
-            describe_result = client.describe_instance_types(**describe_args)
-            yield from [i["InstanceType"] for i in describe_result["InstanceTypes"]]
-            if "NextToken" not in describe_result:
-                break
-            describe_args["NextToken"] = describe_result["NextToken"]
+
+        def instance_type_generator():
+            while True:
+                describe_result = client.describe_instance_types(**describe_args)
+                yield from (i["InstanceType"] for i in describe_result["InstanceTypes"])
+                if "NextToken" not in describe_result:
+                    break
+                describe_args["NextToken"] = describe_result["NextToken"]
+
+        return (
+            inst
+            for inst in sorted(instance_type_generator())
+            if inst.startswith(("p2", "p3", "p4", "g4d"))
+        )
 
     @staticmethod
     def _format_price_string(instance_type, price, gpus, cpus, mem) -> str:
