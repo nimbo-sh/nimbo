@@ -88,29 +88,14 @@ class AwsStorage(Storage):
 
     @staticmethod
     def _sync_folder(source, target, delete=False) -> None:
-        command = AwsStorage._s3_sync_command(source, target, delete)
+        command = AwsStorage.mk_s3_command("sync", source, target, delete)
         print(f"\nRunning command: {command}")
         subprocess.Popen(command, shell=True).communicate()
 
     @staticmethod
-    def s3_cp_command(source, target, delete=False):
-        # TODO: too much reused code with below, this is shared with execute
+    def mk_s3_command(cmd, source, target, delete=False) -> str:
         command = (
-            f"aws s3 cp {source} {target} "
-            f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
-        )
-
-        if delete:
-            command += " --delete"
-
-        if CONFIG.encryption:
-            command += f" --sse {CONFIG.encryption}"
-        return command
-
-    @staticmethod
-    def _s3_sync_command(source, target, delete=False):
-        command = (
-            f"aws s3 sync {source} {target} "
+            f"aws s3 {cmd} {source} {target} "
             f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
         )
 

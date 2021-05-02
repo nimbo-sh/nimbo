@@ -117,7 +117,9 @@ class AwsInstance(Instance):
             subprocess.check_output(
                 "echo 'Hello World' > nimbo-access-test.txt", shell=True
             )
-            command = AwsStorage.s3_cp_command("nimbo-access-test.txt", results_path)
+            command = AwsStorage.mk_s3_command(
+                "cp", "nimbo-access-test.txt", results_path
+            )
             subprocess.check_output(command, shell=True)
 
             command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
