@@ -13,15 +13,15 @@ from nimbo.core.constants import NIMBO_CONFIG_FILE
 def make_config() -> Union[AwsConfig, GcpConfig]:
     config = load_yaml_from_file(NIMBO_CONFIG_FILE)
 
-    # Provider field validation is postponed. If provider is not specified,
+    # Provider field validation is postponed. If cloud_provider is not specified,
     # assume AwsConfig for running commands like --help and generate-config.
-    if "provider" not in config:
+    if "cloud_provider" not in config:
         return AwsConfig(**config)
     else:
-        config["provider"] = config["provider"].upper()
+        config["cloud_provider"] = config["cloud_provider"].upper()
 
     try:
-        provider = CloudProvider(config["provider"])
+        cloud_provider = CloudProvider(config["cloud_provider"])
     except ValueError:
         permitted_values = ", ".join([f"'{p.value}'" for p in CloudProvider])
         raise pydantic.ValidationError(
@@ -31,13 +31,13 @@ def make_config() -> Union[AwsConfig, GcpConfig]:
                         f"value is not a valid enumeration member; permitted: "
                         f"{permitted_values}"
                     ),
-                    "provider",
+                    "cloud_provider",
                 )
             ],
             AwsConfig,
         )
 
-    if provider == CloudProvider.AWS:
+    if cloud_provider == CloudProvider.AWS:
         return AwsConfig(**config)
 
     return GcpConfig(**config)

@@ -41,8 +41,7 @@ class BaseConfig(pydantic.BaseModel):
         title = "Nimbo configuration"
         extra = "forbid"
 
-    # TODO: this is not checked for
-    provider: CloudProvider = None
+    cloud_provider: CloudProvider = None
 
     local_datasets_path: Optional[str] = None
     local_results_path: Optional[str] = None

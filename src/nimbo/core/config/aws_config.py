@@ -69,6 +69,7 @@ class AwsConfig(BaseConfig):
         required_config = {}
 
         if RequiredCase.MINIMAL in cases:
+            required_config["cloud_provider"] = self.cloud_provider
             required_config["aws_profile"] = self.aws_profile
             required_config["region_name"] = self.region_name
         if RequiredCase.STORAGE in cases:
@@ -87,7 +88,7 @@ class AwsConfig(BaseConfig):
         unspecified = [key for key, value in required_config.items() if not value]
         if unspecified:
             raise AssertionError(
-                f"For running this command {', '.join(unspecified)} should"
+                f"For running this command '{', '.join(unspecified)}' should"
                 f" be specified in {self.nimbo_config_file}"
             )
 

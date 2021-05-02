@@ -97,9 +97,9 @@ class GcpTestConfig(CommonTestConfigMixin, GcpConfig):
 
 def make_config() -> Union[AwsTestConfig, GcpTestConfig]:
     raw_config = load_yaml_from_file(os.path.join(ASSETS_PATH, NIMBO_CONFIG_FILE))
-    provider = CloudProvider(raw_config["provider"].lower())
+    cloud_provider = CloudProvider(raw_config["cloud_provider"].lower())
 
-    if provider == CloudProvider.AWS:
+    if cloud_provider == CloudProvider.AWS:
         config = AwsTestConfig(**raw_config)
     else:
         config = GcpTestConfig(**raw_config)
