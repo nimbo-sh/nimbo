@@ -7,6 +7,7 @@ from typing import Dict
 
 from nimbo import CONFIG
 from nimbo.core.constants import NIMBO_ROOT
+from nimbo.core.print import nprint, nprint_header
 
 
 class Instance(abc.ABC):
@@ -77,11 +78,17 @@ class Instance(abc.ABC):
     @staticmethod
     def _sync_code(host: str) -> None:
         if ".git" not in os.listdir():
-            print("No git repo found. Syncing all the python files as a fallback.")
-            print("Please consider using git to track the files to sync.")
+            nprint(
+                "No git repo found. Syncing all python and bash files as a fallback.",
+                style="warning",
+            )
+            nprint(
+                "Please consider using git to track the files to sync.", style="warning"
+            )
             subprocess.Popen(
                 f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "
-                f"--include '*/' --include '*.py' --include '*.sh' --exclude '*' "
+                f"--include '*/' --include '*.py' --include '*.ipynb' --include '*.sh' "
+                f"--exclude '*' "
                 f". ubuntu@{host}:/home/ubuntu/project",
                 shell=True,
             ).communicate()
@@ -103,7 +110,7 @@ class Instance(abc.ABC):
 
     @staticmethod
     def _block_until_ssh_ready(host: str) -> None:
-        print(
+        nprint_header(
             f"Waiting for instance to be ready for ssh at {host}. "
             "This can take up to 2 minutes... "
         )
@@ -130,7 +137,7 @@ class Instance(abc.ABC):
                 "More info at docs.nimbo.sh/common-issues#cant-ssh.\n"
             )
 
-        print("Ready. (%0.3fs)" % (time.monotonic() - start))
+        nprint_header(f"Ready. (%0.3f s)" % (time.monotonic() - start))
 
     @staticmethod
     def _run_remote_script(
@@ -144,7 +151,7 @@ class Instance(abc.ABC):
 
         remote_script = os.path.join(NIMBO_ROOT, "scripts", script)
         subprocess.check_output(
-            f"{scp_cmd} {remote_script} " f"ubuntu@{host}:/home/ubuntu/", shell=True
+            f"{scp_cmd} {remote_script} ubuntu@{host}:/home/ubuntu/", shell=True
         )
 
         nimbo_log = "/home/ubuntu/nimbo-log.txt"

@@ -12,6 +12,7 @@ from nimbo.core.constants import (
     IS_TEST_ENV,
     NIMBO_DEFAULT_CONFIG,
 )
+from nimbo.core.print import nprint
 
 
 def assert_required_config(*cases: RequiredCase):
@@ -26,11 +27,11 @@ def assert_required_config(*cases: RequiredCase):
                 CONFIG.assert_required_config_exists(*cases)
                 return func(*args, **kwargs)
             except AssertionError as e:
-                print(e)
+                nprint(e, style="error")
                 sys.exit(1)
             except FileNotFoundError as e:
                 # Happens when nimbo config file is not found
-                print(e)
+                nprint(e, style="error")
                 sys.exit(1)
 
         return decorated
@@ -52,10 +53,10 @@ def handle_errors(func):
             try:
                 return func(*args, **kwargs)
             except botocore.errorfactory.ClientError as e:
-                print(e.response["Error"]["Message"])
+                nprint(e, style="error")
                 sys.exit(1)
             except ValueError as e:
-                print(e)
+                nprint(e, style="error")
                 sys.exit(1)
             except KeyboardInterrupt:
                 print("Aborting...")

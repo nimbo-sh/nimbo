@@ -5,6 +5,7 @@ import botocore.exceptions
 
 from nimbo import CONFIG
 from nimbo.core.cloud_provider.provider.services.storage import Storage
+from nimbo.core.print import nprint
 
 
 class AwsStorage(Storage):
@@ -24,9 +25,7 @@ class AwsStorage(Storage):
                 source = CONFIG.local_datasets_path
                 target = CONFIG.s3_datasets_path
 
-        AwsStorage._sync_folder(
-            source, target, CONFIG.aws_profile, CONFIG.region_name, delete
-        )
+        AwsStorage._sync_folder(source, target, delete)
 
     # noinspection DuplicatedCode
     @staticmethod
@@ -44,9 +43,7 @@ class AwsStorage(Storage):
                 source = CONFIG.s3_datasets_path
                 target = CONFIG.local_datasets_path
 
-        AwsStorage._sync_folder(
-            source, target, CONFIG.aws_profile, CONFIG.region_name, delete
-        )
+        AwsStorage._sync_folder(source, target, delete)
 
     @staticmethod
     def ls(path: str) -> None:
@@ -70,15 +67,13 @@ class AwsStorage(Storage):
             session = CONFIG.get_session()
             s3 = session.client("s3")
             location = {"LocationConstraint": session.region_name}
-            s3.create_bucket(
-                Bucket=bucket_name, CreateBucketConfiguration=location, DryRun=dry_run
-            )
+            s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration=location)
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
-                print("Bucket nimbo-main-bucket already exists.")
+                nprint("Bucket nimbo-main-bucket already exists.", style="warning")
             else:
-                print(e)
-                return
+                nprint(e, style="error")
+            return
 
         print("Bucket %s created." % bucket_name)
 
@@ -92,9 +87,36 @@ class AwsStorage(Storage):
             print(f' {bucket["Name"]}')
 
     @staticmethod
-    def _sync_folder(source, target, profile, region, delete=False) -> None:
-        command = f"aws s3 sync {source} {target} --profile {profile} --region {region}"
-        if delete:
-            command = command + " --delete"
-        print(f"\nRunning command: {command}\n")
+    def _sync_folder(source, target, delete=False) -> None:
+        command = AwsStorage._s3_sync_command(source, target, delete)
+        print(f"\nRunning command: {command}")
         subprocess.Popen(command, shell=True).communicate()
+
+    @staticmethod
+    def s3_cp_command(source, target, delete=False):
+        # TODO: too much reused code with below, this is shared with execute
+        command = (
+            f"aws s3 cp {source} {target} "
+            f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+        )
+
+        if delete:
+            command += " --delete"
+
+        if CONFIG.encryption:
+            command += f" --sse {CONFIG.encryption}"
+        return command
+
+    @staticmethod
+    def _s3_sync_command(source, target, delete=False):
+        command = (
+            f"aws s3 sync {source} {target} "
+            f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+        )
+
+        if delete:
+            command += " --delete"
+
+        if CONFIG.encryption:
+            command += f" --sse {CONFIG.encryption}"
+        return command

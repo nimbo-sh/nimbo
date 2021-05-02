@@ -98,6 +98,23 @@ def list_spot_gpu_prices(dry_run):
 
 
 @cli.command()
+@click.argument("qty", type=int, required=True)
+@click.argument("timescale", type=click.Choice(["days", "months"]), required=True)
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def spending(qty, timescale, dry_run):
+    """Shows daily/monthly spending summary. Costs without credits or refunds applied.
+
+    QTY is the number of days/months you want to see, starting from the current date.\n
+    For example:\n
+        'nimbo spending 10 days' will show daily spending of the last 10 days\n
+        'nimbo spending 3 months' will show the monthly spending of the last 3 months
+    """
+    Cloud.show_spending(qty, timescale, dry_run)
+
+
+@cli.command()
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors

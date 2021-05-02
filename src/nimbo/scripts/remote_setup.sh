@@ -29,10 +29,16 @@ CONDASH=$CONDA_PATH/etc/profile.d/conda.sh
 cd $PROJ_DIR
 
 CONFIG=nimbo-config.yml
-LOCAL_DATASETS_PATH="$(grep 'local_datasets_path:' $CONFIG | awk '{print $2}')"
-LOCAL_RESULTS_PATH="$(grep 'local_results_path:' $CONFIG | awk '{print $2}')"
-S3_DATASETS_PATH="$(grep 's3_datasets_path:' $CONFIG | awk '{print $2}')"
-S3_RESULTS_PATH="$(grep 's3_results_path:' $CONFIG | awk '{print $2}')"
+source ./nimbo_vars
+
+if [ -z "${ENCRYPTION}" ]; then
+    S3CP="$AWS s3 cp"
+    S3SYNC="$AWS s3 sync"
+else
+    S3CP="$AWS s3 cp --sse $ENCRYPTION"
+    S3SYNC="$AWS s3 sync --sse $ENCRYPTION"
+fi
+
 ENV_FILE=local_env.yml
 ENV_NAME="$(grep 'name:' $ENV_FILE | awk '{print $2}')"
 
@@ -41,16 +47,17 @@ S3_LOG_PATH=$S3_RESULTS_PATH/nimbo-logs/$S3_LOG_NAME
 LOCAL_LOG=/home/ubuntu/nimbo-log.txt
 echo "Will save logs to $S3_LOG_PATH"
 
-while true; do 
-    $AWS s3 cp --quiet $LOCAL_LOG $S3_LOG_PATH > /dev/null 2>&1
-    $AWS s3 sync --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH > /dev/null 2>&1
-    sleep 5
-done &
-
 mkdir -p $LOCAL_DATASETS_PATH
 mkdir -p $LOCAL_RESULTS_PATH
 
 mkdir -p $CONDA_PATH
+
+
+while true; do 
+    $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >/tmp/nimbo-s3-logs 2>&1
+    $S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >/tmp/nimbo-s3-logs 2>&1
+    sleep 5
+done &
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
@@ -75,9 +82,9 @@ echo "Done."
 # Import datasets and results from the bucket
 echo ""
 echo "Importing datasets from $S3_DATASETS_PATH to $LOCAL_DATASETS_PATH..."
-$AWS s3 cp --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/dev/null
+$S3CP --recursive $S3_DATASETS_PATH $LOCAL_DATASETS_PATH >/tmp/nimbo-s3-logs
 echo "Importing results from $S3_RESULTS_PATH to $LOCAL_RESULTS_PATH..."
-$AWS s3 cp --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/dev/null
+$S3CP --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/tmp/nimbo-s3-logs
 
 echo ""
 echo "================================================="
@@ -93,7 +100,7 @@ fi
 
 echo ""
 echo "Saving results to S3..."
-$AWS s3 sync $LOCAL_RESULTS_PATH $S3_RESULTS_PATH
+$S3SYNC $LOCAL_RESULTS_PATH $S3_RESULTS_PATH
 
 conda deactivate
 echo ""

@@ -11,3 +11,8 @@ class Utils(abc.ABC):
     @abc.abstractmethod
     def ls_spot_gpu_prices(dry_run=False) -> None:
         ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def show_spending(qty: int, timescale: str, dry_run=False) -> None:
+        ...

@@ -1,7 +1,7 @@
-import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 from pprint import pprint
 from typing import Dict, List, Union
 
@@ -11,6 +11,9 @@ import requests
 from nimbo import CONFIG
 from nimbo.core import telemetry
 from nimbo.core.cloud_provider.provider.services.instance import Instance
+from nimbo.core.cloud_provider.provider_impl.aws.services.aws_storage import AwsStorage
+from nimbo.core.constants import NIMBO_VARS
+from nimbo.core.print import nprint, nprint_header
 
 
 class AwsInstance(Instance):
@@ -31,8 +34,8 @@ class AwsInstance(Instance):
             # Wait for the instance to be running
             AwsInstance._block_until_instance_running(instance_id)
             end_t = time.monotonic()
-            print(f"Instance running. ({round((end_t - start_t), 2)}s)")
-            print(f"InstanceId: {instance_id}")
+            nprint_header(f"Instance running. ({round((end_t - start_t), 2)} s)")
+            nprint_header(f"InstanceId: [green]{instance_id}[/green]")
             print()
 
             time.sleep(5)
@@ -41,7 +44,9 @@ class AwsInstance(Instance):
             AwsInstance._block_until_ssh_ready(host)
 
             if job_cmd == "_nimbo_launch":
-                print(f"Run 'nimbo ssh {instance_id}' to log onto the instance")
+                nprint_header(
+                    f"Run [cyan]nimbo ssh {instance_id}[/cyan] to log onto the instance"
+                )
                 return {"message": job_cmd + "_success", "instance_id": instance_id}
 
             ssh = (
@@ -50,28 +55,30 @@ class AwsInstance(Instance):
             )
             scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
-            local_env = "local_env.yml"
+            local_env = "/tmp/local_env.yml"
             user_conda_yml = CONFIG.conda_env
-            subprocess.check_output(f"cp {user_conda_yml} local_env.yml", shell=True)
+            # TODO: Replace this with shutil
+            subprocess.check_output(f"cp {user_conda_yml} {local_env}", shell=True)
 
             # Send conda env yaml and setup scripts to instance
-            print("\nSyncing conda, config, and setup files...")
+            print()
+            nprint_header(f"Syncing conda, config, and setup files...")
+            AwsInstance._write_nimbo_vars()
 
             # Create project folder and send env and config files there
+            subprocess.check_output(f"{ssh} ubuntu@{host} mkdir project", shell=True)
             subprocess.check_output(
-                f"{ssh} ubuntu@{host} " f"mkdir project", shell=True
-            )
-            subprocess.check_output(
-                f"{scp} {local_env} {CONFIG.nimbo_config_file} "
-                f"ubuntu@{host}:/home/ubuntu/project/",
+                f"{scp} {local_env} {CONFIG.nimbo_config_file} {NIMBO_VARS}"
+                f" ubuntu@{host}:/home/ubuntu/project/",
                 shell=True,
             )
-            subprocess.check_output(f"rm {local_env}", shell=True)
 
             # Sync code with instance
-            print("\nSyncing code...")
+            print()
+            nprint_header(f"Syncing code...")
             AwsInstance._sync_code(host)
 
+            nprint_header(f"Running setup code on the instance from here on.")
             # Run remote_setup script on instance
             AwsInstance._run_remote_script(
                 ssh, scp, host, instance_id, job_cmd, "remote_setup.sh"
@@ -84,10 +91,10 @@ class AwsInstance(Instance):
                 type(e) != KeyboardInterrupt
                 and type(e) != subprocess.CalledProcessError
             ):
-                print(e)
+                nprint(e, style="error")
 
             if not CONFIG.persist:
-                print(f"Deleting instance {instance_id} (from local)...")
+                nprint_header(f"Deleting instance {instance_id} (from local)... ")
                 AwsInstance.delete_instance(instance_id)
 
             return {"message": job_cmd + "_error", "instance_id": instance_id}
@@ -97,7 +104,7 @@ class AwsInstance(Instance):
         if dry_run:
             return
 
-        CONFIG.instance_type = "t2.medium"
+        CONFIG.instance_type = "t3.medium"
         CONFIG.run_in_background = False
         CONFIG.persist = False
 
@@ -106,14 +113,13 @@ class AwsInstance(Instance):
             profile = CONFIG.aws_profile
             region = CONFIG.region_name
             results_path = CONFIG.s3_results_path
+
             subprocess.check_output(
                 "echo 'Hello World' > nimbo-access-test.txt", shell=True
             )
-            command = (
-                f"aws s3 cp nimbo-access-test.txt {results_path} "
-                f" --profile {profile} --region {region}"
-            )
+            command = AwsStorage.s3_cp_command("nimbo-access-test.txt", results_path)
             subprocess.check_output(command, shell=True)
+
             command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
             subprocess.check_output(command, shell=True)
             command = (
@@ -127,12 +133,12 @@ class AwsInstance(Instance):
                 "permissions from your computer \u2713"
             )
 
-        except subprocess.CalledProcessError:
-            print("\nError.")
+        except subprocess.CalledProcessError as e:
+            nprint(e, style="error")
             sys.exit(1)
 
         # Launch instance with new volume for anaconda
-        print("Launching test instance... ", end="", flush=True)
+        print("Launching test instance... ")
 
         instance_id = AwsInstance._start_instance()
 
@@ -154,7 +160,7 @@ class AwsInstance(Instance):
             time.sleep(5)
             host = AwsInstance._get_host_from_instance_id(instance_id)
             ssh = (
-                f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
+                f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no' "
                 "-o ServerAliveInterval=20"
             )
             scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
@@ -163,27 +169,27 @@ class AwsInstance(Instance):
 
             print("Instance key allows ssh access to remote instance \u2713")
             print("Security group allows ssh access to remote instance \u2713")
+
+            AwsInstance._write_nimbo_vars()
+
             subprocess.check_output(
-                f"{scp} {CONFIG.nimbo_config_file} " f"ubuntu@{host}:/home/ubuntu/",
+                f"{scp} {CONFIG.nimbo_config_file} {NIMBO_VARS} "
+                + f"ubuntu@{host}:/home/ubuntu/",
                 shell=True,
             )
             AwsInstance._run_remote_script(
                 ssh, scp, host, instance_id, "", "remote_s3_test.sh"
             )
-            print("The instance profile has the required S3 and EC2 permissions \u2713")
-
-            print("\nEverything working \u2713")
-            print("Instance has been deleted.")
 
         except BaseException as e:
             if (
                 type(e) != KeyboardInterrupt
                 and type(e) != subprocess.CalledProcessError
             ):
-                print(e)
+                nprint(e, style="error")
 
             if not CONFIG.persist:
-                print(f"Deleting instance {instance_id} (from local)...")
+                nprint_header(f"Deleting instance {instance_id} (from local)...")
                 AwsInstance.delete_instance(instance_id)
 
             sys.exit(1)
@@ -194,6 +200,19 @@ class AwsInstance(Instance):
         while status != "running":
             time.sleep(1)
             status = AwsInstance.get_instance_status(instance_id)
+
+    @staticmethod
+    def _write_nimbo_vars() -> None:
+        var_list = [
+            f"S3_DATASETS_PATH={CONFIG.s3_datasets_path}",
+            f"S3_RESULTS_PATH={CONFIG.s3_results_path}",
+            f"LOCAL_DATASETS_PATH={CONFIG.local_datasets_path}",
+            f"LOCAL_RESULTS_PATH={CONFIG.local_results_path}",
+        ]
+        if CONFIG.encryption:
+            var_list.append(f"ENCRYPTION={CONFIG.encryption}")
+        with open(NIMBO_VARS, "w") as f:
+            f.write("\n".join(var_list))
 
     @staticmethod
     def _get_host_from_instance_id(instance_id: str, dry_run=False) -> str:
@@ -264,7 +283,7 @@ class AwsInstance(Instance):
         instance_filters = AwsInstance._make_instance_filters()
 
         image = AwsInstance._get_image_id()
-        print(f"Using image {image}")
+        nprint_header(f"Launching instance with image {image}... ")
 
         ebs_config = {
             "VolumeSize": CONFIG.disk_size,
@@ -277,7 +296,7 @@ class AwsInstance(Instance):
             "BlockDeviceMappings": [{"DeviceName": "/dev/sda1", "Ebs": ebs_config}],
             "ImageId": image,
             "InstanceType": CONFIG.instance_type,
-            "KeyName": os.path.basename(CONFIG.instance_key).rstrip(".pem"),
+            "KeyName": Path(CONFIG.instance_key).stem,
             "Placement": {"Tenancy": "default"},
             "SecurityGroups": [CONFIG.security_group],
             "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
@@ -299,11 +318,9 @@ class AwsInstance(Instance):
             request_id = instance_request["SpotInstanceRequestId"]
 
             try:
-                print("Spot instance request submitted.")
-                print(
-                    "Waiting for the spot instance request to be fulfilled... ",
-                    end="",
-                    flush=False,
+                nprint_header("Spot instance request submitted.")
+                nprint_header(
+                    "Waiting for the spot instance request to be fulfilled... "
                 )
 
                 status = ""
@@ -322,10 +339,10 @@ class AwsInstance(Instance):
                         raise Exception(response["SpotInstanceRequests"][0]["Status"])
             except KeyboardInterrupt:
                 ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[request_id])
-                print("Cancelled spot instance request.")
+                nprint_header("Cancelled spot instance request.")
                 sys.exit(1)
 
-            print("Done.")
+            nprint_header("Done.")
             ec2.create_tags(
                 Resources=[instance_request["InstanceId"]], Tags=instance_tags,
             )
@@ -359,7 +376,7 @@ class AwsInstance(Instance):
                 InstanceIds=[instance_id], DryRun=dry_run
             )
             status = response["TerminatingInstances"][0]["CurrentState"]["Name"]
-            print(f"Instance {instance_id}: {status}")
+            nprint_header(f"Instance [green]{instance_id}[/green]: {status}")
         except botocore.exceptions.ClientError as e:
             if "DryRunOperation" not in str(e):
                 raise
@@ -382,7 +399,7 @@ class AwsInstance(Instance):
                     status = delete_response["TerminatingInstances"][0]["CurrentState"][
                         "Name"
                     ]
-                    print(f"Instance {instance_id}: {status}")
+                    nprint_header(f"Instance [green]{instance_id}[/green]: {status}")
         except botocore.exceptions.ClientError as e:
             if "DryRunOperation" not in str(e):
                 raise
@@ -416,7 +433,7 @@ class AwsInstance(Instance):
             for reservation in response["Reservations"]:
                 for inst in reservation["Instances"]:
                     print(
-                        f"Id: {inst['InstanceId']}\n"
+                        f"Id: [bright_green]{inst['InstanceId']}[/bright_green]\n"
                         f"Status: {inst['State']['Name']}\n"
                         f"Launch Time: {inst['LaunchTime']}\n"
                         f"InstanceType: {inst['InstanceType']}\n"

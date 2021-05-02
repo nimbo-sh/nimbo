@@ -40,8 +40,9 @@ def isolated_filesystem(*cases: RequiredCase):
     """
 
     def decorator(func):
+        # noinspection PyUnusedLocal
         @functools.wraps(func)
-        def decorated():
+        def decorated(*args, **kwargs):
             runner = CliRunner()
             with runner.isolated_filesystem():
                 _setup_for_case(*cases)
