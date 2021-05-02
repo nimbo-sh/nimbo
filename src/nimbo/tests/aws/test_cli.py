@@ -200,11 +200,6 @@ def test_instance_profile_and_security_group(runner: CliRunner):
             raise
 
     result = runner.invoke(
-        cli, "list-instance-profiles --dry-run", catch_exceptions=False
-    )
-    assert result.exit_code == 0
-
-    result = runner.invoke(
         cli,
         "create-instance-profile mock_role --dry-run",
         catch_exceptions=False,

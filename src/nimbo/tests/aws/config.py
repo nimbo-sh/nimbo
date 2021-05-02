@@ -14,7 +14,6 @@ from nimbo.core.config import (
     load_yaml_from_file,
 )
 
-# TODO: support multiple config files, refactor test infrastructure
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
 CONDA_ENV = "env.yml"
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
