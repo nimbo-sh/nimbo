@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.tests.config import ASSETS_PATH, CONDA_ENV, NIMBO_CONFIG_FILE
+from nimbo.tests.aws.config import ASSETS_PATH, CONDA_ENV, NIMBO_CONFIG_FILE
 
 
 def make_file(path: str, text: str) -> None:

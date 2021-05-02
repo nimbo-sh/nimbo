@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from nimbo import CONFIG
 from nimbo.main import cli
 from nimbo.core.config import RequiredCase
-from nimbo.tests.utils import isolated_filesystem, make_file
+from nimbo.tests.aws.utils import isolated_filesystem, make_file
 
 
 @pytest.fixture

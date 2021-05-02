@@ -4,11 +4,13 @@ import pytest
 from click.testing import CliRunner
 
 from nimbo import CONFIG
-from nimbo.main import cli
-from nimbo.core import execute
-from nimbo.core.constants import FULL_REGION_NAMES
+from nimbo.core.cloud_provider.provider_impl.aws.services.aws_instance import (
+    AwsInstance,
+)
 from nimbo.core.config import RequiredCase
-from nimbo.tests.utils import isolated_filesystem
+from nimbo.core.constants import FULL_REGION_NAMES
+from nimbo.main import cli
+from nimbo.tests.aws.utils import isolated_filesystem
 
 
 @pytest.fixture
@@ -52,7 +54,7 @@ def test_launch(runner: CliRunner):
             )
 
         CONFIG.instance_key = instance_key
-        response = execute.run_job("_nimbo_launch", dry_run=False)
+        response = AwsInstance.run("_nimbo_launch", dry_run=False)
 
         assert response["message"] == "_nimbo_launch_success"
         instance_id = response["instance_id"]
@@ -66,7 +68,7 @@ def test_launch(runner: CliRunner):
 @isolated_filesystem(RequiredCase.JOB)
 def test_spot_launch(runner: CliRunner):
     CONFIG.spot = True
-    response = execute.run_job("_nimbo_launch", dry_run=False)
+    response = AwsInstance.run("_nimbo_launch", dry_run=False)
 
     assert response["message"] == "_nimbo_launch_success"
     instance_id = response["instance_id"]

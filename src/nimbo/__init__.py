@@ -5,7 +5,7 @@ import pkg_resources
 import pydantic
 
 import nimbo.core.config
-import nimbo.tests.config
+import nimbo.tests.aws.config
 from nimbo.core.constants import IS_TEST_ENV
 
 version = pkg_resources.get_distribution("nimbo").version
@@ -13,7 +13,7 @@ version = pkg_resources.get_distribution("nimbo").version
 
 try:
     if IS_TEST_ENV:
-        CONFIG = nimbo.tests.config.make_config()
+        CONFIG = nimbo.tests.aws.config.make_config()
     else:
         CONFIG = nimbo.core.config.make_config()
 
