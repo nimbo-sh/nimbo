@@ -11,14 +11,14 @@ from nimbo.core.print import nprint
 class AwsStorage(Storage):
     # noinspection DuplicatedCode
     @staticmethod
-    def push(directory: str, delete=False) -> None:
-        assert directory in ["datasets", "results", "logs"]
+    def push(folder: str, delete=False) -> None:
+        assert folder in ["datasets", "results", "logs"]
 
-        if directory == "logs":
+        if folder == "logs":
             source = os.path.join(CONFIG.local_results_path, "nimbo-logs")
             target = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
         else:
-            if directory == "results":
+            if folder == "results":
                 source = CONFIG.local_results_path
                 target = CONFIG.s3_results_path
             else:
@@ -29,14 +29,14 @@ class AwsStorage(Storage):
 
     # noinspection DuplicatedCode
     @staticmethod
-    def pull(directory: str, delete=False) -> None:
-        assert directory in ["datasets", "results", "logs"]
+    def pull(folder: str, delete=False) -> None:
+        assert folder in ["datasets", "results", "logs"]
 
-        if directory == "logs":
+        if folder == "logs":
             source = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
             target = os.path.join(CONFIG.local_results_path, "nimbo-logs")
         else:
-            if directory == "results":
+            if folder == "results":
                 source = CONFIG.s3_results_path
                 target = CONFIG.local_results_path
             else:

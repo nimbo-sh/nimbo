@@ -4,12 +4,12 @@ import abc
 class Storage(abc.ABC):
     @staticmethod
     @abc.abstractmethod
-    def push(directory: str, delete=False) -> None:
+    def push(folder: str, delete=False) -> None:
         ...
 
     @staticmethod
     @abc.abstractmethod
-    def pull(directory: str, delete=False) -> None:
+    def pull(folder: str, delete=False) -> None:
         ...
 
     @staticmethod

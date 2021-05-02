@@ -3,11 +3,11 @@ from nimbo.core.cloud_provider.provider.services.storage import Storage
 
 class GcpStorage(Storage):
     @staticmethod
-    def push(directory: str, delete=False) -> None:
+    def push(folder: str, delete=False) -> None:
         ...
 
     @staticmethod
-    def pull(directory: str, delete=False) -> None:
+    def pull(folder: str, delete=False) -> None:
         ...
 
     @staticmethod

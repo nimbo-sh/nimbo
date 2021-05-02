@@ -203,7 +203,7 @@ def create_bucket(bucket_name, dry_run):
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def push(directory, delete):
+def push(folder, delete):
     """Push your local datasets/results folder onto S3."""
 
     if delete:
@@ -213,7 +213,7 @@ def push(directory, delete):
             "Do you want to continue?",
             abort=True,
         )
-    Cloud.push(directory, delete)
+    Cloud.push(folder, delete)
 
 
 @cli.command()
@@ -230,7 +230,7 @@ def push(directory, delete):
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def pull(directory, delete):
+def pull(folder, delete):
     """Pull the S3 datasets/results folder into your local computer."""
 
     if delete:
@@ -240,7 +240,7 @@ def pull(directory, delete):
             "Do you want to continue?",
             abort=True,
         )
-    Cloud.pull(directory, delete)
+    Cloud.pull(folder, delete)
 
 
 @cli.command()
