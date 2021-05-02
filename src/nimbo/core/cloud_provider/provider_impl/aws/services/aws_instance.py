@@ -434,7 +434,7 @@ class AwsInstance(Instance):
             )
             for reservation in response["Reservations"]:
                 for inst in reservation["Instances"]:
-                    print(
+                    nprint(
                         f"Id: [bright_green]{inst['InstanceId']}[/bright_green]\n"
                         f"Status: {inst['State']['Name']}\n"
                         f"Launch Time: {inst['LaunchTime']}\n"
