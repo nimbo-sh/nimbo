@@ -33,7 +33,7 @@ def launch_instance(client):
         "KeyName": Path(CONFIG.instance_key).stem,
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [CONFIG.security_group],
-        "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
+        "IamInstanceProfile": {"Name": CONFIG.role},
     }
 
     if CONFIG.spot:
