@@ -29,6 +29,7 @@ def launch_instance(client):
         "BlockDeviceMappings": [{"DeviceName": "/dev/sda1", "Ebs": ebs_config}],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,
+        "InstanceInitiatedShutdownBehavior": "terminate",
         "KeyName": Path(CONFIG.instance_key).stem,
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [CONFIG.security_group],

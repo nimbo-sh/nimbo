@@ -5,9 +5,8 @@ trap 'echo "Job failed."; do_cleanup; exit' ERR
 trap 'echo "Received signal to stop."; do_cleanup; exit' SIGQUIT SIGTERM SIGINT
 
 do_cleanup () { 
-    echo "Deleting instance $INSTANCE_ID..."
-    $AWS ec2 terminate-instances --instance-ids $INSTANCE_ID >/dev/null
-    echo "Done."
+    echo "Deleting instance $INSTANCE_ID."
+    sudo shutdown now >/tmp/nimbo-system-logs
 }
 
 INSTANCE_ID=$1
