@@ -35,8 +35,8 @@ def admin_setup(profile, full_s3_access):
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
 def add_user(username, profile):
-    """Adds user USERNAME to the user group NimboUserGroup. 
-    
+    """Adds user USERNAME to the user group NimboUserGroup.
+
     You must have run 'nimbo admin-setup' before adding users.
 
     PROFILE is the profile name of your root/admin account.

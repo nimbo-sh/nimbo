@@ -125,7 +125,7 @@ EC2_POLICY_JSON = {
                 "ec2:RevokeSecurityGroupIngress",
                 "ec2:RunInstances",
             ],
-            "Resource": "*"
+            "Resource": "*",
         },
         {
             "Sid": "NimboEC2Policy2",
@@ -138,29 +138,20 @@ EC2_POLICY_JSON = {
                 "ec2:CancelSpotInstanceRequests",
             ],
             "Resource": "*",
-            "Condition": {
-                "StringEquals": {
-                    "ec2:ResourceTag/Owner": "${aws:userid}"
-                }
-            }
+            "Condition": {"StringEquals": {"ec2:ResourceTag/Owner": "${aws:userid}"}},
         },
         {
             "Sid": "NimboEC2Policy3",
             "Effect": "Allow",
-            "Action": [
-                "ec2:AttachVolume",
-                "ec2:DetachVolume"
-            ],
+            "Action": ["ec2:AttachVolume", "ec2:DetachVolume"],
             "Resource": "arn:aws:ec2:*:*:instance/*",
-            "Condition": {
-                "StringEquals": {"ec2:ResourceTag/Owner": "${aws:userid}"}
-            }
+            "Condition": {"StringEquals": {"ec2:ResourceTag/Owner": "${aws:userid}"}},
         },
         {
             "Sid": "NimboPricingPolicy",
             "Effect": "Allow",
             "Action": ["pricing:*"],
-            "Resource": "*"
+            "Resource": "*",
         },
-    ]
+    ],
 }
