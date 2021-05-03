@@ -21,11 +21,27 @@ def generate_config():
 
 
 @cli.command()
+@click.argument("profile")
 @click.option("--full-s3-access", is_flag=True)
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
-def admin_setup(full_s3_access):
-    setup.setup(full_s3_access)
+def admin_setup(profile, full_s3_access):
+    setup.setup(profile, full_s3_access)
+
+
+@cli.command()
+@click.argument("username")
+@click.argument("profile")
+@utils.assert_required_config(RequiredCase.NONE)
+@utils.handle_errors
+def add_user(username, profile):
+    """Adds user USERNAME to the user group NimboUserGroup. 
+    
+    You must have run 'nimbo admin-setup' before adding users.
+
+    PROFILE is the profile name of your root/admin account.
+    """
+    setup.add_user(username, profile)
 
 
 @cli.command()
