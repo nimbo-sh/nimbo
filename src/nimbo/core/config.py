@@ -87,6 +87,7 @@ class NimboConfig(pydantic.BaseModel):
         default=os.path.isfile(NIMBO_CONFIG_FILE)
     )
     user_id: Optional[str] = None
+    user_arn: Optional[str] = None
     telemetry_url: str = TELEMETRY_URL
 
     def get_session(self) -> boto3.Session:
@@ -94,7 +95,9 @@ class NimboConfig(pydantic.BaseModel):
             profile_name=self.aws_profile, region_name=self.region_name
         )
 
-        self.user_id = session.client("sts").get_caller_identity()["Arn"]
+        caller_identity = session.client("sts").get_caller_identity()
+        self.user_id = caller_identity["UserId"]
+        self.user_arn = caller_identity["Arn"]
         return session
 
     def assert_required_config_exists(self, *cases: RequiredCase) -> None:

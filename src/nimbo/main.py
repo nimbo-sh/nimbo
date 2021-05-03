@@ -1,6 +1,6 @@
 import click
 
-from nimbo.core import access, execute, storage, utils
+from nimbo.core import access, execute, storage, utils, setup
 from nimbo.core.config import RequiredCase
 
 
@@ -18,6 +18,14 @@ def generate_config():
     Remember to change any fields to your own values.
     """
     utils.generate_config()
+
+
+@cli.command()
+@click.option("--full-s3-access", is_flag=True)
+@utils.assert_required_config(RequiredCase.NONE)
+@utils.handle_errors
+def admin_setup(full_s3_access):
+    setup.setup(full_s3_access)
 
 
 @cli.command()
