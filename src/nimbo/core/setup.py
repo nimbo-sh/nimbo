@@ -81,15 +81,6 @@ def setup(profile, full_s3_access=False):
     print_header(f"Creating user group {NIMBO_USER_GROUP}...")
     create_group(iam, NIMBO_USER_GROUP)
 
-    # "Resource": "arn:aws:iam::*:role/Role1"
-    # "Condition": {
-    # "StringEquals": {
-    #    "aws:username": [
-    #        "Miguel",
-    #        "Employee",
-    #    ]
-    # }
-
     print_header(f"Creating policy {EC2_POLICY_NAME}...")
     create_policy(iam, EC2_POLICY_NAME, EC2_POLICY_JSON)
 
