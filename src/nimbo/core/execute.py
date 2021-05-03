@@ -8,13 +8,15 @@ from subprocess import PIPE
 from pathlib import Path
 
 from nimbo import CONFIG
-from nimbo.core import telemetry, utils
+from nimbo.core import telemetry, utils, access
 from nimbo.core.storage import s3_cp_command, s3_sync_command
 from nimbo.core.statics import NIMBO_ROOT, NIMBO_VARS
 from nimbo.core.print import print, print_header
 
 
 def launch_instance(client):
+
+    access.allow_inbound_current_ip(CONFIG.security_group)
     image = utils.get_image_id()
     print_header(f"Launching instance with image {image}... ")
 
