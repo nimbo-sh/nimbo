@@ -1,4 +1,5 @@
 import sys
+import json
 from botocore.exceptions import ClientError
 
 from nimbo import CONFIG
@@ -8,13 +9,13 @@ NIMBO_USER_GROUP = "NimboUserGroup"
 EC2_POLICY_NAME = "NimboEC2Policy"
 CRED_POLICY_NAME = "NimboCredentialsPolicy"
 PASS_ROLE_POLICY_NAME = "NimboPassRolePolicy"
-INSTANCE_ROLE_NAME = "NimboInstanceRole"
-INSTANCE_PROFILE_NAME = "NimboInstanceProfile"
+S3_ACCESS_ROLE_NAME = "NimboFullS3AccessRole"
 
 
-def setup():
+def setup(full_s3_access=False):
     iam = CONFIG.get_session().client("iam")
 
+    # Create user group
     try:
         print_header(f"Creating user group {NIMBO_USER_GROUP}...")
         iam.create_group(GroupName=NIMBO_USER_GROUP)
@@ -25,147 +26,145 @@ def setup():
             print(e, style="error")
             sys.exit(1)
 
-
-    policy_json = {
+    # Create EC2 policy for user group
+    ec2_policy_json = {
         "Version": "2012-10-17",
         "Statement": [
             {
-                "Sid": "VisualEditor0",
+                "Sid": "NimboEC2Policy1",
                 "Effect": "Allow",
                 "Action": [
-                    "ec2:AssociateDhcpOptions",
-                    "ec2:AssociateIamInstanceProfile",
-                    "ec2:AssociateRouteTable",
-                    "ec2:AttachInternetGateway",
-                    "ec2:AttachVolume",
                     "ec2:AuthorizeSecurityGroupEgress",
                     "ec2:AuthorizeSecurityGroupIngress",
-                    "ec2:CancelSpotInstanceRequests",
-                    "ec2:CreateDhcpOptions",
-                    "ec2:CreateInternetGateway",
+                    "ec2:CopySnapshot",
                     "ec2:CreateKeyPair",
                     "ec2:CreatePlacementGroup",
-                    "ec2:CreateRoute",
                     "ec2:CreateSecurityGroup",
+                    "ec2:CreateSnapshot",
+                    "ec2:CreateSnapshots",
                     "ec2:CreateSubnet",
-                    "ec2:CreateTags",
                     "ec2:CreateVolume",
                     "ec2:CreateVpc",
                     "ec2:CreateVpcPeeringConnection",
-                    "ec2:DeleteInternetGateway",
                     "ec2:DeleteKeyPair",
                     "ec2:DeletePlacementGroup",
-                    "ec2:DeleteRoute",
-                    "ec2:DeleteRouteTable",
                     "ec2:DeleteSecurityGroup",
                     "ec2:DeleteSubnet",
                     "ec2:DeleteTags",
                     "ec2:DeleteVolume",
                     "ec2:DeleteVpc",
-                    "ec2:DescribeAvailabilityZones",
-                    "ec2:DescribeIamInstanceProfileAssociations",
-                    "ec2:DescribeInstanceStatus",
-                    "ec2:DescribeInstances",
-                    "ec2:DescribeKeyPairs",
-                    "ec2:DescribePlacementGroups",
-                    "ec2:DescribePrefixLists",
-                    "ec2:DescribeReservedInstancesOfferings",
-                    "ec2:DescribeRouteTables",
-                    "ec2:DescribeSecurityGroups",
-                    "ec2:DescribeSpotInstanceRequests",
-                    "ec2:DescribeSpotPriceHistory",
-                    "ec2:DescribeSubnets",
-                    "ec2:DescribeVolumes",
-                    "ec2:DescribeVpcs",
-                    "ec2:DetachInternetGateway",
-                    "ec2:DisassociateIamInstanceProfile",
+                    "ec2:Describe*",
+                    "ec2:GetConsole*",
+                    "ec2:ImportSnapshot",
+                    "ec2:ModifySnapshotAttribute",
                     "ec2:ModifyVpcAttribute",
-                    "ec2:ReplaceIamInstanceProfileAssociation",
                     "ec2:RequestSpotInstances",
                     "ec2:RevokeSecurityGroupEgress",
                     "ec2:RevokeSecurityGroupIngress",
                     "ec2:RunInstances",
-                    "ec2:TerminateInstances"
-                    "pricing:*"
                 ],
                 "Resource": "*"
             },
             {
-                "Sid": "VisualEditor1",
+                "Sid": "NimboEC2Policy2",
                 "Effect": "Allow",
-                "Action": "ec2:RunInstances",
-                "Resource": [
-                    "arn:aws:ec2:*:*:subnet/*",
-                    "arn:aws:ec2:*::snapshot/*",
-                    "arn:aws:ec2:*:*:launch-template/*",
-                    "arn:aws:ec2:*:*:security-group/*",
-                    "arn:aws:ec2:*:*:placement-group/*",
-                    "arn:aws:ec2:*:*:network-interface/*",
-                    "arn:aws:ec2:*:*:capacity-reservation/*",
-                    "arn:aws:ec2:*:*:key-pair/*",
-                    "arn:aws:ec2:*:*:instance/*",
-                    "arn:aws:elastic-inference:*:*:elastic-inference-accelerator/*",
-                    "arn:aws:ec2:*:*:elastic-gpu/*",
-                    "arn:aws:ec2:*:*:volume/*",
-                    "arn:aws:ec2:*::image/*"
-                ]
+                "Action": [
+                    "ec2:CreateTags",
+                    "ec2:StartInstances",
+                    "ec2:StopInstances",
+                    "ec2:TerminateInstances",
+                    "ec2:DeleteSnapshot",
+                    "ec2:CancelSpotInstanceRequests",
+                ],
+                "Resource": "*",
+                "Condition": {
+                    "StringEquals": {
+                        "ec2:ResourceTag/Owner": "${aws:userid}"
+                    }
+                }
             },
             {
-                "Sid": "VisualEditor2",
+                "Sid": "NimboEC2Policy3",
                 "Effect": "Allow",
-                "Action": "ec2:RequestSpotInstances",
-                "Resource": [
-                    "arn:aws:ec2:*:*:subnet/*",
-                    "arn:aws:ec2:*:*:security-group/*",
-                    "arn:aws:ec2:*:*:spot-instances-request/*",
-                    "arn:aws:ec2:*:*:key-pair/*",
-                    "arn:aws:ec2:*::image/*"
-                ]
-            }
+                "Action": [
+                    "ec2:AttachVolume",
+                    "ec2:DetachVolume"
+                ],
+                "Resource": "arn:aws:ec2:*:*:instance/*",
+                "Condition": {
+                    "StringEquals": {"ec2:ResourceTag/Owner": "${aws:userid}"}
+                }
+            },
+            {
+                "Sid": "NimboPricingPolicy",
+                "Effect": "Allow",
+                "Action": ["pricing:*"],
+                "Resource": "*"
+            },
         ]
     }
 
+    #"Resource": "arn:aws:iam::*:role/Role1"
+    #"Condition": {
+    #"StringEquals": {
+    #    "aws:username": [
+    #        "Miguel",
+    #        "Employee",
+    #    ]
+    #}
+
     try:
         print_header(f"Creating EC2 policy {EC2_POLICY_NAME}...")
-        ec2_policy = iam_client.create_policy(
+        ec2_policy = iam.create_policy(
             PolicyName=EC2_POLICY_NAME,
-            PolicyDocument=json.dumps(policy_json)
+            PolicyDocument=json.dumps(ec2_policy_json)
         )
-        ec2_policy_arn = policy['Policy']['Arn']
-    except ClientError as error:
+        ec2_policy_arn = ec2_policy['Policy']['Arn']
+        print_header(f"Attaching EC2 policy {EC2_POLICY_NAME} to user group {NIMBO_USER_GROUP}...")
+        iam.attach_group_policy(GroupName=NIMBO_USER_GROUP, PolicyArn=ec2_policy_arn)
+    except ClientError as e:
         if e.response['Error']['Code'] == 'EntityAlreadyExists':
             print(f"Policy {EC2_POLICY_NAME} already exists. Skipping.", style="warning")
         else:
             print(e, style="error")
             sys.exit(1)
 
-    print_header(f"Attaching EC2 policy {EC2_POLICY_NAME} to user group {NIMBO_USER_GROUP}...")        
-    iam.attach_group_policy(GroupName=NIMBO_USER_GROUP, PolicyArn=ec2_policy_arn)
+    if full_s3_access:
+        print_header(f"Creating role {S3_ACCESS_ROLE_NAME}...")
+        assume_role_policy = {
+            "Version": "2012-10-17",
+            "Statement": {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Principal": {"Service": "ec2.amazonaws.com"},
+            },
+        }
+        iam.create_role(RoleName=S3_ACCESS_ROLE_NAME, AssumeRolePolicyDocument=json.dumps(assume_role_policy))
+        iam.attach_role_policy(
+            PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess", RoleName=S3_ACCESS_ROLE_NAME
+        )
+        iam.create_instance_profile(InstanceProfileName=S3_ACCESS_ROLE_NAME, Path="/")
+        iam.add_role_to_instance_profile(
+            InstanceProfileName=S3_ACCESS_ROLE_NAME, RoleName=S3_ACCESS_ROLE_NAME
+        )
 
+        pass_role_policy_json = {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Sid": "NimboPassRolePolicy",
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": f"arn:aws:iam::*:role/{S3_ACCESS_ROLE_NAME}"
+            }]
+        }
+        pass_role_policy = iam.create_policy(
+            PolicyName=PASS_ROLE_POLICY_NAME,
+            PolicyDocument=json.dumps(pass_role_policy_json)
+        )
+        pass_role_policy_arn = ec2_policy['Policy']['Arn']
+        print_header(f"Attaching policy {PASS_ROLE_POLICY_NAME} to user group {NIMBO_USER_GROUP}...")
+        iam.attach_group_policy(GroupName=NIMBO_USER_GROUP, PolicyArn=pass_role_policy_arn)
+        print_header(f"Attaching policy AmazonS3FullAccess to user group {NIMBO_USER_GROUP}...")
+        iam.attach_group_policy(GroupName=NIMBO_USER_GROUP, PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess")
 
-    policy = {
-        "Version": "2012-10-17",
-        "Statement": {
-            "Effect": "Allow",
-            "Action": "sts:AssumeRole",
-            "Principal": {"Service": "ec2.amazonaws.com"},
-        },
-    }
-    iam.create_role(RoleName=INSTANCE_ROLE_NAME, AssumeRolePolicyDocument=json.dumps(policy))
-    iam.attach_role_policy(
-        PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess", RoleName=role_name
-    )
-    iam.attach_role_policy(
-        PolicyArn="arn:aws:iam::aws:policy/AmazonEC2FullAccess", RoleName=role_name
-    )
-
-    iam.create_instance_profile(InstanceProfileName=instance_profile_name, Path="/")
-    iam.add_role_to_instance_profile(
-        InstanceProfileName=instance_profile_name, RoleName=role_name
-    )
-
-
-
-
-
-
+    print_header("Done.")
