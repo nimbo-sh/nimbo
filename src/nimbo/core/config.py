@@ -73,6 +73,7 @@ class NimboConfig(pydantic.BaseModel):
     spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = None
     security_group: Optional[str] = None
     instance_key: Optional[str] = None
+    role: Optional[str] = None
 
     conda_env: Optional[str] = None
     run_in_background: bool = False
