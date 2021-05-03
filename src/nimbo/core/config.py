@@ -129,14 +129,15 @@ class NimboConfig(pydantic.BaseModel):
             required_config["disk_size"] = self.disk_size
             required_config["instance_key"] = self.instance_key
             required_config["security_group"] = self.security_group
+            required_config["role"] = self.role
         if RequiredCase.JOB in cases:
             required_config["conda_env"] = self.conda_env
 
         unspecified = [key for key, value in required_config.items() if not value]
         if unspecified:
             raise AssertionError(
-                f"For running this command {', '.join(unspecified)} should"
-                f" be specified in {self.nimbo_config_file}"
+                f"For running this command '{', '.join(unspecified)}' should "
+                f"be specified in {self.nimbo_config_file}"
             )
 
         bad_fields = {}

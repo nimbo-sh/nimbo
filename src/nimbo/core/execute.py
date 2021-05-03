@@ -29,7 +29,6 @@ def launch_instance(client):
         "BlockDeviceMappings": [{"DeviceName": "/dev/sda1", "Ebs": ebs_config}],
         "ImageId": image,
         "InstanceType": CONFIG.instance_type,
-        "InstanceInitiatedShutdownBehavior": "terminate",
         "KeyName": Path(CONFIG.instance_key).stem,
         "Placement": {"Tenancy": "default"},
         "SecurityGroups": [CONFIG.security_group],
@@ -86,6 +85,7 @@ def launch_instance(client):
     else:
         instance_config["MinCount"] = 1
         instance_config["MaxCount"] = 1
+        instance_config["InstanceInitiatedShutdownBehavior"] = "terminate"
         instance_config["TagSpecifications"] = [
             {"ResourceType": "instance", "Tags": utils.make_instance_tags()}
         ]

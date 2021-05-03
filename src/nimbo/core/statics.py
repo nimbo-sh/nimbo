@@ -29,6 +29,7 @@ persist: no  # whether instance persists when the job finishes or on error
 # Permissions and credentials
 security_group: default
 instance_key: your-ec2-key-pair.pem  # can be an absolute path
+role: NimboFullS3AccessRole
 """
 
 
