@@ -10,9 +10,8 @@ do_cleanup () {
 
     PERSIST="$(grep 'persist:' $CONFIG | awk '{print $2}')"
     if [ "$PERSIST" = "no" ]; then
-        echo "Deleting instance $INSTANCE_ID..."
-        $AWS ec2 terminate-instances --instance-ids $INSTANCE_ID >/dev/null
-        echo "Done."
+        echo "Deleting instance $INSTANCE_ID."
+        sudo shutdown now >/tmp/nimbo-system-logs
     fi
 }
 
