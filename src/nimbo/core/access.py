@@ -1,10 +1,12 @@
+import sys
 import json
 import textwrap
-from pprint import pprint
-
 import requests
+from pprint import pprint
+from botocore.exceptions import ClientError
 
 from nimbo import CONFIG
+from nimbo.core.print import print
 
 
 def create_security_group(group_name, dry_run=False):
@@ -30,25 +32,41 @@ def allow_inbound_current_ip(group_name, dry_run=False):
 
     ec2 = CONFIG.get_session().client("ec2")
 
-    # Get the security group id
-    response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
-    security_group_id = response["SecurityGroups"][0]["GroupId"]
+    try:
+        # Get the security group id
+        response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidGroup.NotFound':
+            print(f"Security group {group_name} not found. Please use an existing security group "
+                  "or create a new one in the AWS console.", style="error")
+            sys.exit(1)
+        elif e.response['Error']['Code'] == 'UnauthorizedOperation':
+            return
+        else:
+            raise
 
+    security_group_id = response["SecurityGroups"][0]["GroupId"]
     my_public_ip = requests.get("https://checkip.amazonaws.com").text.strip()
 
-    response = ec2.authorize_security_group_ingress(
-        GroupId=security_group_id,
-        IpPermissions=[
-            {
-                "IpProtocol": "tcp",
-                "FromPort": 22,
-                "ToPort": 22,
-                "IpRanges": [{"CidrIp": f"{my_public_ip}/16"}],
-            }
-        ],
-    )
-    print("Ingress Successfully Set")
-    pprint(response)
+    try:
+        response = ec2.authorize_security_group_ingress(
+            GroupId=security_group_id,
+            IpPermissions=[
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "IpRanges": [{"CidrIp": f"{my_public_ip}/16"}],
+                }
+            ],
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "InvalidPermission.Duplicate":
+            return
+        elif e.response['Error']['Code'] == 'UnauthorizedOperation':
+            return
+        else:
+            raise
 
 
 def create_instance_profile_and_role(dry_run=False):
