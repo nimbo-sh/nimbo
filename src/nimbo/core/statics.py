@@ -75,3 +75,91 @@ FULL_REGION_NAMES = {
     "us-west-1": "US West (N. California)",
     "us-west-2": "US West (Oregon)",
 }
+
+
+ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Principal": {"Service": "ec2.amazonaws.com"},
+    },
+}
+
+
+EC2_POLICY_JSON = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "NimboEC2Policy1",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:CopySnapshot",
+                "ec2:CreateKeyPair",
+                "ec2:CreatePlacementGroup",
+                "ec2:CreateSecurityGroup",
+                "ec2:CreateSnapshot",
+                "ec2:CreateSnapshots",
+                "ec2:CreateSubnet",
+                "ec2:CreateTags",
+                "ec2:CreateVolume",
+                "ec2:CreateVpc",
+                "ec2:CreateVpcPeeringConnection",
+                "ec2:DeleteKeyPair",
+                "ec2:DeletePlacementGroup",
+                "ec2:DeleteSecurityGroup",
+                "ec2:DeleteSubnet",
+                "ec2:DeleteTags",
+                "ec2:DeleteVolume",
+                "ec2:DeleteVpc",
+                "ec2:Describe*",
+                "ec2:GetConsole*",
+                "ec2:ImportSnapshot",
+                "ec2:ModifySnapshotAttribute",
+                "ec2:ModifyVpcAttribute",
+                "ec2:RequestSpotInstances",
+                "ec2:RevokeSecurityGroupEgress",
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:RunInstances",
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "NimboEC2Policy2",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances",
+                "ec2:DeleteSnapshot",
+                "ec2:CancelSpotInstanceRequests",
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "ec2:ResourceTag/Owner": "${aws:userid}"
+                }
+            }
+        },
+        {
+            "Sid": "NimboEC2Policy3",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:DetachVolume"
+            ],
+            "Resource": "arn:aws:ec2:*:*:instance/*",
+            "Condition": {
+                "StringEquals": {"ec2:ResourceTag/Owner": "${aws:userid}"}
+            }
+        },
+        {
+            "Sid": "NimboPricingPolicy",
+            "Effect": "Allow",
+            "Action": ["pricing:*"],
+            "Resource": "*"
+        },
+    ]
+}
