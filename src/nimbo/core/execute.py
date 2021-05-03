@@ -150,7 +150,10 @@ def block_until_ssh_ready(host: str) -> None:
 
 def sync_code(host):
     if ".git" not in os.listdir():
-        print("No git repo found. Syncing all the python and bash files as a fallback.", style="warning")
+        print(
+            "No git repo found. Syncing all the python and bash files as a fallback.",
+            style="warning",
+        )
         print("Please consider using git to track the files to sync.", style="warning")
         subprocess.Popen(
             f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "

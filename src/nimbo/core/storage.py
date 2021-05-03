@@ -71,9 +71,7 @@ def create_bucket(bucket_name, dry_run=False):
         session = CONFIG.get_session()
         s3 = session.client("s3")
         location = {"LocationConstraint": session.region_name}
-        s3.create_bucket(
-            Bucket=bucket_name, CreateBucketConfiguration=location
-        )
+        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration=location)
     except ClientError as e:
         if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
             print("Bucket nimbo-main-bucket already exists.", style="warning")

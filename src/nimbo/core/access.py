@@ -36,11 +36,14 @@ def allow_inbound_current_ip(group_name, dry_run=False):
         # Get the security group id
         response = ec2.describe_security_groups(GroupNames=[group_name], DryRun=dry_run)
     except ClientError as e:
-        if e.response['Error']['Code'] == 'InvalidGroup.NotFound':
-            print(f"Security group {group_name} not found. Please use an existing security group "
-                  "or create a new one in the AWS console.", style="error")
+        if e.response["Error"]["Code"] == "InvalidGroup.NotFound":
+            print(
+                f"Security group {group_name} not found. Please use an existing security group "
+                "or create a new one in the AWS console.",
+                style="error",
+            )
             sys.exit(1)
-        elif e.response['Error']['Code'] == 'UnauthorizedOperation':
+        elif e.response["Error"]["Code"] == "UnauthorizedOperation":
             return
         else:
             raise
@@ -63,7 +66,7 @@ def allow_inbound_current_ip(group_name, dry_run=False):
     except ClientError as e:
         if e.response["Error"]["Code"] == "InvalidPermission.Duplicate":
             return
-        elif e.response['Error']['Code'] == 'UnauthorizedOperation':
+        elif e.response["Error"]["Code"] == "UnauthorizedOperation":
             return
         else:
             raise
