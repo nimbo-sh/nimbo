@@ -62,8 +62,7 @@ Create two instance keys, one for `eu-west-1` and one for `us-east-2`. The keys 
 begin with the zone name, e.g. `eu-west-1-dave.pem`. Do not forget to `chmod 400` the
 created keys. Place these keys in `src/nimbo/tests/assets`. 
 
-Create a `nimbo-config.yml` file in `src/nimbo/tests/assets` with only `aws_profile`
-and `security_group` fields set.
+Create a `nimbo-config.yml` file in `src/nimbo/tests/assets` with only `aws_profile`, `security_group`, and `role` fields set.
 
 Make sure that the `security_group` that you put in test `nimbo-config.yml` allows
 your IP for all regions, otherwise, the tests will fail.
