@@ -1,8 +1,7 @@
 #!/bin/bash
 
-trap "kill 0" EXIT
-trap 'echo "Job failed."; do_cleanup; exit' ERR
-trap 'echo "Received signal to stop."; do_cleanup; exit' SIGQUIT SIGTERM SIGINT
+trap 'echo "Job failed."; do_cleanup; exit 1' ERR
+trap 'echo "Received signal to stop."; do_cleanup; exit 1' SIGQUIT SIGTERM SIGINT
 
 do_cleanup () { 
     echo "Deleting instance $INSTANCE_ID."
@@ -34,4 +33,4 @@ printf "The instance profile has the required S3 and EC2 permissions \xE2\x9C\x9
 
 printf "Everything working \xE2\x9C\x94\n"
 
-do_cleanup; exit
+do_cleanup; exit 0
