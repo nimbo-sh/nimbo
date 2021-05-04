@@ -85,6 +85,18 @@ def launch_and_setup(dry_run):
 
 @cli.command()
 @click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.JOB)
+@utils.handle_errors
+def notebook(dry_run):
+    """
+    Launches an EC2 instance with your code, data and environment,
+    without running any job.
+    """
+    execute.run_job("_nimbo_notebook", dry_run)
+
+
+@cli.command()
+@click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.INSTANCE, RequiredCase.STORAGE)
 @utils.handle_errors
 def test_access(dry_run):

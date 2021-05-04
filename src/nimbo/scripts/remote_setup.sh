@@ -1,8 +1,7 @@
 #!/bin/bash
 
-trap "kill 0" EXIT
-trap 'echo "Job failed."; do_cleanup; exit' ERR
-trap 'echo "Received signal to stop."; do_cleanup; exit' SIGQUIT SIGTERM SIGINT
+trap 'echo "Job failed."; do_cleanup; exit 1' ERR
+trap 'echo "Received signal to stop."; do_cleanup; exit 1' SIGINT
 
 do_cleanup () { 
     echo "Backing up nimbo logs..."
@@ -52,11 +51,11 @@ mkdir -p $LOCAL_RESULTS_PATH
 mkdir -p $CONDA_PATH
 
 
-while true; do 
-    $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >/tmp/nimbo-s3-logs 2>&1
-    $S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >/tmp/nimbo-s3-logs 2>&1
-    sleep 5
-done &
+nohup bash -c "while true;  
+do $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >>/tmp/nimbo-s3-logs 2>&1;
+$S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >>/tmp/nimbo-s3-logs 2>&1;
+sleep 5; done" >/dev/null 2>&1 &
+
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
 if [ -f "$CONDASH" ]; then
@@ -92,6 +91,14 @@ echo ""
 if [ "$JOB_CMD" = "_nimbo_launch_and_setup" ]; then
     echo "Setup complete. You can now use 'nimbo ssh $1' to ssh into this instance."
     exit 0
+elif [ "$JOB_CMD" = "_nimbo_notebook" ]; then
+    if ! conda env export | grep -q jupyterlab; then
+        echo "Jupyterlab installation not found. Installing..."
+        conda install -q -y jupyterlab -c conda-forge >/dev/null
+    fi
+    nohup jupyter lab --no-browser --port 57467 --autoreload --ServerApp.token="" >/tmp/nimbo-notebook-logs 2>&1 &
+    echo "Notebook running at http://localhost:57467/lab"
+    exit 0
 else
     echo "Running job: ${@:2}"
     ${@:2}
@@ -105,5 +112,5 @@ conda deactivate
 echo ""
 echo "Job finished."
 
-do_cleanup; exit
+do_cleanup; exit 0
 

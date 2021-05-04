@@ -189,7 +189,7 @@ def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script):
             f"nohup {bash_cmd} {instance_id} {job_cmd} </dev/null >{nimbo_log} 2>&1 &"
         )
     else:
-        full_command = f"{bash_cmd} {instance_id} {job_cmd} | tee {nimbo_log}"
+        full_command = f"{bash_cmd} {instance_id} {job_cmd}"
 
     subprocess.Popen(
         f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True
@@ -232,7 +232,7 @@ def run_job(job_cmd, dry_run=False):
 
         ssh = (
             f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
-            " -o ServerAliveInterval=20 "
+            " -o ServerAliveInterval=5 "
         )
         scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
@@ -263,6 +263,11 @@ def run_job(job_cmd, dry_run=False):
         # Run remote_setup script on instance
         run_remote_script(ssh, scp, host, instance_id, job_cmd, "remote_setup.sh")
 
+        if job_cmd == "_nimbo_notebook":
+            subprocess.Popen(
+                f"{ssh} -o 'ExitOnForwardFailure yes' "
+                f"ubuntu@{host} -NfL 57467:localhost:57467 >/dev/null 2>&1", 
+                shell=True).communicate()
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
     except BaseException as e:

@@ -75,3 +75,17 @@ def test_spot_launch(runner: CliRunner):
         cli, f"delete-instance {instance_id}", catch_exceptions=False
     )
     assert result.exit_code == 0
+
+
+@isolated_filesystem(RequiredCase.JOB)
+def test_notebook(runner: CliRunner):
+    CONFIG.spot = True
+    response = execute.run_job("_nimbo_notebook", dry_run=False)
+
+    assert response["message"] == "_nimbo_notebook_success"
+    instance_id = response["instance_id"]
+
+    result = runner.invoke(
+        cli, f"delete-instance {instance_id}", catch_exceptions=False
+    )
+    assert result.exit_code == 0
