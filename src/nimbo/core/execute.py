@@ -176,6 +176,17 @@ def sync_code(host):
         ).communicate()
 
 
+def sync_notebooks(instance_id):
+    host = utils.check_instance_host(instance_id)
+
+    subprocess.Popen(
+        f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "
+        f"--include '*/' --include '*.ipynb' --exclude '*' "
+        f"ubuntu@{host}:/home/ubuntu/project/ .",
+        shell=True
+    ).communicate()
+
+
 def run_remote_script(ssh_cmd, scp_cmd, host, instance_id, job_cmd, script):
     remote_script = join(NIMBO_ROOT, "scripts", script)
     subprocess.check_output(
@@ -268,6 +279,11 @@ def run_job(job_cmd, dry_run=False):
                 f"{ssh} -o 'ExitOnForwardFailure yes' "
                 f"ubuntu@{host} -NfL 57467:localhost:57467 >/dev/null 2>&1", 
                 shell=True).communicate()
+            print_header(
+                "Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync "
+                "the notebook to your local folder, as the remote notebooks will be lost "
+                "once the instance is terminated."
+            )
         return {"message": job_cmd + "_success", "instance_id": instance_id}
 
     except BaseException as e:

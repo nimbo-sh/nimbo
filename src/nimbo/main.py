@@ -89,10 +89,28 @@ def launch_and_setup(dry_run):
 @utils.handle_errors
 def notebook(dry_run):
     """
-    Launches an EC2 instance with your code, data and environment,
-    without running any job.
+    Launches jupyter lab on an EC2 instance with your code, data and environment.
+
+    Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync
+    the notebook to your local folder, as the remote notebooks will be lost
+    once the instance is terminated.
     """
     execute.run_job("_nimbo_notebook", dry_run)
+
+
+@cli.command()
+@click.argument("instance_id")
+@utils.assert_required_config(RequiredCase.INSTANCE)
+@utils.handle_errors
+def sync_notebooks(instance_id):
+    """
+    Syncs the ipynb files from the instance INSTANCE_ID to your local folder.
+
+    Make sure to run 'nimbo sync-notebooks <instance_id>' to sync the notebook
+    to your local folder, as the remote notebooks will be lost once the instance
+    is terminated.
+    """
+    execute.sync_notebooks(instance_id)
 
 
 @cli.command()
