@@ -187,31 +187,3 @@ def test_push_pull(runner: CliRunner):
         cli, "push results --delete", input="y", catch_exceptions=False
     )
     assert result.exit_code == 0
-
-
-@isolated_filesystem(RequiredCase.MINIMAL)
-def test_instance_profile_and_security_group(runner: CliRunner):
-    expected_message = "would have succeeded, but DryRun flag is set"
-
-    try:
-        runner.invoke(cli, "allow-current-ip default --dry-run", catch_exceptions=False)
-    except ClientError as e:
-        if expected_message not in str(e):
-            raise
-
-    result = runner.invoke(
-        cli, "list-instance-profiles --dry-run", catch_exceptions=False
-    )
-    assert result.exit_code == 0
-
-    result = runner.invoke(
-        cli,
-        "create-instance-profile mock_role --dry-run",
-        catch_exceptions=False,
-    )
-    assert result.exit_code == 0
-
-    result = runner.invoke(
-        cli, "create-instance-profile-and-role --dry-run", catch_exceptions=False
-    )
-    assert result.exit_code == 0
