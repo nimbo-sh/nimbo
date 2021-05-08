@@ -22,6 +22,30 @@ def generate_config():
 
 
 @cli.command()
+@click.argument("profile")
+@click.option("--full-s3-access", is_flag=True)
+@utils.assert_required_config(RequiredCase.NONE)
+@utils.handle_errors
+def admin_setup(profile, full_s3_access):
+    Cloud.setup(profile, full_s3_access)
+
+
+@cli.command()
+@click.argument("username")
+@click.argument("profile")
+@utils.assert_required_config(RequiredCase.NONE)
+@utils.handle_errors
+def add_user(username, profile):
+    """Adds user USERNAME to the user group NimboUserGroup.
+
+    You must have run 'nimbo admin-setup' before adding users.
+
+    PROFILE is the profile name of your root/admin account.
+    """
+    Cloud.add_user(username, profile)
+
+
+@cli.command()
 @click.argument("job_cmd")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.JOB)
@@ -58,6 +82,36 @@ def launch_and_setup(dry_run):
     without running any job.
     """
     Cloud.run("_nimbo_launch_and_setup", dry_run)
+
+
+@cli.command()
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.JOB)
+@utils.handle_errors
+def notebook(dry_run):
+    """
+    Launches jupyter lab on an EC2 instance with your code, data and environment.
+
+    Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync
+    the notebook to your local folder, as the remote notebooks will be lost
+    once the instance is terminated.
+    """
+    Cloud.run("_nimbo_notebook", dry_run)
+
+
+@cli.command()
+@click.argument("instance_id")
+@utils.assert_required_config(RequiredCase.INSTANCE)
+@utils.handle_errors
+def sync_notebooks(instance_id):
+    """
+    Syncs the ipynb files from the instance INSTANCE_ID to your local folder.
+
+    Make sure to run 'nimbo sync-notebooks <instance_id>' to sync the notebook
+    to your local folder, as the remote notebooks will be lost once the instance
+    is terminated.
+    """
+    Cloud.sync_notebooks(instance_id)
 
 
 @cli.command()
@@ -266,29 +320,3 @@ def allow_current_ip(security_group, dry_run):
     GROUP is the security group to which the inbound rule will be added.
     """
     Cloud.allow_ingress_current_ip(security_group, dry_run)
-
-
-@cli.command()
-@click.argument("role_name")
-@click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.MINIMAL)
-@utils.handle_errors
-def create_instance_profile(role_name, dry_run):
-    """Creates an instance profile called NimboInstanceProfile with role ROLE_NAME.
-
-    ROLE_NAME is the role to associate with the instance profile.
-    """
-    Cloud.setup_as_user(role_name, dry_run)
-
-
-@cli.command()
-@click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.MINIMAL)
-@utils.handle_errors
-def create_instance_profile_and_role(dry_run):
-    """Creates an instance profile called NimboInstanceProfile and the associated role.
-
-    The role created has full EC2 and S3 access.\n
-    Only recommended for individual accounts with root access.
-    """
-    Cloud.setup_as_admin(dry_run)

@@ -1,13 +1,11 @@
 #!/bin/bash
 
-trap "kill 0" EXIT
-trap 'echo "Job failed."; do_cleanup; exit' ERR
-trap 'echo "Received signal to stop."; do_cleanup; exit' SIGQUIT SIGTERM SIGINT
+trap 'echo "Job failed."; do_cleanup; exit 1' ERR
+trap 'echo "Received signal to stop."; do_cleanup; exit 1' SIGQUIT SIGTERM SIGINT
 
 do_cleanup () { 
-    echo "Deleting instance $INSTANCE_ID..."
-    $AWS ec2 terminate-instances --instance-ids $INSTANCE_ID >/dev/null
-    echo "Done."
+    echo "Deleting instance $INSTANCE_ID."
+    sudo shutdown now >/tmp/nimbo-system-logs
 }
 
 INSTANCE_ID=$1
@@ -35,4 +33,4 @@ printf "The instance profile has the required S3 and EC2 permissions \xE2\x9C\x9
 
 printf "Everything working \xE2\x9C\x94\n"
 
-do_cleanup; exit
+do_cleanup; exit 0

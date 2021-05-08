@@ -75,6 +75,17 @@ class Instance(abc.ABC):
             shell=True,
         ).communicate()
 
+    @classmethod
+    def sync_notebooks(cls, instance_id: str):
+        host = cls._get_host_from_instance_id(instance_id)
+
+        subprocess.Popen(
+            f"rsync -avm -e 'ssh -i {CONFIG.instance_key}' "
+            f"--include '*/' --include '*.ipynb' --exclude '*' "
+            f"ubuntu@{host}:/home/ubuntu/project/ .",
+            shell=True,
+        ).communicate()
+
     @staticmethod
     def _sync_code(host: str) -> None:
         if ".git" not in os.listdir():
@@ -162,7 +173,7 @@ class Instance(abc.ABC):
                 f" </dev/null >{nimbo_log} 2>&1 &"
             )
         else:
-            full_command = f"{bash_cmd} {instance_id} {job_cmd} | tee {nimbo_log}"
+            full_command = f"{bash_cmd} {instance_id} {job_cmd}"
 
         subprocess.Popen(
             f'{ssh_cmd} ubuntu@{host} "{full_command}"', shell=True

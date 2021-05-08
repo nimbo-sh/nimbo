@@ -16,10 +16,10 @@ class Permissions(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def setup_as_user(role_name: str = "", dry_run=False) -> None:
+    def setup(profile: str, full_s3_access=False) -> None:
         ...
 
     @staticmethod
     @abc.abstractmethod
-    def setup_as_admin(dry_run=False) -> None:
+    def add_user(username: str, profile: str) -> None:
         ...

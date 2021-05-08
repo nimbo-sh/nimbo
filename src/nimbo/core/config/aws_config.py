@@ -44,13 +44,19 @@ class AwsConfig(BaseConfig):
     spot_duration: pydantic.conint(ge=60, le=360, multiple_of=60) = None
     security_group: Optional[str] = None
     instance_key: Optional[str] = None
+    role: Optional[str] = None
+
+    # The following are defined internally
+    user_arn: Optional[str] = None
 
     def get_session(self) -> boto3.Session:
         session = boto3.Session(
             profile_name=self.aws_profile, region_name=self.region_name
         )
 
-        self.user_id = session.client("sts").get_caller_identity()["Arn"]
+        caller_identity = session.client("sts").get_caller_identity()
+        self.user_id = caller_identity["UserId"]
+        self.user_arn = caller_identity["Arn"]
         return session
 
     def assert_required_config_exists(self, *cases: RequiredCase) -> None:
@@ -82,6 +88,7 @@ class AwsConfig(BaseConfig):
             required_config["disk_size"] = self.disk_size
             required_config["instance_key"] = self.instance_key
             required_config["security_group"] = self.security_group
+            required_config["role"] = self.role
         if RequiredCase.JOB in cases:
             required_config["conda_env"] = self.conda_env
 

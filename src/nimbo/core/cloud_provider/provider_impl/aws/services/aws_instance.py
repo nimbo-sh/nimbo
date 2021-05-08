@@ -11,6 +11,9 @@ import requests
 from nimbo import CONFIG
 from nimbo.core import telemetry
 from nimbo.core.cloud_provider.provider.services.instance import Instance
+from nimbo.core.cloud_provider.provider_impl.aws.services.aws_permissions import (
+    AwsPermissions,
+)
 from nimbo.core.cloud_provider.provider_impl.aws.services.aws_storage import AwsStorage
 from nimbo.core.constants import NIMBO_VARS
 from nimbo.core.print import nprint, nprint_header
@@ -51,7 +54,7 @@ class AwsInstance(Instance):
 
             ssh = (
                 f"ssh -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
-                " -o ServerAliveInterval=20 "
+                " -o ServerAliveInterval=5 "
             )
             scp = f"scp -i {CONFIG.instance_key} -o 'StrictHostKeyChecking no'"
 
@@ -83,6 +86,18 @@ class AwsInstance(Instance):
             AwsInstance._run_remote_script(
                 ssh, scp, host, instance_id, job_cmd, "remote_setup.sh"
             )
+
+            if job_cmd == "_nimbo_notebook":
+                subprocess.Popen(
+                    f"{ssh} -o 'ExitOnForwardFailure yes' "
+                    f"ubuntu@{host} -NfL 57467:localhost:57467 >/dev/null 2>&1",
+                    shell=True,
+                ).communicate()
+                nprint_header(
+                    "Make sure to run 'nimbo sync-notebooks <instance_id>' frequently "
+                    "to sync the notebook to your local folder, as the remote notebooks"
+                    " will be lost once the instance is terminated."
+                )
 
             return {"message": job_cmd + "_success", "instance_id": instance_id}
 
@@ -280,6 +295,8 @@ class AwsInstance(Instance):
 
     @staticmethod
     def _start_instance() -> str:
+        AwsPermissions.allow_ingress_current_ip(CONFIG.security_group)
+
         ec2 = CONFIG.get_session().client("ec2")
         instance_tags = AwsInstance._make_instance_tags()
         instance_filters = AwsInstance._make_instance_filters()
@@ -301,7 +318,7 @@ class AwsInstance(Instance):
             "KeyName": Path(CONFIG.instance_key).stem,
             "Placement": {"Tenancy": "default"},
             "SecurityGroups": [CONFIG.security_group],
-            "IamInstanceProfile": {"Name": "NimboInstanceProfile"},
+            "IamInstanceProfile": {"Name": CONFIG.role},
         }
 
         if CONFIG.spot:
@@ -352,6 +369,7 @@ class AwsInstance(Instance):
         else:
             instance_config["MinCount"] = 1
             instance_config["MaxCount"] = 1
+            instance_config["InstanceInitiatedShutdownBehavior"] = "terminate"
             instance_config["TagSpecifications"] = [
                 {"ResourceType": "instance", "Tags": instance_tags}
             ]
