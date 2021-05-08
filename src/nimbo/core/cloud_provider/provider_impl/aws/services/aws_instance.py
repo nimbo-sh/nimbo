@@ -26,7 +26,6 @@ class AwsInstance(Instance):
             return {"message": job_cmd + "_dry_run"}
 
         # Launch instance with new volume for anaconda
-        print("Launching instance... ", end="", flush=True)
         telemetry.record_event("run")
 
         start_t = time.monotonic()
