@@ -2,21 +2,25 @@
   <img src="https://user-images.githubusercontent.com/6595222/115258675-1bf98300-a129-11eb-8ea1-24cdc67d81e8.png" width="480" height="240">
 </p>
 
-# Nimbo: Run jobs on AWS with a single command
+# Nimbo: Machine Learning on AWS with a single command
 
-[Nimbo](https://nimbo.sh) is a CLI tool that allows you to run code on AWS as if you were running it locally. It's as simple as:
+[Nimbo](https://nimbo.sh) is a dead-simple command-line tool that allows you to run code on AWS as if you were running it locally. It abstracts away the complexity of AWS, allowing you to build, iterate, and deliver machine learning models faster than ever.
 
-### nimbo run "python -u train.py --lr=3e-4"
+### Example - ```nimbo run "python -u train.py --lr=3e-4```
 <a href="https://asciinema.org/a/408353" target="_blank"><img src="https://asciinema.org/a/408353.svg" height=300 width=300/></a>
 
-It also provides many useful commands to make it faster to work with AWS, such as easily checking prices, logging onto an instance, or syncing data. For example:
-- nimbo list-spot-gpu-prices
-- nimbo ssh <instance-id>
-- nimbo push datasets
-- nimbo pull logs
-- nimbo delete-all-instances
+### The fastest way to prototype on AWS
 
-Nimbo drastically simplifies your AWS workflow by taking care of instance, environment, data, and IAM management - no changes to your codebase needed. Since it is independent of your code, you can run any type of job you want.
+Nimbo drastically simplifies your AWS workflow by taking care of instance, environment, data, and IAM management - no changes to your codebase needed. Whether you're just getting started with AWS or are a seasoned veteran, Nimbo takes the pain out of doing Machine Learning in the cloud, allowing you to focus on what matters - building great models for your team and clients.
+
+### Powerful commands
+
+Nimbo provides many useful commands to supercharge your productivity when working with AWS, such as easily launching notebooks, checking prices, logging onto an instance, or syncing data. Some examples include :
+- `nimbo list-spot-gpu-prices`
+- `nimbo ssh <instance-id>`
+- `nimbo push datasets`
+- `nimbo pull logs`
+- `nimbo delete-all-instances`
 
 ## Key Features
 - **Your Infrastructure:**
@@ -43,7 +47,6 @@ Current examples include:
 - [Training a neural network on MNIST with Tensorflow, on a spot instance](https://github.com/nimbo-sh/nimbo-examples/tree/main/tensorflow-mnist)
 
 ## Product roadmap
-- **Implement `nimbo notebook`:** You will be able to spin up a jupyter lab notebook running on an EC2 instance. Data will be continuously synced with your S3 bucket so that you don't have to worry about doing manual backups. Your local code will be automatically synced with the instance, so you can code locally and test the changes directly on the remote notebook. The notebook will also be synced with your local machine so you don't have to worry about losing your notebook changes when deleting the instance.
 - **GCP support:** Use the same commands to run jobs on AWS or GCP.
 - **Deployment:** Deploy ML models to AWS/GCP with a single command. Automatically create an API endpoint for providing video/audio/text and getting results from your model back.
 - **Add Docker support:** Right now we assume you are using a conda environment, but many people use docker to run jobs. This feature would allow you to run a command such as `nimbo run "docker-compose up"`, where the docker image would be fetched from DockerHub (or equivalent repository) through a `docker_image` parameter on the `nimbo-config.yml` file.
