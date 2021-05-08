@@ -1,6 +1,7 @@
 import click
 
-from nimbo.core import access, execute, storage, utils, setup
+from nimbo.core import utils
+from nimbo.core.cloud_provider import Cloud
 from nimbo.core.config import RequiredCase
 
 
@@ -26,7 +27,7 @@ def generate_config():
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
 def admin_setup(profile, full_s3_access):
-    setup.setup(profile, full_s3_access)
+    Cloud.setup(profile, full_s3_access)
 
 
 @cli.command()
@@ -41,7 +42,7 @@ def add_user(username, profile):
 
     PROFILE is the profile name of your root/admin account.
     """
-    setup.add_user(username, profile)
+    Cloud.add_user(username, profile)
 
 
 @cli.command()
@@ -56,7 +57,7 @@ def run(job_cmd, dry_run):
     E.g. \"python runner.py --epochs=10\".\n
     The command must be between quotes.
     """
-    execute.run_job(job_cmd, dry_run)
+    Cloud.run(job_cmd, dry_run)
 
 
 @cli.command()
@@ -68,7 +69,7 @@ def launch(dry_run):
     Launches an EC2 instance according to your nimbo-config,
     without doing any further setup.
     """
-    execute.run_job("_nimbo_launch", dry_run)
+    Cloud.run("_nimbo_launch", dry_run)
 
 
 @cli.command()
@@ -80,7 +81,7 @@ def launch_and_setup(dry_run):
     Launches an EC2 instance with your code, data and environment,
     without running any job.
     """
-    execute.run_job("_nimbo_launch_and_setup", dry_run)
+    Cloud.run("_nimbo_launch_and_setup", dry_run)
 
 
 @cli.command()
@@ -95,7 +96,7 @@ def notebook(dry_run):
     the notebook to your local folder, as the remote notebooks will be lost
     once the instance is terminated.
     """
-    execute.run_job("_nimbo_notebook", dry_run)
+    Cloud.run("_nimbo_notebook", dry_run)
 
 
 @cli.command()
@@ -110,7 +111,7 @@ def sync_notebooks(instance_id):
     to your local folder, as the remote notebooks will be lost once the instance
     is terminated.
     """
-    execute.sync_notebooks(instance_id)
+    Cloud.sync_notebooks(instance_id)
 
 
 @cli.command()
@@ -119,7 +120,7 @@ def sync_notebooks(instance_id):
 @utils.handle_errors
 def test_access(dry_run):
     """Runs a mock job to test your config file, permissions, and credentials."""
-    execute.run_access_test(dry_run)
+    Cloud.run_access_test(dry_run)
 
 
 @cli.command()
@@ -129,7 +130,7 @@ def test_access(dry_run):
 @utils.handle_errors
 def ssh(instance_id, dry_run):
     """SSH into an instance by INSTANCE_ID."""
-    utils.ssh(instance_id, dry_run)
+    Cloud.ssh(instance_id, dry_run)
 
 
 @cli.command()
@@ -138,7 +139,7 @@ def ssh(instance_id, dry_run):
 @utils.handle_errors
 def list_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU instances."""
-    utils.list_gpu_prices(dry_run)
+    Cloud.ls_gpu_prices(dry_run)
 
 
 @cli.command()
@@ -147,7 +148,7 @@ def list_gpu_prices(dry_run):
 @utils.handle_errors
 def list_spot_gpu_prices(dry_run):
     """Lists the prices, types, and specs of GPU spot instances."""
-    utils.list_spot_gpu_prices(dry_run)
+    Cloud.ls_spot_gpu_prices(dry_run)
 
 
 @cli.command()
@@ -164,7 +165,7 @@ def spending(qty, timescale, dry_run):
         'nimbo spending 10 days' will show daily spending of the last 10 days\n
         'nimbo spending 3 months' will show the monthly spending of the last 3 months
     """
-    utils.show_spending(qty, timescale, dry_run)
+    Cloud.show_spending(qty, timescale, dry_run)
 
 
 @cli.command()
@@ -173,7 +174,7 @@ def spending(qty, timescale, dry_run):
 @utils.handle_errors
 def list_active(dry_run):
     """Lists all your active instances."""
-    utils.show_active_instances(dry_run)
+    Cloud.ls_active_instances(dry_run)
 
 
 @cli.command()
@@ -182,7 +183,7 @@ def list_active(dry_run):
 @utils.handle_errors
 def list_stopped(dry_run):
     """Lists all your stopped instances."""
-    utils.show_stopped_instances(dry_run)
+    Cloud.ls_stopped_instances(dry_run)
 
 
 @cli.command()
@@ -192,7 +193,7 @@ def list_stopped(dry_run):
 @utils.handle_errors
 def check_instance_status(instance_id, dry_run):
     """Checks the status of an instance by INSTANCE_ID."""
-    utils.check_instance_status(instance_id, dry_run)
+    print(Cloud.get_instance_status(instance_id, dry_run))
 
 
 @cli.command()
@@ -202,7 +203,7 @@ def check_instance_status(instance_id, dry_run):
 @utils.handle_errors
 def stop_instance(instance_id, dry_run):
     """Stops an instance by INSTANCE_ID."""
-    utils.stop_instance(instance_id, dry_run)
+    Cloud.stop_instance(instance_id, dry_run)
 
 
 @cli.command()
@@ -212,7 +213,7 @@ def stop_instance(instance_id, dry_run):
 @utils.handle_errors
 def delete_instance(instance_id, dry_run):
     """Terminates an instance by INSTANCE_ID."""
-    utils.delete_instance(instance_id, dry_run)
+    Cloud.delete_instance(instance_id, dry_run)
 
 
 @cli.command()
@@ -225,7 +226,7 @@ def delete_all_instances(dry_run):
         "This will delete all your running instances.\n" "Do you want to continue?",
         abort=True,
     )
-    utils.delete_all_instances(dry_run)
+    Cloud.delete_all_instances(dry_run)
 
 
 @cli.command()
@@ -239,7 +240,7 @@ def create_bucket(bucket_name, dry_run):
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
-    storage.create_bucket(bucket_name, dry_run)
+    Cloud.mk_bucket(bucket_name, dry_run)
 
 
 @cli.command()
@@ -266,7 +267,7 @@ def push(folder, delete):
             "Do you want to continue?",
             abort=True,
         )
-    storage.push(folder, delete)
+    Cloud.push(folder, delete)
 
 
 @cli.command()
@@ -293,7 +294,7 @@ def pull(folder, delete):
             "Do you want to continue?",
             abort=True,
         )
-    storage.pull(folder, delete)
+    Cloud.pull(folder, delete)
 
 
 @cli.command()
@@ -305,4 +306,17 @@ def ls(path):
 
     PATH is an s3 path of the form s3://bucket-name/my/files/path.
     """
-    storage.ls(path)
+    Cloud.ls(path)
+
+
+@cli.command()
+@click.argument("security_group")
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def allow_current_ip(security_group, dry_run):
+    """Adds the IP of the current machine to the allowed inbound rules of GROUP.
+
+    GROUP is the security group to which the inbound rule will be added.
+    """
+    Cloud.allow_ingress_current_ip(security_group, dry_run)

@@ -1,14 +1,21 @@
+import abc
 import os
 import random
 import string
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 
 import pydantic
 
-from nimbo.core.config import NimboConfig, RequiredCase, load_yaml_from_file
+from nimbo.core.config import (
+    AwsConfig,
+    CloudProvider,
+    GcpConfig,
+    RequiredCase,
+    load_yaml_from_file,
+)
 
-CONDA_ENV = "env.yml"
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
+CONDA_ENV = "env.yml"
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
 
@@ -20,9 +27,11 @@ S3_DATASETS_PATH = f"s3://nimbo-test-bucket/{_random_string_of_len(20)}"
 S3_RESULTS_PATH = f"s3://nimbo-test-bucket/{_random_string_of_len(20)}"
 
 
-class NimboTestConfig(NimboConfig):
-    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
+class CommonTestConfigMixin(abc.ABC, pydantic.BaseModel):
+    # Can't use pydantic.PrivateAttr here as pydantic complains about overlap later
+    # user_id and _initial_state fields defined here to prevent undefined warnings
+    user_id: Optional[str] = None
+    _initial_state: Dict[str, Any] = {}
 
     def save_initial_state(self):
         self._initial_state = self.dict()
@@ -39,6 +48,15 @@ class NimboTestConfig(NimboConfig):
 
         for key, value in self._initial_state.items():
             setattr(self, key, value)
+
+    @abc.abstractmethod
+    def inject_required_config(self, *cases: RequiredCase) -> None:
+        ...
+
+
+class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
+    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
+    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
 
     def inject_required_config(self, *cases: RequiredCase) -> None:
         cases = RequiredCase.decompose(*cases)
@@ -68,10 +86,23 @@ class NimboTestConfig(NimboConfig):
                 return file
 
 
-def make_config() -> NimboTestConfig:
-    config = NimboTestConfig(
-        **load_yaml_from_file(os.path.join(ASSETS_PATH, NIMBO_CONFIG_FILE))
-    )
+class GcpTestConfig(CommonTestConfigMixin, GcpConfig):
+    _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
+    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
+
+    def inject_required_config(self, *cases: RequiredCase) -> None:
+        pass
+
+
+def make_config() -> Union[AwsTestConfig, GcpTestConfig]:
+    raw_config = load_yaml_from_file(os.path.join(ASSETS_PATH, NIMBO_CONFIG_FILE))
+    cloud_provider = CloudProvider(raw_config["cloud_provider"].upper())
+
+    if cloud_provider == CloudProvider.AWS:
+        config = AwsTestConfig(**raw_config)
+    else:
+        config = GcpTestConfig(**raw_config)
+
     config.save_initial_state()
 
     return config

@@ -1,7 +1,7 @@
 from rich.console import Console
 from rich.theme import Theme
 
-console = Console(
+_console = Console(
     theme=Theme(
         {
             "repr.number": "",
@@ -18,5 +18,8 @@ console = Console(
         }
     )
 )
-print = console.print
-print_header = lambda x: console.print(f"[blue]==>[/blue] {x}", style="bold")
+nprint = _console.print
+
+
+def nprint_header(x) -> None:
+    nprint(f"[blue]==>[/blue] {x}", style="bold")

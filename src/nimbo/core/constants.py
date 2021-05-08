@@ -1,12 +1,16 @@
+import os
 import pathlib
 
+IS_TEST_ENV = "NIMBO_ENV" in os.environ and os.environ["NIMBO_ENV"] == "test"
 
 NIMBO_ROOT = str(pathlib.Path(__file__).parent.parent.absolute())
 NIMBO_CONFIG_FILE = "nimbo-config.yml"
 NIMBO_VARS = "/tmp/nimbo_vars"
 TELEMETRY_URL = "https://nimbotelemetry-8ef4c-default-rtdb.firebaseio.com/events.json"
 
-NIMBO_DEFAULT_CONFIG = """# Data paths
+NIMBO_DEFAULT_CONFIG = """cloud_provider: AWS
+
+# Data paths
 local_datasets_path: your-datasets-folder  # relative to project root
 local_results_path: your-results-folder    # relative to project root
 s3_datasets_path: s3://your-bucket/your-project/example-datasets-folder

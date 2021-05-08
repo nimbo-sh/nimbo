@@ -5,7 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 
 from nimbo import CONFIG
-from nimbo.core.statics import NIMBO_ROOT
+from nimbo.core.constants import NIMBO_ROOT
 
 cred = credentials.Certificate(
     NIMBO_ROOT + "/ami/credentials/nimboami-firebase-adminsdk-yxyfy-6d01f1d35f.json"
