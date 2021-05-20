@@ -47,14 +47,7 @@ echo "Will save logs to $S3_LOG_PATH"
 
 mkdir -p $LOCAL_DATASETS_PATH
 mkdir -p $LOCAL_RESULTS_PATH
-
 mkdir -p $CONDA_PATH
-
-
-nohup bash -c "while true;  
-do $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >>/tmp/nimbo-s3-logs 2>&1;
-$S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >>/tmp/nimbo-s3-logs 2>&1;
-sleep 5; done" >/dev/null 2>&1 &
 
 
 # ERROR: This currently doesn't allow for a new unseen env to be passed. Fix this.
@@ -87,6 +80,11 @@ $S3CP --recursive $S3_RESULTS_PATH $LOCAL_RESULTS_PATH >/tmp/nimbo-s3-logs
 echo ""
 echo "================================================="
 echo ""
+
+nohup bash -c "while true;  
+do $S3CP --quiet $LOCAL_LOG $S3_LOG_PATH >>/tmp/nimbo-s3-logs 2>&1;
+$S3SYNC --quiet $LOCAL_RESULTS_PATH $S3_RESULTS_PATH >>/tmp/nimbo-s3-logs 2>&1;
+sleep 10; done" >/dev/null 2>&1 &
 
 if [ "$JOB_CMD" = "_nimbo_launch_and_setup" ]; then
     echo "Setup complete. You can now use 'nimbo ssh $1' to ssh into this instance."
