@@ -50,6 +50,7 @@ class BaseConfig(pydantic.BaseModel):
     run_in_background: bool = False
     persist: bool = False
 
+    ip_cidr_range: pydantic.conint(strict=True, ge=0, le=32) = 32
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 180
     telemetry: bool = True
 
