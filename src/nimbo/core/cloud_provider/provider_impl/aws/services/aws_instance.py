@@ -136,7 +136,9 @@ class AwsInstance(Instance):
             )
             subprocess.check_output(command, shell=True)
 
-            command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
+            command = (
+                f"aws s3 ls_bucket {results_path} --profile {profile} --region {region}"
+            )
             subprocess.check_output(command, shell=True)
             command = (
                 f"aws s3 rm {results_path}/nimbo-access-test.txt "
@@ -386,6 +388,11 @@ class AwsInstance(Instance):
         except botocore.exceptions.ClientError as e:
             if "DryRunOperation" not in str(e):
                 raise
+
+    @staticmethod
+    def resume_instance(instance_id: str, dry_run=False) -> None:
+        # TODO
+        pass
 
     @staticmethod
     def delete_instance(instance_id: str, dry_run=False) -> None:

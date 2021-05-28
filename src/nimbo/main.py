@@ -24,23 +24,47 @@ def cli():
 @utils.assert_required_config(RequiredCase.JOB)
 @utils.handle_errors
 def run(job_cmd, dry_run):
-    """Runs the JOB_CMD command on an EC2 instance.
+    """Run JOB_CMD on an instance.
 
-    JOB_CMD is any command you would run locally.\n
+    JOB_CMD is any command you would run locally.
     E.g. \"python runner.py --epochs=10\".\n
     The command must be between quotes.
     """
     Cloud.run(job_cmd, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@cli.command(
+    cls=NimboCommand,
+    help_section=HelpSection.INSTANCE,
+    short_help="Launch Jupiter with your code, data, and environment",
+)
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.JOB)
+@utils.handle_errors
+def notebook(dry_run):
+    """
+    Launch Jupyter Lab on an instance with your code, data and environment.
+
+    Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync
+    the notebook to your local folder, as the remote notebooks will be lost
+    once the instance is terminated.
+    """
+    Cloud.run("_nimbo_notebook", dry_run)
+
+
+@cli.command(
+    cls=NimboCommand,
+    help_section=HelpSection.INSTANCE,
+    short_help="Launch an instance with minimal setup.",
+)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.JOB)
 @utils.handle_errors
 def launch(dry_run):
     """
-    Launches an EC2 instance according to your nimbo-config,
-    without doing any further setup.
+    Launch an instance according to your Nimbo config with minimal setup.
+
+    The launched instance does not include your code, data, or environment.
     """
     Cloud.run("_nimbo_launch", dry_run)
 
@@ -51,8 +75,9 @@ def launch(dry_run):
 @utils.handle_errors
 def launch_and_setup(dry_run):
     """
-    Launches an EC2 instance with your code, data and environment,
-    without running any job.
+    Launch an instance with your code, data and environment.
+
+    The launched instance does not run any job.
     """
     Cloud.run("_nimbo_launch_and_setup", dry_run)
 
@@ -68,27 +93,12 @@ def ssh(instance_id, dry_run):
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
-@click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.JOB)
-@utils.handle_errors
-def notebook(dry_run):
-    """
-    Launches jupyter lab on an EC2 instance with your code, data and environment.
-
-    Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync
-    the notebook to your local folder, as the remote notebooks will be lost
-    once the instance is terminated.
-    """
-    Cloud.run("_nimbo_notebook", dry_run)
-
-
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def get_status(instance_id, dry_run):
-    """Checks the status of an instance by INSTANCE_ID."""
+    """Get the status of an instance by INSTANCE_ID."""
     print(Cloud.get_status(instance_id, dry_run))
 
 
@@ -97,7 +107,7 @@ def get_status(instance_id, dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def ls_active(dry_run):
-    """Lists all your active instances."""
+    """List all your active instances."""
     Cloud.ls_active_instances(dry_run)
 
 
@@ -106,7 +116,7 @@ def ls_active(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def ls_stopped(dry_run):
-    """Lists all your stopped instances."""
+    """List all your stopped instances."""
     Cloud.ls_stopped_instances(dry_run)
 
 
@@ -116,7 +126,7 @@ def ls_stopped(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def rm_instance(instance_id, dry_run):
-    """Terminates an instance by INSTANCE_ID."""
+    """Terminate an instance by INSTANCE_ID."""
     Cloud.delete_instance(instance_id, dry_run)
 
 
@@ -125,7 +135,7 @@ def rm_instance(instance_id, dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def rm_all_instances(dry_run):
-    """Terminates all your instances."""
+    """Terminate all your instances."""
     click.confirm(
         "This will delete all your running instances.\n" "Do you want to continue?",
         abort=True,
@@ -139,17 +149,31 @@ def rm_all_instances(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def stop_instance(instance_id, dry_run):
-    """Stops an instance by INSTANCE_ID."""
+    """Stop an instance by INSTANCE_ID."""
     Cloud.stop_instance(instance_id, dry_run)
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@click.argument("instance_id")
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def resume_instance(instance_id, dry_run):
+    """Resume a stopped instance by INSTANCE_ID."""
+    Cloud.resume_instance(instance_id, dry_run)
+
+
+@cli.command(
+    cls=NimboCommand,
+    help_section=HelpSection.INSTANCE,
+    short_help="Add your IP to instance firewall ingress allow list.",
+)
 @click.argument("security_group")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def add_current_ip(security_group, dry_run):
-    """Adds the IP of the current machine to the allowed inbound rules of GROUP.
+    """Add the IP of the current machine to the allowed inbound rules of GROUP.
 
     GROUP is the security group to which the inbound rule will be added.
     """
@@ -163,7 +187,7 @@ def add_current_ip(security_group, dry_run):
 @utils.handle_errors
 def mk_bucket(bucket_name, dry_run):
     """
-    Create a bucket BUCKET_NAME in S3.
+    Create the bucket BUCKET_NAME in S3.
 
     BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
     """
@@ -171,15 +195,29 @@ def mk_bucket(bucket_name, dry_run):
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
+@click.argument("bucket_name")
+@click.option("--dry-run", is_flag=True)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def rm_bucket(bucket_name, dry_run):
+    """
+    Remove the bucket BUCKET_NAME in S3.
+
+    BUCKET_NAME is the name of the bucket to remove, s3://BUCKET_NAME
+    """
+    Cloud.rm_bucket(bucket_name, dry_run)
+
+
+@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
 @click.argument("path")
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
-def ls(path):
-    """List the s3 objects in PATH.
+def ls_bucket(path):
+    """List S3 objects in PATH.
 
-    PATH is an s3 path of the form s3://bucket-name/my/files/path.
+    PATH is an S3 path of the form s3://bucket-name/my/files/path.
     """
-    Cloud.ls(path)
+    Cloud.ls_bucket(path)
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
@@ -224,7 +262,7 @@ def push(folder, delete):
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
 def pull(folder, delete):
-    """Pull the S3 datasets/results folder into your local computer."""
+    """Pull datasets/results folder into your computer from S3."""
 
     if delete:
         click.confirm(
@@ -242,7 +280,7 @@ def pull(folder, delete):
 @utils.handle_errors
 def sync_notebooks(instance_id):
     """
-    Syncs the ipynb files from the instance INSTANCE_ID to your local folder.
+    Pull ipynb files from INSTANCE_ID to your local folder.
 
     Make sure to run 'nimbo sync-notebooks <instance_id>' to sync the notebook
     to your local folder, as the remote notebooks will be lost once the instance
@@ -255,7 +293,7 @@ def sync_notebooks(instance_id):
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
 def generate_config():
-    """Creates a base nimbo-config.yml in your current directory.
+    """Create a base nimbo-config.yml in the current directory.
 
     Remember to change any fields to your own values.
     """
@@ -267,7 +305,7 @@ def generate_config():
 @utils.assert_required_config(RequiredCase.INSTANCE, RequiredCase.STORAGE)
 @utils.handle_errors
 def test_access(dry_run):
-    """Runs a mock job to test your config file, permissions, and credentials."""
+    """Run a mock job to test your config."""
     Cloud.run_access_test(dry_run)
 
 
@@ -275,8 +313,8 @@ def test_access(dry_run):
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
-def ls_gpu_prices(dry_run):
-    """Lists the prices, types, and specs of GPU instances."""
+def ls_prices(dry_run):
+    """List the prices, types, and specs of GPU instances."""
     Cloud.ls_gpu_prices(dry_run)
 
 
@@ -284,8 +322,8 @@ def ls_gpu_prices(dry_run):
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
-def ls_spot_gpu_prices(dry_run):
-    """Lists the prices, types, and specs of GPU spot instances."""
+def ls_spot_prices(dry_run):
+    """List the prices, types, and specs of GPU spot instances."""
     Cloud.ls_spot_gpu_prices(dry_run)
 
 
@@ -296,12 +334,12 @@ def ls_spot_gpu_prices(dry_run):
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def spending(qty, timescale, dry_run):
-    """Shows daily/monthly spending summary. Costs without credits or refunds applied.
+    """Show daily/monthly spending summary. Costs without credits or refunds applied.
 
     QTY is the number of days/months you want to see, starting from the current date.\n
     For example:\n
-        'nimbo spending 10 days' will show daily spending of the last 10 days\n
-        'nimbo spending 3 months' will show the monthly spending of the last 3 months
+        'nimbo spending 10 days' shows daily spending of the last 10 days\n
+        'nimbo spending 3 months' shows the monthly spending of the last 3 months
     """
     Cloud.spending(qty, timescale, dry_run)
 
@@ -312,6 +350,13 @@ def spending(qty, timescale, dry_run):
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
 def admin_setup(profile, full_s3_access):
+    """
+    Setup Nimbo access role for your organisation.
+
+    Creates a user group and instance role that gives users in your AWS account the
+    necessary permissions to use Nimbo. Once `admin-setup` is done, you can run
+    `add-user` to allow a specific user to use the user group and role.
+    """
     Cloud.setup(profile, full_s3_access)
 
 

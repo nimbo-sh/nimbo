@@ -46,11 +46,11 @@ class AwsStorage(Storage):
         AwsStorage._sync_folder(source, target, delete)
 
     @staticmethod
-    def ls(path: str) -> None:
+    def ls_bucket(path: str) -> None:
         profile = CONFIG.aws_profile
         region = CONFIG.region_name
         path = path.rstrip("/") + "/"
-        command = f"aws s3 ls {path} --profile {profile} --region {region}"
+        command = f"aws s3 ls_bucket {path} --profile {profile} --region {region}"
         print(f"Running command: {command}")
         subprocess.Popen(command, shell=True).communicate()
 
@@ -78,13 +78,9 @@ class AwsStorage(Storage):
         print("Bucket %s created." % bucket_name)
 
     @staticmethod
-    def ls_buckets() -> None:
-        s3 = CONFIG.get_session().client("s3")
-        response = s3.list_buckets()
-
-        print("Existing buckets:")
-        for bucket in response["Buckets"]:
-            print(f' {bucket["Name"]}')
+    def rm_bucket(bucket_name: str, dry_run=False) -> None:
+        # TODO: TO IMPLEMENT
+        pass
 
     @staticmethod
     def _sync_folder(source, target, delete=False) -> None:
