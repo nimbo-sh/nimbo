@@ -195,20 +195,6 @@ def mk_bucket(bucket_name, dry_run):
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
-@click.argument("bucket_name")
-@click.option("--dry-run", is_flag=True)
-@utils.assert_required_config(RequiredCase.MINIMAL)
-@utils.handle_errors
-def rm_bucket(bucket_name, dry_run):
-    """
-    Remove the bucket BUCKET_NAME in S3.
-
-    BUCKET_NAME is the name of the bucket to remove, s3://BUCKET_NAME
-    """
-    Cloud.rm_bucket(bucket_name, dry_run)
-
-
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
 @click.argument("path")
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors

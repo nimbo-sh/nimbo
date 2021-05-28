@@ -17,7 +17,3 @@ class GcpStorage(Storage):
     @staticmethod
     def mk_bucket(bucket_name: str, dry_run=False) -> None:
         ...
-
-    @staticmethod
-    def rm_bucket(bucket_name: str, dry_run=False) -> None:
-        pass

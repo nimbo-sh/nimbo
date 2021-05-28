@@ -78,11 +78,6 @@ class AwsStorage(Storage):
         print("Bucket %s created." % bucket_name)
 
     @staticmethod
-    def rm_bucket(bucket_name: str, dry_run=False) -> None:
-        # TODO: TO IMPLEMENT
-        pass
-
-    @staticmethod
     def _sync_folder(source, target, delete=False) -> None:
         command = AwsStorage.mk_s3_command("sync", source, target, delete)
         print(f"\nRunning command: {command}")

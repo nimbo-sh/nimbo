@@ -21,8 +21,3 @@ class Storage(abc.ABC):
     @abc.abstractmethod
     def mk_bucket(bucket_name: str, dry_run=False) -> None:
         ...
-
-    @staticmethod
-    @abc.abstractmethod
-    def rm_bucket(bucket_name: str, dry_run=False) -> None:
-        ...

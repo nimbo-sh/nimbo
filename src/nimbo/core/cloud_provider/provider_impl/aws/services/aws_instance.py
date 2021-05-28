@@ -391,8 +391,13 @@ class AwsInstance(Instance):
 
     @staticmethod
     def resume_instance(instance_id: str, dry_run=False) -> None:
-        # TODO
-        pass
+        ec2 = CONFIG.get_session().client("ec2")
+        try:
+            response = ec2.start_instances(InstanceIds=[instance_id], DryRun=dry_run)
+            pprint(response)
+        except botocore.exceptions.ClientError as e:
+            if "DryRunOperation" not in str(e):
+                raise
 
     @staticmethod
     def delete_instance(instance_id: str, dry_run=False) -> None:
