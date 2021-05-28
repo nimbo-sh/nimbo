@@ -50,7 +50,7 @@ class AwsStorage(Storage):
         profile = CONFIG.aws_profile
         region = CONFIG.region_name
         path = path.rstrip("/") + "/"
-        command = f"aws s3 ls_bucket {path} --profile {profile} --region {region}"
+        command = f"aws s3 ls {path} --profile {profile} --region {region}"
         print(f"Running command: {command}")
         subprocess.Popen(command, shell=True).communicate()
 

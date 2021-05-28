@@ -16,11 +16,11 @@ Nimbo drastically simplifies your AWS workflow by taking care of instance, envir
 ### Powerful commands
 
 Nimbo provides many useful commands to supercharge your productivity when working with AWS, such as easily launching notebooks, checking prices, logging onto an instance, or syncing data. Some examples include :
-- `nimbo list-spot-gpu-prices`
+- `nimbo ls-spot-prices`
 - `nimbo ssh <instance-id>`
 - `nimbo push datasets`
 - `nimbo pull logs`
-- `nimbo delete-all-instances`
+- `nimbo rm-all-instances`
 
 ## Key Features
 - **Your Infrastructure:**

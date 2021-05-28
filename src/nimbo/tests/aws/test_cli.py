@@ -40,26 +40,26 @@ def test_ssh_passes_with_instance(runner: CliRunner):
 
 @isolated_filesystem(RequiredCase.MINIMAL)
 def test_list_prices(runner: CliRunner):
-    result = runner.invoke(cli, "list-gpu-prices", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-prices", catch_exceptions=False)
     assert result.exit_code == 0
-    result = runner.invoke(cli, "list-spot-gpu-prices", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-spot-prices", catch_exceptions=False)
     assert result.exit_code == 0
 
     # Check if it works for us-east-2 region
     CONFIG.region_name = "us-east-2"
 
-    result = runner.invoke(cli, "list-gpu-prices", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-prices", catch_exceptions=False)
     assert result.exit_code == 0
-    result = runner.invoke(cli, "list-spot-gpu-prices", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-spot-prices", catch_exceptions=False)
     assert result.exit_code == 0
 
 
 @isolated_filesystem(RequiredCase.MINIMAL)
 def test_list_instances(runner: CliRunner):
-    result = runner.invoke(cli, "list-active --dry-run", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-active --dry-run", catch_exceptions=False)
     assert result.exit_code == 0
 
-    result = runner.invoke(cli, "list-stopped --dry-run", catch_exceptions=False)
+    result = runner.invoke(cli, "ls-stopped --dry-run", catch_exceptions=False)
     assert result.exit_code == 0
 
 
@@ -68,7 +68,7 @@ def test_instance_actions(runner: CliRunner):
     try:
         runner.invoke(
             cli,
-            "check-instance-status i-0be1989edd819b442 --dry-run",
+            "get-status i-0be1989edd819b442 --dry-run",
             catch_exceptions=False,
         )
     except ClientError as e:
@@ -86,7 +86,7 @@ def test_instance_actions(runner: CliRunner):
     try:
         runner.invoke(
             cli,
-            "delete-instance i-0be1989edd819b442 --dry-run",
+            "rm-instance i-0be1989edd819b442 --dry-run",
             catch_exceptions=False,
         )
     except ClientError as e:
@@ -94,7 +94,7 @@ def test_instance_actions(runner: CliRunner):
             raise
 
     result = runner.invoke(
-        cli, "delete-all-instances --dry-run", input="y", catch_exceptions=False
+        cli, "rm-all-instances --dry-run", input="y", catch_exceptions=False
     )
     assert result.exit_code == 0
 

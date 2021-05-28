@@ -37,7 +37,7 @@ class GcpInstance(Instance):
         pass
 
     @staticmethod
-    def get_instance_status(instance_id: str, dry_run=False) -> str:
+    def get_status(instance_id: str, dry_run=False) -> str:
         pass
 
     @staticmethod

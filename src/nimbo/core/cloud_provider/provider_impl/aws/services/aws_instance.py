@@ -137,7 +137,7 @@ class AwsInstance(Instance):
             subprocess.check_output(command, shell=True)
 
             command = (
-                f"aws s3 ls_bucket {results_path} --profile {profile} --region {region}"
+                f"aws s3 ls {results_path} --profile {profile} --region {region}"
             )
             subprocess.check_output(command, shell=True)
             command = (
@@ -217,7 +217,7 @@ class AwsInstance(Instance):
         status = ""
         while status != "running":
             time.sleep(1)
-            status = AwsInstance.get_instance_status(instance_id)
+            status = AwsInstance.get_status(instance_id)
 
     @staticmethod
     def _write_nimbo_vars() -> None:
@@ -431,7 +431,7 @@ class AwsInstance(Instance):
                 raise
 
     @staticmethod
-    def get_instance_status(instance_id: str, dry_run=False) -> str:
+    def get_status(instance_id: str, dry_run=False) -> str:
         ec2 = CONFIG.get_session().client("ec2")
         try:
             response = ec2.describe_instances(

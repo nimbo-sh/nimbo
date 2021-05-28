@@ -53,7 +53,7 @@ class Instance(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def get_instance_status(instance_id: str, dry_run=False) -> str:
+    def get_status(instance_id: str, dry_run=False) -> str:
         ...
 
     @staticmethod
@@ -110,7 +110,7 @@ class Instance(abc.ABC):
             ).communicate()
         else:
             output, error = subprocess.Popen(
-                "git ls_bucket-tree -r HEAD --name-only",
+                "git ls-tree -r HEAD --name-only",
                 stdout=subprocess.PIPE,
                 shell=True,
             ).communicate()
