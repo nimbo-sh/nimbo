@@ -19,6 +19,7 @@ def assert_required_config(*cases: RequiredCase):
     """
     Decorator for ensuring that required config is present
     """
+
     def decorator(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
