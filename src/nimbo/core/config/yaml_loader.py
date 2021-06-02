@@ -56,15 +56,15 @@ def _substitute_env_vars(key: str, value: str) -> str:
 
 def from_file(file: str) -> Dict[str, Any]:
     """ Load YAML into a dictionary, inject environment variables """
+    
+    if os.path.isfile(file):
+        with open(file, "r") as f:
+            config = yaml.safe_load(f)
 
-    if not os.path.isfile(file):
-        raise FileNotFoundError(f"{file} is not a file")
+        for key, value in config.items():
+            if type(value) == str and "${" in value:
+                config[key] = _substitute_env_vars(key, value)
 
-    with open(file, "r") as f:
-        config = yaml.safe_load(f)
-
-    for key, value in config.items():
-        if type(value) == str and "${" in value:
-            config[key] = _substitute_env_vars(key, value)
-
-    return config
+        return config
+    
+    return {}
