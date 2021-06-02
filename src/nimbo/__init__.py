@@ -16,7 +16,6 @@ try:
         CONFIG = nimbo.tests.aws.config.make_config()
     else:
         CONFIG = nimbo.core.config.make_config()
-
 except pydantic.error_wrappers.ValidationError as e:
     e_msg = str(e)
     e_num = len(e.errors())

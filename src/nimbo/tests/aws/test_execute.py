@@ -27,13 +27,13 @@ def test_test_access(runner: CliRunner):
 @isolated_filesystem(RequiredCase.JOB)
 def test_run_no_code(runner: CliRunner):
     result = runner.invoke(
-        cli, "delete-all-instances", input="y", catch_exceptions=False
+        cli, "rm-all-instances", input="y", catch_exceptions=False
     )
     assert result.exit_code == 0
     result = runner.invoke(cli, "run 'python --version'", catch_exceptions=False)
     assert result.exit_code == 0
     result = runner.invoke(
-        cli, "delete-all-instances", input="y", catch_exceptions=False
+        cli, "rm-all-instances", input="y", catch_exceptions=False
     )
     assert result.exit_code == 0
 
@@ -60,7 +60,7 @@ def test_launch(runner: CliRunner):
         instance_id = response["instance_id"]
 
         result = runner.invoke(
-            cli, f"delete-instance {instance_id}", catch_exceptions=False
+            cli, f"rm-instance {instance_id}", catch_exceptions=False
         )
         assert result.exit_code == 0
 
@@ -74,7 +74,7 @@ def test_spot_launch(runner: CliRunner):
     instance_id = response["instance_id"]
 
     result = runner.invoke(
-        cli, f"delete-instance {instance_id}", catch_exceptions=False
+        cli, f"rm-instance {instance_id}", catch_exceptions=False
     )
     assert result.exit_code == 0
 
@@ -88,6 +88,6 @@ def test_notebook(runner: CliRunner):
     instance_id = response["instance_id"]
 
     result = runner.invoke(
-        cli, f"delete-instance {instance_id}", catch_exceptions=False
+        cli, f"rm-instance {instance_id}", catch_exceptions=False
     )
     assert result.exit_code == 0

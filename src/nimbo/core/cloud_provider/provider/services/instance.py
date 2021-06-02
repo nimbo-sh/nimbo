@@ -38,6 +38,11 @@ class Instance(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
+    def resume_instance(instance_id: str, dry_run=False) -> None:
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
     def delete_instance(instance_id: str, dry_run=False) -> None:
         ...
 
@@ -48,7 +53,7 @@ class Instance(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def get_instance_status(instance_id: str, dry_run=False) -> str:
+    def get_status(instance_id: str, dry_run=False) -> str:
         ...
 
     @staticmethod
@@ -105,7 +110,9 @@ class Instance(abc.ABC):
             ).communicate()
         else:
             output, error = subprocess.Popen(
-                "git ls-tree -r HEAD --name-only", stdout=subprocess.PIPE, shell=True
+                "git ls-tree -r HEAD --name-only",
+                stdout=subprocess.PIPE,
+                shell=True,
             ).communicate()
             git_tracked_files = output.decode("utf-8").strip().splitlines()
             include_files = [

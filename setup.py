@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="nimbo",  # Replace with your own username
-    version="0.2.10",
+    version="0.2.11",
     author="NimboSH, Ltd.",
     author_email="support@nimbo.sh",
     description="Run machine learning jobs on AWS with a single command.",
@@ -26,13 +26,16 @@ setuptools.setup(
     include_package_data=True,
     entry_points={"console_scripts": ["nimbo=nimbo.main:cli"]},
     python_requires=">=3.6",
+    # Colorama version specified to resolve conflicts with awcli, click, rich
     install_requires=[
-        "awscli>=1.19<2.0",
-        "boto3>=1.17",
+        "colorama==0.4.3",
         "requests>=2.25",
         "click>=7.0",
-        "pyyaml>=5.3.0",
         "pydantic>=1.7.0",
+        "pyyaml>=5.3.0",
+        "boto3>=1.17",
+        "awscli>=1.19<2.0",
         "rich>=10.1.0",
+        "python-dateutil>=2.8.0"
     ],
 )

@@ -8,7 +8,7 @@ import botocore
 import botocore.session
 import pydantic
 
-from nimbo.core.config.common import BaseConfig, RequiredCase
+from nimbo.core.config.common_config import BaseConfig, RequiredCase
 from nimbo.core.constants import FULL_REGION_NAMES, NIMBO_CONFIG_FILE
 
 

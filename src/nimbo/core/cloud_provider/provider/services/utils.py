@@ -14,5 +14,5 @@ class Utils(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def show_spending(qty: int, timescale: str, dry_run=False) -> None:
+    def spending(qty: int, timescale: str, dry_run=False) -> None:
         ...

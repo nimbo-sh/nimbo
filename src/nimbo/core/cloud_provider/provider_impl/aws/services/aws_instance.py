@@ -136,7 +136,9 @@ class AwsInstance(Instance):
             )
             subprocess.check_output(command, shell=True)
 
-            command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
+            command = (
+                f"aws s3 ls {results_path} --profile {profile} --region {region}"
+            )
             subprocess.check_output(command, shell=True)
             command = (
                 f"aws s3 rm {results_path}/nimbo-access-test.txt "
@@ -215,7 +217,7 @@ class AwsInstance(Instance):
         status = ""
         while status != "running":
             time.sleep(1)
-            status = AwsInstance.get_instance_status(instance_id)
+            status = AwsInstance.get_status(instance_id)
 
     @staticmethod
     def _write_nimbo_vars() -> None:
@@ -388,6 +390,16 @@ class AwsInstance(Instance):
                 raise
 
     @staticmethod
+    def resume_instance(instance_id: str, dry_run=False) -> None:
+        ec2 = CONFIG.get_session().client("ec2")
+        try:
+            response = ec2.start_instances(InstanceIds=[instance_id], DryRun=dry_run)
+            pprint(response)
+        except botocore.exceptions.ClientError as e:
+            if "DryRunOperation" not in str(e):
+                raise
+
+    @staticmethod
     def delete_instance(instance_id: str, dry_run=False) -> None:
         ec2 = CONFIG.get_session().client("ec2")
         try:
@@ -424,7 +436,7 @@ class AwsInstance(Instance):
                 raise
 
     @staticmethod
-    def get_instance_status(instance_id: str, dry_run=False) -> str:
+    def get_status(instance_id: str, dry_run=False) -> str:
         ec2 = CONFIG.get_session().client("ec2")
         try:
             response = ec2.describe_instances(

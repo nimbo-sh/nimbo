@@ -125,7 +125,7 @@ class AwsUtils(Utils):
         return string
 
     @staticmethod
-    def show_spending(qty: int, timescale: str, dry_run=False) -> None:
+    def spending(qty: int, timescale: str, dry_run=False) -> None:
         today = date.today()
         time_format = "%Y-%m-%d"
 

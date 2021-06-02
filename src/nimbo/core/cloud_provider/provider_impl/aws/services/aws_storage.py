@@ -46,7 +46,7 @@ class AwsStorage(Storage):
         AwsStorage._sync_folder(source, target, delete)
 
     @staticmethod
-    def ls(path: str) -> None:
+    def ls_bucket(path: str) -> None:
         profile = CONFIG.aws_profile
         region = CONFIG.region_name
         path = path.rstrip("/") + "/"
@@ -76,15 +76,6 @@ class AwsStorage(Storage):
             return
 
         print("Bucket %s created." % bucket_name)
-
-    @staticmethod
-    def ls_buckets() -> None:
-        s3 = CONFIG.get_session().client("s3")
-        response = s3.list_buckets()
-
-        print("Existing buckets:")
-        for bucket in response["Buckets"]:
-            print(f' {bucket["Name"]}')
 
     @staticmethod
     def _sync_folder(source, target, delete=False) -> None:
