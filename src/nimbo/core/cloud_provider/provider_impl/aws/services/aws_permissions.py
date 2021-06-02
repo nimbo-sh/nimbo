@@ -48,7 +48,9 @@ class AwsPermissions(Permissions):
                         "IpProtocol": "tcp",
                         "FromPort": 22,
                         "ToPort": 22,
-                        "IpRanges": [{"CidrIp": f"{my_public_ip}/16"}],
+                        "IpRanges": [
+                            {"CidrIp": f"{my_public_ip}/{CONFIG.ip_cidr_range}"}
+                        ],
                     }
                 ],
             )
