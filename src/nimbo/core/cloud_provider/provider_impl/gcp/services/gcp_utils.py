@@ -11,5 +11,5 @@ class GcpUtils(Utils):
         pass
 
     @staticmethod
-    def show_spending(qty: int, timescale: str, dry_run=False) -> None:
+    def spending(qty: int, timescale: str, dry_run=False) -> None:
         pass

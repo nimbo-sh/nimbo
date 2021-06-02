@@ -27,12 +27,13 @@ setuptools.setup(
     entry_points={"console_scripts": ["nimbo=nimbo.main:cli"]},
     python_requires=">=3.6",
     install_requires=[
-        "awscli>=1.19<2.0",
-        "boto3>=1.17",
         "requests>=2.25",
         "click>=7.0",
-        "pyyaml>=5.3.0",
         "pydantic>=1.7.0",
+        "pyyaml>=5.3.0",
+        "boto3>=1.17",
+        "awscli>=1.19<2.0",
         "rich>=10.1.0",
+        "python-dateutil>=2.8.0"
     ],
 )
