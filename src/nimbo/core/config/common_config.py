@@ -1,9 +1,8 @@
 import enum
 import os
-from typing import Any, Dict, Optional, Set
+from typing import Optional, Set
 
 import pydantic
-import yaml
 
 from nimbo.core.constants import NIMBO_CONFIG_FILE, TELEMETRY_URL
 
@@ -84,11 +83,3 @@ class BaseConfig(pydantic.BaseModel):
         if value != TELEMETRY_URL:
             raise ValueError("overriding telemetry url is forbidden")
         return value
-
-
-def load_yaml_from_file(file: str) -> Dict[str, Any]:
-    if os.path.isfile(file):
-        with open(file, "r") as f:
-            return yaml.safe_load(f)
-
-    return {}
