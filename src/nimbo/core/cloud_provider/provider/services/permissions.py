@@ -16,10 +16,10 @@ class Permissions(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def setup(profile: str, full_s3_access=False) -> None:
+    def setup(profile: str, no_s3_access=False) -> None:
         ...
 
     @staticmethod
     @abc.abstractmethod
-    def add_user(username: str, profile: str) -> None:
+    def add_user(profile: str, username: str) -> None:
         ...

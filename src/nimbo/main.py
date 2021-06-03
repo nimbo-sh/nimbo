@@ -332,30 +332,34 @@ def spending(qty, timescale, dry_run):
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.ADMIN)
 @click.argument("profile")
-@click.option("--full-s3-access", is_flag=True)
+@click.option(
+    "--no-s3-access", help="Create your own S3 access role separately.", is_flag=True
+)
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
-def admin_setup(profile, full_s3_access):
+def admin_setup(profile, no_s3_access):
     """
     Setup Nimbo access role for your organisation.
 
     Creates a user group and instance role that gives users in your AWS account the
     necessary permissions to use Nimbo. Once `admin-setup` is done, you can run
     `add-user` to allow a specific user to use the user group and role.
+
+    PROFILE is the profile name of your root/admin account from ~/.aws/credentials
     """
-    Cloud.setup(profile, full_s3_access)
+    Cloud.setup(profile, no_s3_access)
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.ADMIN)
-@click.argument("username")
 @click.argument("profile")
+@click.argument("username")
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
-def add_user(username, profile):
+def add_user(profile, username):
     """Adds user USERNAME to the user group NimboUserGroup.
 
     You must have run 'nimbo admin-setup' before adding users.
 
-    PROFILE is the profile name of your root/admin account.
+    PROFILE is the profile name of your root/admin account from ~/.aws/credentials
     """
-    Cloud.add_user(username, profile)
+    Cloud.add_user(profile, username)
