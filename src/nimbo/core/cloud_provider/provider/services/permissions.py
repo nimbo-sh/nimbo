@@ -4,6 +4,12 @@ import abc
 class Permissions(abc.ABC):
     @staticmethod
     @abc.abstractmethod
+    def mk_instance_key(dry_run=False) -> None:
+        """Create and download an instance key to the current directory."""
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
     def allow_ingress_current_ip(target: str, dry_run=False) -> None:
         """
         Adds the IP of the current machine to the allowed ingress rules of

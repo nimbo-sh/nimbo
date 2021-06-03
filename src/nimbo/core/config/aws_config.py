@@ -57,6 +57,7 @@ class AwsConfig(BaseConfig):
         caller_identity = session.client("sts").get_caller_identity()
         self.user_id = caller_identity["UserId"]
         self.user_arn = caller_identity["Arn"]
+
         return session
 
     def assert_required_config_exists(self, *cases: RequiredCase) -> None:
