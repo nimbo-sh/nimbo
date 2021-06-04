@@ -287,6 +287,14 @@ def generate_config():
 
 
 @cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def mk_instance_key():
+    """Create and download an instance key to the current directory."""
+    Cloud.mk_instance_key()
+
+
+@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.INSTANCE, RequiredCase.STORAGE)
 @utils.handle_errors

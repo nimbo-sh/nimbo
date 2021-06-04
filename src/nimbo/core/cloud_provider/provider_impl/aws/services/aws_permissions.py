@@ -1,5 +1,7 @@
 import json
+import os
 import sys
+from typing import Optional
 
 import boto3
 import botocore.exceptions
@@ -18,6 +20,27 @@ S3_ACCESS_ROLE_NAME = "NimboFullS3AccessRole"
 
 
 class AwsPermissions(Permissions):
+    @staticmethod
+    def mk_instance_key(dry_run=False) -> None:
+        ec2 = CONFIG.get_session().client("ec2")
+
+        username = CONFIG.user_arn.split("/")[1]
+        key_name = f"{username}-{CONFIG.region_name}"
+
+        try:
+            response = ec2.create_key_pair(KeyName=key_name, DryRun=dry_run)
+            key_body = response["KeyMaterial"]
+
+            with open(f"{key_name}.pem", "w") as f:
+                f.write(key_body)
+
+            os.chmod(f"{key_name}.pem", int("400", base=8))
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "UnauthorizedOperation":
+                return
+            else:
+                raise
+
     @staticmethod
     def allow_ingress_current_ip(target: str, dry_run=False) -> None:
         ec2 = CONFIG.get_session().client("ec2")
