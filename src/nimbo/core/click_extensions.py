@@ -1,4 +1,5 @@
 import enum
+import typing as t
 
 import click
 
@@ -11,19 +12,16 @@ class HelpSection(enum.Enum):
 
 
 class NimboCommand(click.Command):
-    """ click.Command extension for command grouping """
-
     def __init__(self, *args, **kwargs):
         self.help_section: HelpSection = kwargs.pop("help_section", None)
         super().__init__(*args, **kwargs)
 
 
 class NimboGroup(click.Group):
-    """ click.Group extension for command grouping """
-
-    def list_commands(self, ctx):
+    def list_commands(self, ctx: click.Context) -> t.List[str]:
         # Avoid command sorting
-        return self.commands.keys()
+
+        return list(self.commands.keys())
 
     def format_commands(
         self, ctx: click.Context, formatter: click.HelpFormatter

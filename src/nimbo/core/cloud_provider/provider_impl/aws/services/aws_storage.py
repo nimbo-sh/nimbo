@@ -1,98 +1,128 @@
-import os.path
-import subprocess
-
 import botocore.exceptions
 
 from nimbo import CONFIG
 from nimbo.core.cloud_provider.provider.services.storage import Storage
-from nimbo.core.print import nprint
+from nimbo.core.print import NimboPrint
 
 
 class AwsStorage(Storage):
+    @staticmethod
+    def push(directory: str, delete=False) -> None:
+        pass
+
+    @staticmethod
+    def pull(directory: str, delete=False) -> None:
+        pass
+
+    # @staticmethod
+    # def _sync_folder(source, target, delete=False) -> None:
+    #     command = AwsStorage.mk_s3_command("sync", source, target, delete)
+    #     print(f"\nRunning command: {command}")
+    #     subprocess.Popen(command, shell=True).communicate()
+
+    # @staticmethod
+    # TODO: this is used in multiple places
+    # def mk_s3_command(cmd, source, target, delete=False) -> str:
+    #     command = (
+    #         f"aws s3 {cmd} {source} {target}"
+    #         f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
+    #     )
+
+    #     if delete:
+    #         command += " --delete"
+
+    #     if CONFIG.encryption:
+    #         command += f" --sse {CONFIG.encryption}"
+    #     return command
+
     # noinspection DuplicatedCode
-    @staticmethod
-    def push(folder: str, delete=False) -> None:
-        assert folder in ["datasets", "results", "logs"]
+    # @staticmethod
+    # def push(folder: str, delete=False) -> None:
+    #     assert folder in ["datasets", "results", "logs"]
 
-        if folder == "logs":
-            source = os.path.join(CONFIG.local_results_path, "nimbo-logs")
-            target = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
-        else:
-            if folder == "results":
-                source = CONFIG.local_results_path
-                target = CONFIG.s3_results_path
-            else:
-                source = CONFIG.local_datasets_path
-                target = CONFIG.s3_datasets_path
+    #     if folder == "logs":
+    #         source = os.path.join(CONFIG.local_results_path, "nimbo-logs")
+    #         target = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
+    #     else:
+    #         if folder == "results":
+    #             source = CONFIG.local_results_path
+    #             target = CONFIG.s3_results_path
+    #         else:
+    #             source = CONFIG.local_datasets_path
+    #             target = CONFIG.s3_datasets_path
 
-        AwsStorage._sync_folder(source, target, delete)
+    #     AwsStorage._sync_folder(source, target, delete)
 
     # noinspection DuplicatedCode
-    @staticmethod
-    def pull(folder: str, delete=False) -> None:
-        assert folder in ["datasets", "results", "logs"]
+    # @staticmethod
+    # def pull(folder: str, delete=False) -> None:
+    #     assert folder in ["datasets", "results", "logs"]
 
-        if folder == "logs":
-            source = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
-            target = os.path.join(CONFIG.local_results_path, "nimbo-logs")
-        else:
-            if folder == "results":
-                source = CONFIG.s3_results_path
-                target = CONFIG.local_results_path
-            else:
-                source = CONFIG.s3_datasets_path
-                target = CONFIG.local_datasets_path
+    #     if folder == "logs":
+    #         source = os.path.join(CONFIG.s3_results_path, "nimbo-logs")
+    #         target = os.path.join(CONFIG.local_results_path, "nimbo-logs")
+    #     else:
+    #         if folder == "results":
+    #             source = CONFIG.s3_results_path
+    #             target = CONFIG.local_results_path
+    #         else:
+    #             source = CONFIG.s3_datasets_path
+    #             target = CONFIG.local_datasets_path
 
-        AwsStorage._sync_folder(source, target, delete)
-
-    @staticmethod
-    def ls_bucket(path: str) -> None:
-        profile = CONFIG.aws_profile
-        region = CONFIG.region_name
-        path = path.rstrip("/") + "/"
-        command = f"aws s3 ls {path} --profile {profile} --region {region}"
-        print(f"Running command: {command}")
-        subprocess.Popen(command, shell=True).communicate()
+    #     AwsStorage._sync_folder(source, target, delete)
 
     @staticmethod
-    def mk_bucket(bucket_name: str, dry_run=False) -> None:
-        """Create an S3 bucket in a specified region
-
-        :param bucket_name: Bucket to create
-        :param dry_run
-        :return: True if bucket created, else False
-        """
+    def mk_bucket(bucket_name: str) -> None:
+        s3 = CONFIG.get_session().client("s3")
 
         try:
-            session = CONFIG.get_session()
-            s3 = session.client("s3")
-            location = {"LocationConstraint": session.region_name}
-            s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration=location)
+            s3.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"LocationConstraint": CONFIG.region_name},
+            )
+            print(f"Bucket {bucket_name} created.")
         except botocore.exceptions.ClientError as e:
-            if e.response["Error"]["Code"] == "BucketAlreadyOwnedByYou":
-                nprint("Bucket nimbo-main-bucket already exists.", style="warning")
+            error_code = e.response["Error"]["Code"]
+            if error_code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+                NimboPrint.error(f"Bucket {bucket_name} already exists.")
+            elif error_code == "InvalidBucketName":
+                NimboPrint.error(
+                    f"""
+                    Bucket name {bucket_name} is invalid, please refer to
+                    https://ext.nimbo.sh/j9l for bucket naming rules.
+                    """
+                )
+            elif error_code == "AccessDenied":
+                NimboPrint.error(
+                    """
+                    Access denied - make sure that the role defined in Nimbo config
+                    has the 's3:CreateBucket' action for creating S3 buckets.
+                    """
+                )
             else:
-                nprint(e, style="error")
+                raise
+
+    @staticmethod
+    def ls_bucket(bucket_name: str, prefix: str) -> None:
+        s3 = CONFIG.get_session().client("s3")
+
+        bucket_names = (bucket["Name"] for bucket in s3.list_buckets()["Buckets"])
+        if bucket_name not in bucket_names:
+            NimboPrint.error(f"""You do not own the bucket f{bucket_name}""")
             return
 
-        print("Bucket %s created." % bucket_name)
-
-    @staticmethod
-    def _sync_folder(source, target, delete=False) -> None:
-        command = AwsStorage.mk_s3_command("sync", source, target, delete)
-        print(f"\nRunning command: {command}")
-        subprocess.Popen(command, shell=True).communicate()
-
-    @staticmethod
-    def mk_s3_command(cmd, source, target, delete=False) -> str:
-        command = (
-            f"aws s3 {cmd} {source} {target} "
-            f" --profile {CONFIG.aws_profile} --region {CONFIG.region_name}"
-        )
-
-        if delete:
-            command += " --delete"
-
-        if CONFIG.encryption:
-            command += f" --sse {CONFIG.encryption}"
-        return command
+        try:
+            for obj in s3.list_objects(Bucket=bucket_name, Prefix=prefix)["Contents"]:
+                print(obj["Key"])
+        except botocore.exceptions.ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "AccessDenied":
+                NimboPrint.error(
+                    """
+                    Access denied - make sure that the role defined in Nimbo config
+                    has the 's3:ListAllMyBuckets' and 's3:ListBucket' actions
+                    for listing S3 buckets.
+                    """
+                )
+            else:
+                raise

@@ -1,3 +1,5 @@
+import functools
+
 import click
 
 from nimbo.core import utils
@@ -18,7 +20,10 @@ def cli():
     pass
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+command = functools.partial(cli.command, cls=NimboCommand)
+
+
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("job_cmd")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.JOB)
@@ -33,8 +38,7 @@ def run(job_cmd, dry_run):
     Cloud.run(job_cmd, dry_run)
 
 
-@cli.command(
-    cls=NimboCommand,
+@command(
     help_section=HelpSection.INSTANCE,
     short_help="Launch Jupiter with your code, data, and environment",
 )
@@ -46,14 +50,13 @@ def notebook(dry_run):
     Launch Jupyter Lab on an instance with your code, data and environment.
 
     Make sure to run 'nimbo sync-notebooks <instance_id>' frequently to sync
-    the notebook to your local folder, as the remote notebooks will be lost
+    the notebook to your local directory, as the remote notebooks will be lost
     once the instance is terminated.
     """
     Cloud.run("_nimbo_notebook", dry_run)
 
 
-@cli.command(
-    cls=NimboCommand,
+@command(
     help_section=HelpSection.INSTANCE,
     short_help="Launch an instance with minimal setup.",
 )
@@ -69,7 +72,7 @@ def launch(dry_run):
     Cloud.run("_nimbo_launch", dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.JOB)
 @utils.handle_errors
@@ -82,7 +85,7 @@ def launch_and_setup(dry_run):
     Cloud.run("_nimbo_launch_and_setup", dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.INSTANCE)
@@ -92,7 +95,7 @@ def ssh(instance_id, dry_run):
     Cloud.ssh(instance_id, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
@@ -102,7 +105,7 @@ def get_status(instance_id, dry_run):
     print(Cloud.get_status(instance_id, dry_run))
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -111,7 +114,7 @@ def ls_active(dry_run):
     Cloud.ls_active_instances(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -120,7 +123,7 @@ def ls_stopped(dry_run):
     Cloud.ls_stopped_instances(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
@@ -130,7 +133,7 @@ def rm_instance(instance_id, dry_run):
     Cloud.delete_instance(instance_id, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -143,7 +146,7 @@ def rm_all_instances(dry_run):
     Cloud.delete_all_instances(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
@@ -153,7 +156,7 @@ def stop_instance(instance_id, dry_run):
     Cloud.stop_instance(instance_id, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.INSTANCE)
+@command(help_section=HelpSection.INSTANCE)
 @click.argument("instance_id")
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
@@ -163,8 +166,7 @@ def resume_instance(instance_id, dry_run):
     Cloud.resume_instance(instance_id, dry_run)
 
 
-@cli.command(
-    cls=NimboCommand,
+@command(
     help_section=HelpSection.INSTANCE,
     short_help="Add your IP to instance firewall ingress allow list.",
 )
@@ -180,102 +182,104 @@ def add_current_ip(security_group, dry_run):
     Cloud.allow_ingress_current_ip(security_group, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
+@command(help_section=HelpSection.STORAGE)
 @click.argument("bucket_name")
-@click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
-def mk_bucket(bucket_name, dry_run):
+def mk_bucket(bucket_name):
     """
-    Create the bucket BUCKET_NAME in S3.
+    Create bucket BUCKET_NAME in S3.
 
-    BUCKET_NAME is the name of the bucket to create, s3://BUCKET_NAME
+    BUCKET_NAME is the name of the bucket to create, 's3://BUCKET_NAME'.
+    BUCKET_NAME must be unique within the region the bucket is being created in.
     """
-    Cloud.mk_bucket(bucket_name, dry_run)
+    Cloud.mk_bucket(bucket_name)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
-@click.argument("path")
+@command(help_section=HelpSection.STORAGE)
+@click.argument("bucket_name")
+@click.argument("prefix", required=False)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
-def ls_bucket(path):
-    """List S3 objects in PATH.
-
-    PATH is an S3 path of the form s3://bucket-name/my/files/path.
+def ls_bucket(bucket_name, prefix):
     """
-    Cloud.ls_bucket(path)
+    List S3 objects in BUCKET_NAME with optional PREFIX.
+
+    BUCKET_NAME is the name of the bucket to list, 's3://BUCKET_NAME'.
+    PREFIX is a path relative to the BUCKET_NAME. In the case of
+    's3://bucket-name/my/files/path', PREFIX could be 'my/files'.
+    """
+    Cloud.ls_bucket(bucket_name, prefix if prefix else "")
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
+@command(help_section=HelpSection.STORAGE)
 @click.argument(
-    "folder", type=click.Choice(["datasets", "results", "logs"]), required=True
+    "directory", type=click.Choice(["datasets", "results", "logs"]), required=True
 )
 @click.option(
     "--delete",
     is_flag=True,
     help="""
-      Deletes any files that exist in the local folder
-      but don't exist in the remote folder.
+      Delete files that exist in S3, but not the local DIRECTORY.
     """,
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def push(folder, delete):
-    """Push your local datasets/results folder onto S3."""
+def push(directory, delete):
+    """Push your local DIRECTORY to S3."""
 
     if delete:
         click.confirm(
             "This will delete any files that exist in the remote "
-            "folder but do not exist in the local folder.\n"
+            "directory but do not exist in the local directory.\n"
             "Do you want to continue?",
             abort=True,
         )
-    Cloud.push(folder, delete)
+    Cloud.push(directory, delete)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
+@command(help_section=HelpSection.STORAGE)
 @click.argument(
-    "folder", type=click.Choice(["datasets", "results", "logs"]), required=True
+    "directory", type=click.Choice(["datasets", "results", "logs"]), required=True
 )
 @click.option(
     "--delete",
     is_flag=True,
     help="""
-      Deletes any files that exist in the local
-      folder but don't exist in the remote folder.
+      Delete files that exist in the local DIRECTORY, but do not exist in S3.
     """,
 )
 @utils.assert_required_config(RequiredCase.STORAGE)
 @utils.handle_errors
-def pull(folder, delete):
-    """Pull datasets/results folder into your computer from S3."""
+def pull(directory, delete):
+    """Pull DIRECTORY from S3."""
 
     if delete:
         click.confirm(
             "This will delete any files that exist in the local "
-            "folder but do not exist in the remote folder.\n"
+            "directory but do not exist in the remote directory.\n"
             "Do you want to continue?",
             abort=True,
         )
-    Cloud.pull(folder, delete)
+    Cloud.pull(directory, delete)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.STORAGE)
+@command(help_section=HelpSection.STORAGE)
 @click.argument("instance_id")
 @utils.assert_required_config(RequiredCase.INSTANCE)
 @utils.handle_errors
 def sync_notebooks(instance_id):
     """
-    Pull ipynb files from INSTANCE_ID to your local folder.
+    Pull ipynb files from INSTANCE_ID to your local directory.
 
     Make sure to run 'nimbo sync-notebooks <instance_id>' to sync the notebook
-    to your local folder, as the remote notebooks will be lost once the instance
+    to your local directory, as the remote notebooks will be lost once the instance
     is terminated.
     """
     Cloud.sync_notebooks(instance_id)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @utils.assert_required_config(RequiredCase.NONE)
 @utils.handle_errors
 def generate_config():
@@ -286,7 +290,7 @@ def generate_config():
     utils.generate_config()
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
 def mk_instance_key():
@@ -294,7 +298,7 @@ def mk_instance_key():
     Cloud.mk_instance_key()
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.INSTANCE, RequiredCase.STORAGE)
 @utils.handle_errors
@@ -303,7 +307,7 @@ def test_access(dry_run):
     Cloud.run_access_test(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -312,7 +316,7 @@ def ls_prices(dry_run):
     Cloud.ls_gpu_prices(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @click.option("--dry-run", is_flag=True)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -321,7 +325,7 @@ def ls_spot_prices(dry_run):
     Cloud.ls_spot_gpu_prices(dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.UTILS)
+@command(help_section=HelpSection.UTILS)
 @click.argument("qty", type=int, required=True)
 @click.argument("timescale", type=click.Choice(["days", "months"]), required=True)
 @click.option("--dry-run", is_flag=True)
@@ -338,7 +342,7 @@ def spending(qty, timescale, dry_run):
     Cloud.spending(qty, timescale, dry_run)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.ADMIN)
+@command(help_section=HelpSection.ADMIN)
 @click.argument("profile")
 @click.option(
     "--no-s3-access", help="Create your own S3 access role separately.", is_flag=True
@@ -358,7 +362,7 @@ def admin_setup(profile, no_s3_access):
     Cloud.setup(profile, no_s3_access)
 
 
-@cli.command(cls=NimboCommand, help_section=HelpSection.ADMIN)
+@command(help_section=HelpSection.ADMIN)
 @click.argument("profile")
 @click.argument("username")
 @utils.assert_required_config(RequiredCase.NONE)

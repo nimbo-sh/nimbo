@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-from typing import Optional
 
 import boto3
 import botocore.exceptions
