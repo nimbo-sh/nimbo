@@ -63,7 +63,7 @@ class AwsPermissions(Permissions):
                 raise
 
     @staticmethod
-    def setup(profile: str, full_s3_access=False) -> None:
+    def setup(profile: str, no_s3_access=False) -> None:
         session = boto3.Session(profile_name=profile)
         account = session.client("sts").get_caller_identity()["Account"]
 
@@ -83,7 +83,16 @@ class AwsPermissions(Permissions):
             PolicyArn=f"arn:aws:iam::{account}:policy/{EC2_POLICY_NAME}",
         )
 
-        if full_s3_access:
+        if no_s3_access:
+            nprint(
+                "\nSince you chose not to give full S3 access to the Nimbo user group"
+                " and instance role,\nwe recommend that you create a role with the"
+                " necessary S3 permissions in the AWS console.\nOnce you do this, give"
+                " the role name to the people using Nimbo so that they can set\n"
+                "the 'role' field in the nimbo-config.yml to this value.",
+                style="warning",
+            )
+        else:
             nprint_header(f"Creating role {S3_ACCESS_ROLE_NAME}...")
             AwsPermissions._create_role_and_instance_profile(iam, S3_ACCESS_ROLE_NAME)
 
@@ -129,16 +138,6 @@ class AwsPermissions(Permissions):
                 PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess",
             )
 
-        else:
-            nprint(
-                "\nSince you chose not to give full S3 access to the Nimbo user group"
-                " and instance role,\nwe recommend that you create a role with the"
-                " necessary S3 permissions in the AWS console.\nOnce you do this, give"
-                " the role name to the people using Nimbo so that they can set\n"
-                "the 'role' field in the nimbo-config.yml to this value.",
-                style="warning",
-            )
-
         print()
         nprint_header("Done.")
         nprint_header(
@@ -148,7 +147,7 @@ class AwsPermissions(Permissions):
         )
 
     @staticmethod
-    def add_user(username: str, profile: str) -> None:
+    def add_user(profile: str, username: str) -> None:
         session = boto3.Session(profile_name=profile)
         iam = session.client("iam")
 
