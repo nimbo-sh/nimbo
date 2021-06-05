@@ -6,6 +6,7 @@ from rich.theme import Theme
 _console = Console(
     theme=Theme(
         {
+            "step": "bold magenta",
             "info": "bold white",
             "warning": "bold yellow",
             "error": "bold red",
@@ -25,6 +26,11 @@ class NimboPrint:
     @staticmethod
     def _format(msg: str) -> str:
         return re.sub("( |\\s)+", " ", msg).strip(" ")
+
+    @staticmethod
+    def step(current: int, out_of: int, msg):
+        _console.print(f"[{current}/{out_of}]", style="step", end=" ")
+        print(NimboPrint._format(msg))
 
     @staticmethod
     def info(msg: str) -> None:

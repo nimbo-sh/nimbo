@@ -76,11 +76,11 @@ class AwsStorage(Storage):
         s3 = CONFIG.get_session().client("s3")
 
         try:
+            NimboPrint.step(1, 2, f"Creating bucket {bucket_name}.")
             s3.create_bucket(
                 Bucket=bucket_name,
                 CreateBucketConfiguration={"LocationConstraint": CONFIG.region_name},
             )
-            print(f"Bucket {bucket_name} created.")
         except botocore.exceptions.ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
@@ -102,26 +102,62 @@ class AwsStorage(Storage):
             else:
                 raise
 
+        try:
+            NimboPrint.step(2, 2, f"Making bucket {bucket_name} private.")
+            s3.put_public_access_block(
+                Bucket=bucket_name,
+                PublicAccessBlockConfiguration={
+                    "BlockPublicAcls": True,
+                    "IgnorePublicAcls": True,
+                    "BlockPublicPolicy": True,
+                    "RestrictPublicBuckets": True,
+                },
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "AccessDenied":
+                NimboPrint.error(
+                    f"""
+                    Access denied - make sure that the role defined in Nimbo config has
+                    the 's3:PutBucketPublicAccessBlock' action.
+                    """
+                )
+            else:
+                raise
+
+        NimboPrint.success(f"Bucket {bucket_name} created.")
+
     @staticmethod
     def ls_bucket(bucket_name: str, prefix: str) -> None:
         s3 = CONFIG.get_session().client("s3")
-
-        bucket_names = (bucket["Name"] for bucket in s3.list_buckets()["Buckets"])
-        if bucket_name not in bucket_names:
-            NimboPrint.error(f"""You do not own the bucket f{bucket_name}""")
-            return
 
         try:
             for obj in s3.list_objects(Bucket=bucket_name, Prefix=prefix)["Contents"]:
                 print(obj["Key"])
         except botocore.exceptions.ClientError as e:
-            error_code = e.response["Error"]["Code"]
-            if error_code == "AccessDenied":
+            if e.response["Error"]["Code"] == "AccessDenied":
                 NimboPrint.error(
+                    f"""
+                    Access denied - make sure that you own the bucket {bucket_name},
+                    and that the role defined in Nimbo config has the 's3:ListBucket'
+                    action.
                     """
-                    Access denied - make sure that the role defined in Nimbo config
-                    has the 's3:ListAllMyBuckets' and 's3:ListBucket' actions
-                    for listing S3 buckets.
+                )
+            else:
+                raise
+
+    @staticmethod
+    def ls_buckets() -> None:
+        s3 = CONFIG.get_session().client("s3")
+
+        try:
+            for bucket in s3.list_buckets()["Buckets"]:
+                print(bucket["Name"])
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "AccessDenied":
+                NimboPrint.error(
+                    f"""
+                    Access denied - make sure that the role defined in Nimbo config has
+                    the 's3:ListAllMyBuckets' action.
                     """
                 )
             else:

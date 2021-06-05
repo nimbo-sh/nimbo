@@ -213,6 +213,14 @@ def ls_bucket(bucket_name, prefix):
 
 
 @command(help_section=HelpSection.STORAGE)
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def ls_buckets():
+    """ List S3 buckets owned by you. """
+    Cloud.ls_buckets()
+
+
+@command(help_section=HelpSection.STORAGE)
 @click.argument(
     "directory", type=click.Choice(["datasets", "results", "logs"]), required=True
 )

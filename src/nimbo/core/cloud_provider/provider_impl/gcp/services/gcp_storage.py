@@ -17,3 +17,7 @@ class GcpStorage(Storage):
     @staticmethod
     def ls_bucket(bucket_name: str, prefix: str) -> None:
         ...
+
+    @staticmethod
+    def ls_buckets() -> None:
+        pass

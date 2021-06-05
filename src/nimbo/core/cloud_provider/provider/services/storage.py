@@ -21,3 +21,8 @@ class Storage(abc.ABC):
     @abc.abstractmethod
     def ls_bucket(bucket_name: str, prefix: str) -> None:
         ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def ls_buckets() -> None:
+        ...
