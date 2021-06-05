@@ -32,6 +32,8 @@ class AwsStorage(Storage):
     @_handle_common_exceptions
     def push(directory: str, delete=False) -> None:
         # TODO: this function is wayy too long
+        # TODO: this is not a complete implementation, haven't tested diffs, directory
+        # renaming, etc
 
         local_dir = (
             CONFIG.local_results_path
@@ -137,6 +139,34 @@ class AwsStorage(Storage):
 
     @staticmethod
     @_handle_common_exceptions
+    def rm_bucket(bucket_name: str) -> None:
+        session = CONFIG.get_session()
+        s3_resource = session.resource("s3")
+        s3_client = session.client("s3")
+
+        bucket = s3_resource.Bucket(bucket_name)
+        bucket_versioning = s3_resource.BucketVersioning(bucket_name)
+
+        try:
+            NimboPrint.step(1, 2, f"Emptying bucket {bucket_name}.")
+            if bucket_versioning.status == "Enabled":
+                bucket.object_versions.delete()
+            else:
+                bucket.objects.all().delete()
+
+            NimboPrint.step(2, 2, f"Deleting bucket {bucket_name}.")
+            s3_client.delete_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchBucket":
+                NimboPrint.error(f"Bucket {bucket_name} does not exist.")
+                return
+            else:
+                raise
+        NimboPrint.success(f"Bucket {bucket_name} has been deleted.")
+
+    @staticmethod
+    @_handle_common_exceptions
     def mk_bucket(bucket_name: str) -> None:
         s3 = CONFIG.get_session().client("s3")
 
@@ -150,6 +180,7 @@ class AwsStorage(Storage):
             error_code = e.response["Error"]["Code"]
             if error_code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
                 NimboPrint.error(f"Bucket {bucket_name} already exists.")
+                return
             elif error_code == "InvalidBucketName":
                 NimboPrint.error(
                     f"""
@@ -157,6 +188,7 @@ class AwsStorage(Storage):
                     https://ext.nimbo.sh/j9l for bucket naming rules.
                     """
                 )
+                return
             else:
                 raise
 
@@ -171,7 +203,7 @@ class AwsStorage(Storage):
             },
         )
 
-        NimboPrint.success(f"Bucket {bucket_name} created.")
+        NimboPrint.success(f"Bucket {bucket_name} has been created.")
 
     @staticmethod
     @_handle_common_exceptions

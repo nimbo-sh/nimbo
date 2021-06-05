@@ -198,6 +198,19 @@ def mk_bucket(bucket_name):
 
 @command(help_section=HelpSection.STORAGE)
 @click.argument("bucket_name")
+@utils.assert_required_config(RequiredCase.MINIMAL)
+@utils.handle_errors
+def rm_bucket(bucket_name):
+    """
+    Delete bucket BUCKET_NAME and all its contents from S3.
+
+    BUCKET_NAME is the name of the bucket to delete, 's3://BUCKET_NAME'.
+    """
+    Cloud.rm_bucket(bucket_name)
+
+
+@command(help_section=HelpSection.STORAGE)
+@click.argument("bucket_name")
 @click.argument("prefix", required=False)
 @utils.assert_required_config(RequiredCase.MINIMAL)
 @utils.handle_errors
@@ -221,9 +234,7 @@ def ls_buckets():
 
 
 @command(help_section=HelpSection.STORAGE)
-@click.argument(
-    "directory", type=click.Choice(["datasets", "results"]), required=True
-)
+@click.argument("directory", type=click.Choice(["datasets", "results"]), required=True)
 @click.option(
     "--delete",
     is_flag=True,

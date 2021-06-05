@@ -19,6 +19,11 @@ class Storage(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
+    def rm_bucket(bucket_name: str) -> None:
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
     def ls_bucket(bucket_name: str, prefix: str) -> None:
         ...
 
