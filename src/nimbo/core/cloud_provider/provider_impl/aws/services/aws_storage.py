@@ -26,7 +26,12 @@ class AwsStorage(Storage):
     @staticmethod
     def _get_bucket_name(s3_path: str) -> str:
         # TODO: this should be somewhere else, not reliable
-        return s3_path.replace("s3://", "").split("/")[0]
+        return s3_path.split("/")[2]
+
+    @staticmethod
+    def _get_s3_basedir(s3_path: str) -> str:
+        # TODO: this should be somewhere else, not reliable
+        return "/".join(s3_path.split("/")[3:])
 
     @staticmethod
     @_handle_common_exceptions
@@ -59,18 +64,24 @@ class AwsStorage(Storage):
         s3 = CONFIG.get_session().client("s3")
 
         NimboPrint.step(
-            1, step_count, f"Pushing files from {local_dir} to {remote_dir}."
+            1, step_count, f"Pushing files from {local_dir} to {remote_dir}"
         )
         extra_args = (
-            {"ServerSideEncryption": CONFIG.encryption} if CONFIG.encryption else {}
+            {"ServerSideEncryption": CONFIG.encryption.value}
+            if CONFIG.encryption
+            else {}
         )
         for index, file in enumerate(all_files_in_local_dir, start=2):
             local_file_path = os.path.join(local_dir, file)
-            NimboPrint.step(index, step_count, f"Uploading {local_file_path}.")
+            remote_file_path = os.path.join(
+                AwsStorage._get_s3_basedir(remote_dir), file
+            )
+
+            NimboPrint.step(index, step_count, f"Uploading {local_file_path}")
             s3.upload_file(
                 Filename=local_file_path,
                 Bucket=AwsStorage._get_bucket_name(remote_dir),
-                Key=file,
+                Key=remote_file_path,
                 ExtraArgs=extra_args,
             )
         NimboPrint.success("All files have been pushed.")
