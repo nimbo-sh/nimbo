@@ -102,14 +102,13 @@ class AwsConfig(BaseConfig):
 
         bad_fields = {}
 
+        # TODO: simplify with some reflective programming
         if RequiredCase.MINIMAL in cases:
             bad_fields["aws_profile"] = self._aws_profile_exists()
             bad_fields["region_name"] = self._region_name_valid()
         if RequiredCase.STORAGE in cases:
-            bad_fields["local_results_path"] = self._local_results_not_outside_project()
-            bad_fields[
-                "local_datasets_path"
-            ] = self._local_datasets_not_outside_project()
+            bad_fields["local_results_path"] = self._local_results_path_valid()
+            bad_fields["local_datasets_path"] = self._local_datasets_path_valid()
         if RequiredCase.INSTANCE in cases:
             bad_fields["instance_key"] = self._instance_key_valid()
             bad_fields["disk_iops"] = self._disk_iops_specified_when_needed()

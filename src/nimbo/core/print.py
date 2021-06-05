@@ -14,9 +14,13 @@ _console = Console(
         }
     )
 )
+
+
+# TODO: replace / remove
 nprint = _console.print
 
 
+# TODO: replace / remove
 def nprint_header(x) -> None:
     nprint(f"[blue]==>[/blue] {x}", style="bold")
 

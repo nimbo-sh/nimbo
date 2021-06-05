@@ -61,10 +61,10 @@ class BaseConfig(pydantic.BaseModel):
     )
     telemetry_url: str = TELEMETRY_URL
 
-    def _local_results_not_outside_project(self) -> t.Optional[str]:
+    def _local_results_path_valid(self) -> t.Optional[str]:
         return self._validate_directory(self.local_results_path, "local_results_path")
 
-    def _local_datasets_not_outside_project(self) -> t.Optional[str]:
+    def _local_datasets_path_valid(self) -> t.Optional[str]:
         return self._validate_directory(self.local_datasets_path, "local_datasets_path")
 
     @staticmethod
