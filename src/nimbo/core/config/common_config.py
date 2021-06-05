@@ -1,6 +1,6 @@
 import enum
 import os
-from typing import Optional, Set
+import typing as t
 
 import pydantic
 
@@ -16,7 +16,7 @@ class RequiredCase(str, enum.Enum):
     JOB = "43210"
 
     @classmethod
-    def decompose(cls, *cases: "RequiredCase") -> Set["RequiredCase"]:
+    def decompose(cls, *cases: "RequiredCase") -> t.Set["RequiredCase"]:
         """ Gets all cases that compose each case and the case itself """
 
         decomposed = set()
@@ -42,10 +42,10 @@ class BaseConfig(pydantic.BaseModel):
 
     cloud_provider: CloudProvider = None
 
-    local_datasets_path: Optional[str] = None
-    local_results_path: Optional[str] = None
+    local_datasets_path: t.Optional[str] = None
+    local_results_path: t.Optional[str] = None
 
-    conda_env: Optional[str] = None
+    conda_env: t.Optional[str] = None
     run_in_background: bool = False
     persist: bool = False
 
@@ -55,23 +55,26 @@ class BaseConfig(pydantic.BaseModel):
 
     # The following are defined internally
     nimbo_config_file: str = NIMBO_CONFIG_FILE
-    user_id: Optional[str] = None
+    user_id: t.Optional[str] = None
     _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
         default=os.path.isfile(NIMBO_CONFIG_FILE)
     )
     telemetry_url: str = TELEMETRY_URL
 
-    def _local_results_not_outside_project(self) -> Optional[str]:
-        if os.path.isabs(self.local_results_path):
-            return "local_results_path should be a relative path"
-        if ".." in self.local_results_path:
-            return "local_results_path should not be outside of the project directory"
+    def _local_results_not_outside_project(self) -> t.Optional[str]:
+        return self._validate_directory(self.local_results_path, "local_results_path")
 
-    def _local_datasets_not_outside_project(self) -> Optional[str]:
-        if os.path.isabs(self.local_datasets_path):
-            return "local_datasets_path should be a relative path"
-        if ".." in self.local_datasets_path:
-            return "local_datasets_path should not be outside of the project directory"
+    def _local_datasets_not_outside_project(self) -> t.Optional[str]:
+        return self._validate_directory(self.local_datasets_path, "local_datasets_path")
+
+    @staticmethod
+    def _validate_directory(directory: str, config_key: str) -> t.Optional[str]:
+        if not os.path.isdir(directory):
+            return f"{config_key} does not exist or is not a directory"
+        if os.path.isabs(directory):
+            return f"{config_key} should be a relative path"
+        if ".." in directory:
+            return f"{config_key} should not be outside of the project directory"
 
     @pydantic.validator("nimbo_config_file")
     def _nimbo_config_file_unchanged(cls, value):

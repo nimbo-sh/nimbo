@@ -222,7 +222,7 @@ def ls_buckets():
 
 @command(help_section=HelpSection.STORAGE)
 @click.argument(
-    "directory", type=click.Choice(["datasets", "results", "logs"]), required=True
+    "directory", type=click.Choice(["datasets", "results"]), required=True
 )
 @click.option(
     "--delete",
