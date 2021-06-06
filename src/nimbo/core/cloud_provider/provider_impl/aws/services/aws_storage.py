@@ -1,6 +1,9 @@
+import datetime
 import functools
 import os
+import typing as t
 
+import boto3.exceptions
 import botocore.exceptions
 
 from nimbo import CONFIG
@@ -26,6 +29,9 @@ class AwsStorage(Storage):
     @staticmethod
     def _get_bucket_name(s3_path: str) -> str:
         # TODO: this should be somewhere else, not reliable
+        # AWSCLI has a regex for parsing s3_paths :))), should probably replace
+        # globally AWS_CONFIG to expect the regex, and parse it in some object.
+        # https://github.com/aws/aws-cli/blob/45b0063b2d0b245b17a57fd9eebd9fcc87c4426a/awscli/customizations/s3/utils.py
         return s3_path.split("/")[2]
 
     @staticmethod
@@ -36,9 +42,19 @@ class AwsStorage(Storage):
     @staticmethod
     @_handle_common_exceptions
     def push(directory: str, delete=False) -> None:
-        # TODO: this function is wayy too long
-        # TODO: this is not a complete implementation, haven't tested diffs, directory
-        # renaming, etc
+        # TODO
+        # this reuploads everything each time, should do a diff instead to find
+        # out what needs to be uploaded. The diff should take into account
+        # renamed directories
+        #
+        # This function is too long
+        #
+        # I don't like that results, datasets and logs are standalone strings
+        # What' happens when upploading 100s of files
+        # What happens if I upload 10GB file
+
+        # Fuuuuck, Sync is actually complicated as hell
+        # You need to compare file names and timestamps
 
         local_dir = (
             CONFIG.local_results_path
@@ -78,12 +94,16 @@ class AwsStorage(Storage):
             )
 
             NimboPrint.step(index, step_count, f"Uploading {local_file_path}")
-            s3.upload_file(
-                Filename=local_file_path,
-                Bucket=AwsStorage._get_bucket_name(remote_dir),
-                Key=remote_file_path,
-                ExtraArgs=extra_args,
-            )
+            try:
+                s3.upload_file(
+                    Filename=local_file_path,
+                    Bucket=AwsStorage._get_bucket_name(remote_dir),
+                    Key=remote_file_path,
+                    ExtraArgs=extra_args,
+                )
+            except boto3.exceptions.S3UploadFailedError as e:
+                NimboPrint.error(str(e))
+                return
         NimboPrint.success("All files have been pushed.")
 
     @staticmethod
@@ -217,12 +237,27 @@ class AwsStorage(Storage):
         NimboPrint.success(f"Bucket {bucket_name} has been created.")
 
     @staticmethod
+    def _ls_bucket(
+        bucket_name: str, prefix: str
+    ) -> t.Generator[t.Tuple[str, datetime.datetime], None, None]:
+
+        s3 = CONFIG.get_session().client("s3")
+        paginator = s3.get_paginator("list_objects")
+        page_iter = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
+
+        prefix_len = 0 if len(prefix) == 0 else len(prefix) + 1
+
+        return (
+            (obj["Key"][prefix_len:], obj["LastModified"])
+            for page in page_iter
+            for obj in page["Contents"]
+        )
+
+    @staticmethod
     @_handle_common_exceptions
     def ls_bucket(bucket_name: str, prefix: str) -> None:
-        s3 = CONFIG.get_session().client("s3")
-
-        for obj in s3.list_objects(Bucket=bucket_name, Prefix=prefix)["Contents"]:
-            print(obj["Key"])
+        for file, _ in AwsStorage._ls_bucket(bucket_name, prefix):
+            print(file)
 
     @staticmethod
     @_handle_common_exceptions
