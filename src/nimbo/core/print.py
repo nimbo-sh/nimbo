@@ -51,6 +51,10 @@ class NimboPrint:
         print(NimboPrint._format(msg))
 
     @staticmethod
+    def indented(offset: int, msg):
+        print(" " * offset + NimboPrint._format(msg))
+
+    @staticmethod
     def info(msg: str) -> None:
         _console.print("info", style="info", end=" ")
         print(NimboPrint._format(msg))
