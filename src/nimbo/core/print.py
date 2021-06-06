@@ -6,7 +6,17 @@ from rich.theme import Theme
 _console = Console(
     theme=Theme(
         {
+            "repr.number": "",
+            "repr.str": "",
+            "repr.ellipsis": "",
+            "repr.eui48": "",
+            "repr.eui64": "",
+            "repr.ipv4": "",
+            "repr.ipv6": "",
+            "repr.filename": "",
+            "repr.path": "",
             "step": "bold magenta",
+            "step-number": "bold cyan",
             "info": "bold white",
             "warning": "bold yellow",
             "error": "bold red",
@@ -32,8 +42,12 @@ class NimboPrint:
         return re.sub("( |\\s)+", " ", msg).strip(" ")
 
     @staticmethod
-    def step(current: int, out_of: int, msg):
-        _console.print(f"[{current}/{out_of}]", style="step", end=" ")
+    def step(curr: int, out_of: int, msg):
+        _console.print(
+            f"[[step-number]{curr}[/step-number]/[step-number]{out_of}[/step-number]]",
+            style="step",
+            end=" ",
+        )
         print(NimboPrint._format(msg))
 
     @staticmethod
