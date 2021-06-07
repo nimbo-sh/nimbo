@@ -46,7 +46,21 @@ class AwsStorage(Storage):
         """
         TODO:
         1. Test uploading 1GB-10GB files. Automatically use multipart upload for large files?
-        2. Multithreading uploads?
+        2. Should multithreading uploads.
+        3. I don't like the fact that I'm building in-memory data structures that hold
+           the differences. 100M file paths in memory take around 1-2GB of RAM.
+           Uploading 1M files to S3 costs $5USD just in pricing per 1000 requests.
+           ext4 supports having 4 billion files.
+
+           If we to stream differences, there are two issues:
+           - Cannot detect if a directory has been renamed, so everything in a renamed
+             directory will be re-uploaded.
+           - When pushing, will have to build a set of paths of what to delete to
+             collect delete requests and make it cheaper, which is problematic in some
+             edge cases. Alternatively, delete per object, which will increase the overall
+             delete cost by a factor of 1000x. But for this we could just display
+             a warning explaining why the 1000x price increase, and suggest to
+             delete the bucket, and push from scratch.
         """
 
         local_dir = (
