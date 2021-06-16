@@ -24,7 +24,10 @@ class AwsPermissions(Permissions):
     def mk_instance_key(dry_run=False) -> None:
         ec2 = CONFIG.get_session().client("ec2")
 
-        username = CONFIG.user_arn.split("/")[1]
+        if "/" in CONFIG.user_arn:
+            username = CONFIG.user_arn.split("/")[1]
+        else:
+            username = CONFIG.user_arn.split(":")[-1]
         key_name = f"{username}-{CONFIG.region_name}"
 
         try:
