@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from nimbo import CONFIG
 from nimbo.core.config import RequiredCase
-from nimbo.tests.aws.config import ASSETS_PATH, CONDA_ENV, NIMBO_CONFIG_FILE
+from nimbo.tests.aws.config import ASSETS_PATH, CONDA_ENV
 
 
 def make_file(path: str, text: str) -> None:
@@ -77,7 +77,7 @@ def _copy_assets(*assets: AssetType) -> None:
     dst = os.getcwd()
 
     if AssetType.NIMBO_CONFIG in assets:
-        src = os.path.join(ASSETS_PATH, NIMBO_CONFIG_FILE)
+        src = os.path.join(ASSETS_PATH, CONFIG.config_path)
         shutil.copy(src, dst)
     if AssetType.INSTANCE_KEYS in assets:
         keys = [file for file in os.listdir(ASSETS_PATH) if file[-4:] == ".pem"]

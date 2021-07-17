@@ -36,6 +36,6 @@ setuptools.setup(
         "boto3>=1.17",
         "awscli>=1.19<2.0",
         "rich>=10.1.0",
-        "python-dateutil>=2.8.0"
+        "python-dateutil>=2.8.0",
     ],
 )

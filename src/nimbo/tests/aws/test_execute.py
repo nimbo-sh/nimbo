@@ -26,15 +26,11 @@ def test_test_access(runner: CliRunner):
 
 @isolated_filesystem(RequiredCase.JOB)
 def test_run_no_code(runner: CliRunner):
-    result = runner.invoke(
-        cli, "rm-all-instances", input="y", catch_exceptions=False
-    )
+    result = runner.invoke(cli, "rm-all-instances", input="y", catch_exceptions=False)
     assert result.exit_code == 0
     result = runner.invoke(cli, "run 'python --version'", catch_exceptions=False)
     assert result.exit_code == 0
-    result = runner.invoke(
-        cli, "rm-all-instances", input="y", catch_exceptions=False
-    )
+    result = runner.invoke(cli, "rm-all-instances", input="y", catch_exceptions=False)
     assert result.exit_code == 0
 
 
@@ -73,9 +69,7 @@ def test_spot_launch(runner: CliRunner):
     assert response["message"] == "_nimbo_launch_success"
     instance_id = response["instance_id"]
 
-    result = runner.invoke(
-        cli, f"rm-instance {instance_id}", catch_exceptions=False
-    )
+    result = runner.invoke(cli, f"rm-instance {instance_id}", catch_exceptions=False)
     assert result.exit_code == 0
 
 
@@ -87,7 +81,5 @@ def test_notebook(runner: CliRunner):
     assert response["message"] == "_nimbo_notebook_success"
     instance_id = response["instance_id"]
 
-    result = runner.invoke(
-        cli, f"rm-instance {instance_id}", catch_exceptions=False
-    )
+    result = runner.invoke(cli, f"rm-instance {instance_id}", catch_exceptions=False)
     assert result.exit_code == 0

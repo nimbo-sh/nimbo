@@ -70,7 +70,7 @@ class AwsInstance(Instance):
             # Create project folder and send env and config files there
             subprocess.check_output(f"{ssh} ubuntu@{host} mkdir project", shell=True)
             subprocess.check_output(
-                f"{scp} {local_env} {CONFIG.nimbo_config_file} {NIMBO_VARS}"
+                f"{scp} {local_env} {CONFIG.config_path} {NIMBO_VARS}"
                 f" ubuntu@{host}:/home/ubuntu/project/",
                 shell=True,
             )
@@ -136,9 +136,7 @@ class AwsInstance(Instance):
             )
             subprocess.check_output(command, shell=True)
 
-            command = (
-                f"aws s3 ls {results_path} --profile {profile} --region {region}"
-            )
+            command = f"aws s3 ls {results_path} --profile {profile} --region {region}"
             subprocess.check_output(command, shell=True)
             command = (
                 f"aws s3 rm {results_path}/nimbo-access-test.txt "
@@ -191,7 +189,7 @@ class AwsInstance(Instance):
             AwsInstance._write_nimbo_vars()
 
             subprocess.check_output(
-                f"{scp} {CONFIG.nimbo_config_file} {NIMBO_VARS} "
+                f"{scp} {CONFIG.config_path} {NIMBO_VARS} "
                 + f"ubuntu@{host}:/home/ubuntu/",
                 shell=True,
             )
@@ -347,7 +345,8 @@ class AwsInstance(Instance):
                 while status != "fulfilled":
                     time.sleep(2)
                     response = ec2.describe_spot_instance_requests(
-                        SpotInstanceRequestIds=[request_id], Filters=instance_filters,
+                        SpotInstanceRequestIds=[request_id],
+                        Filters=instance_filters,
                     )
                     instance_request = response["SpotInstanceRequests"][0]
                     status = instance_request["Status"]["Code"]
@@ -364,7 +363,8 @@ class AwsInstance(Instance):
 
             nprint_header("Done.")
             ec2.create_tags(
-                Resources=[instance_request["InstanceId"]], Tags=instance_tags,
+                Resources=[instance_request["InstanceId"]],
+                Tags=instance_tags,
             )
             instance = instance_request
         else:
