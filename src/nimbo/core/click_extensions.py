@@ -1,6 +1,12 @@
 import enum
+import functools
+import sys
 
+import botocore.errorfactory
 import click
+
+from nimbo.core.constants import IS_TEST_ENV
+from nimbo.core.print import nprint
 
 
 class HelpSection(enum.Enum):
@@ -59,3 +65,29 @@ class NimboGroup(click.Group):
 
                     with formatter.section(section):
                         formatter.write_dl(rows, col_spacing=col_spacing)
+
+
+def pprint_errors(func):
+    """
+    Decorator for catching boto3 ClientErrors, ValueError or KeyboardInterrupts.
+    In case of error print the error message and stop Nimbo.
+    """
+
+    @functools.wraps(func)
+    def decorated(*args, **kwargs):
+        if IS_TEST_ENV:
+            return func(*args, **kwargs)
+        else:
+            try:
+                return func(*args, **kwargs)
+            except botocore.errorfactory.ClientError as e:
+                nprint(e, style="error")
+                sys.exit(1)
+            except ValueError as e:
+                nprint(e, style="error")
+                sys.exit(1)
+            except KeyboardInterrupt:
+                print("Aborting...")
+                sys.exit(1)
+
+    return decorated

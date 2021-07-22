@@ -14,7 +14,6 @@ from nimbo.core.config import (
     yaml_loader,
 )
 
-NIMBO_CONFIG_FILE = "nimbo-config.yml"
 CONDA_ENV = "env.yml"
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
@@ -56,7 +55,6 @@ class CommonTestConfigMixin(abc.ABC, pydantic.BaseModel):
 
 class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
     _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
 
     def inject_required_config(self, *cases: RequiredCase) -> None:
         cases = RequiredCase.decompose(*cases)
@@ -88,14 +86,15 @@ class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
 
 class GcpTestConfig(CommonTestConfigMixin, GcpConfig):
     _initial_state: Dict[str, Any] = pydantic.PrivateAttr(default_factory=dict)
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(default=True)
 
     def inject_required_config(self, *cases: RequiredCase) -> None:
         pass
 
 
-def make_config() -> Union[AwsTestConfig, GcpTestConfig]:
-    raw_config = yaml_loader.from_file(os.path.join(ASSETS_PATH, NIMBO_CONFIG_FILE))
+def make_config(config_path: str) -> Union[AwsTestConfig, GcpTestConfig]:
+    raw_config = yaml_loader.from_file(os.path.join(ASSETS_PATH, config_path))
+    raw_config["config_path"] = config_path
+
     cloud_provider = CloudProvider(raw_config["cloud_provider"].upper())
 
     if cloud_provider == CloudProvider.AWS:

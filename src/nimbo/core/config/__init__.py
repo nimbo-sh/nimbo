@@ -1,18 +1,18 @@
-from typing import Union
+import typing as t
 
 import pydantic
 
-from nimbo.core.config.aws_config import AwsConfig
 import nimbo.core.config.yaml_loader
+from nimbo.core.config.aws_config import AwsConfig
 from nimbo.core.config.common_config import CloudProvider
 from nimbo.core.config.common_config import RequiredCase
 from nimbo.core.config.gcp_config import GcpConfig
-from nimbo.core.constants import NIMBO_CONFIG_FILE
 
 
 # noinspection PyUnresolvedReferences
-def make_config() -> Union[AwsConfig, GcpConfig]:
-    config = yaml_loader.from_file(NIMBO_CONFIG_FILE)
+def make_config(config_path: str) -> t.Union[AwsConfig, GcpConfig]:
+    config = yaml_loader.from_file(config_path)
+    config["config_path"] = config_path
 
     # Provider field validation is postponed. If cloud_provider is not specified,
     # assume AwsConfig for running commands like --help and generate-config.

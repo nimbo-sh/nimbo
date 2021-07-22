@@ -4,7 +4,7 @@ from typing import Optional, Set
 
 import pydantic
 
-from nimbo.core.constants import NIMBO_CONFIG_FILE, TELEMETRY_URL
+from nimbo.core.constants import TELEMETRY_URL
 
 
 class RequiredCase(str, enum.Enum):
@@ -40,6 +40,7 @@ class BaseConfig(pydantic.BaseModel):
         title = "Nimbo configuration"
         extra = "forbid"
 
+    config_path: str
     cloud_provider: CloudProvider = None
 
     local_datasets_path: Optional[str] = None
@@ -53,12 +54,7 @@ class BaseConfig(pydantic.BaseModel):
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 180
     telemetry: bool = True
 
-    # The following are defined internally
-    nimbo_config_file: str = NIMBO_CONFIG_FILE
     user_id: Optional[str] = None
-    _nimbo_config_file_exists: bool = pydantic.PrivateAttr(
-        default=os.path.isfile(NIMBO_CONFIG_FILE)
-    )
     telemetry_url: str = TELEMETRY_URL
 
     def _local_results_not_outside_project(self) -> Optional[str]:
@@ -72,12 +68,6 @@ class BaseConfig(pydantic.BaseModel):
             return "local_datasets_path should be a relative path"
         if ".." in self.local_datasets_path:
             return "local_datasets_path should not be outside of the project directory"
-
-    @pydantic.validator("nimbo_config_file")
-    def _nimbo_config_file_unchanged(cls, value):
-        if value != NIMBO_CONFIG_FILE:
-            raise ValueError("overriding nimbo config file name is forbidden")
-        return value
 
     @pydantic.validator("telemetry_url")
     def _nimbo_telemetry_url_unchanged(cls, value):

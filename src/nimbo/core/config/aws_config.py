@@ -9,7 +9,7 @@ import botocore.session
 import pydantic
 
 from nimbo.core.config.common_config import BaseConfig, RequiredCase
-from nimbo.core.constants import FULL_REGION_NAMES, NIMBO_CONFIG_FILE
+from nimbo.core.constants import FULL_REGION_NAMES
 
 
 class _DiskType(str, enum.Enum):
@@ -67,9 +67,9 @@ class AwsConfig(BaseConfig):
 
         if len(cases) == 1 and RequiredCase.NONE in cases:
             return
-        elif not self._nimbo_config_file_exists:
+        elif not os.path.isfile(self.config_path):
             raise FileNotFoundError(
-                f"Nimbo configuration file '{self.nimbo_config_file}' not found.\n"
+                f"Nimbo configuration file '{self.config_path}' not found.\n"
                 "Run 'nimbo generate-config' to create the default config file."
             )
 
@@ -97,7 +97,7 @@ class AwsConfig(BaseConfig):
         if unspecified:
             raise AssertionError(
                 f"For running this command '{', '.join(unspecified)}' should"
-                f" be specified in {self.nimbo_config_file}"
+                f" be specified in {self.config_path}"
             )
 
         bad_fields = {}
@@ -121,7 +121,7 @@ class AwsConfig(BaseConfig):
         if bad_fields:
             print(
                 f"{len(bad_fields)} error{'' if len(bad_fields) == 1 else 's'} "
-                f"in {NIMBO_CONFIG_FILE}\n"
+                f"in {self.config_path}\n"
             )
             for key, error in bad_fields:
                 print(key)

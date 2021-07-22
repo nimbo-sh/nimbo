@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-from typing import Optional
 
 import boto3
 import botocore.exceptions
@@ -115,7 +114,7 @@ class AwsPermissions(Permissions):
                 " and instance role,\nwe recommend that you create a role with the"
                 " necessary S3 permissions in the AWS console.\nOnce you do this, give"
                 " the role name to the people using Nimbo so that they can set\n"
-                "the 'role' field in the nimbo-config.yml to this value.",
+                "the 'role' field in the configuration file to this value.",
                 style="warning",
             )
         else:

@@ -77,7 +77,9 @@ def test_instance_actions(runner: CliRunner):
 
     try:
         runner.invoke(
-            cli, "stop-instance i-0be1989edd819b442 --dry-run", catch_exceptions=False,
+            cli,
+            "stop-instance i-0be1989edd819b442 --dry-run",
+            catch_exceptions=False,
         )
     except ClientError as e:
         if "InvalidInstanceID.NotFound" not in str(e):
