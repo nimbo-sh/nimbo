@@ -278,11 +278,15 @@ class AwsInstance(Instance):
 
     @staticmethod
     def _make_instance_tags() -> List[Dict[str, str]]:
-        return [
+        instance_tags = [
             {"Key": "CreatedBy", "Value": "nimbo"},
             {"Key": "Owner", "Value": CONFIG.user_id},
         ]
-
+        if CONFIG.client_name is not None:
+            instance_tags.append({"Key": "Client", "Value": CONFIG.client_name})
+        if CONFIG.project_name is not None:
+            instance_tags.append({"Key": "Project", "Value": CONFIG.project_name})
+        return instance_tags
     @staticmethod
     def _make_instance_filters() -> List[Dict[str, Union[str, List[str]]]]:
         tags = AwsInstance._make_instance_tags()

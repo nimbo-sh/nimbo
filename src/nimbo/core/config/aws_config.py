@@ -45,6 +45,8 @@ class AwsConfig(BaseConfig):
     security_group: Optional[str] = None
     instance_key: Optional[str] = None
     role: Optional[str] = None
+    project_name: Optional[str] = None
+    client_name: Optional[str] = None
 
     # The following are defined internally
     user_arn: Optional[str] = None
@@ -90,6 +92,9 @@ class AwsConfig(BaseConfig):
             required_config["instance_key"] = self.instance_key
             required_config["security_group"] = self.security_group
             required_config["role"] = self.role
+            required_config["project_name"] = self.project_name
+            required_config["client_name"] = self.client_name
+
         if RequiredCase.JOB in cases:
             required_config["conda_env"] = self.conda_env
 
