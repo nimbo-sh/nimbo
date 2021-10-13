@@ -92,9 +92,7 @@ class AwsConfig(BaseConfig):
             required_config["instance_key"] = self.instance_key
             required_config["security_group"] = self.security_group
             required_config["role"] = self.role
-            required_config["project_name"] = self.project_name
-            required_config["client_name"] = self.client_name
-
+            
         if RequiredCase.JOB in cases:
             required_config["conda_env"] = self.conda_env
 
