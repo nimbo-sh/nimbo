@@ -135,11 +135,10 @@ class Instance(abc.ABC):
 
         start = time.monotonic()
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(1)
-
         reconnect_count = 0
         while reconnect_count < CONFIG.ssh_timeout:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
             error_num = sock.connect_ex((host, 22))
 
             if error_num == 0:
