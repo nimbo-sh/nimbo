@@ -140,7 +140,8 @@ class Instance(abc.ABC):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             error_num = sock.connect_ex((host, 22))
-
+            sock.close()
+            
             if error_num == 0:
                 break
 
