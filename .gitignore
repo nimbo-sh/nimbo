@@ -147,3 +147,6 @@ Pipfile.lock
 
 # Intellij
 .idea
+
+# MacOS
+.DS_Store
