@@ -67,4 +67,4 @@ aware that would make these representations inaccurate in any respect.
 
 ## I agree to all of the above
 - **EXAMPLE** FirstName LastName <https://github.com/firstname-lastname> (<firstname.lastname@gmail.com> is optional, github profile link is required)
-- ...
+- hellno <https://github.com/hellno/>
