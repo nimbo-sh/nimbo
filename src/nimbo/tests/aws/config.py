@@ -69,7 +69,7 @@ class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
             self.s3_datasets_path = S3_DATASETS_PATH
             self.s3_results_path = S3_RESULTS_PATH
         if RequiredCase.INSTANCE in cases:
-            self.image = "ubuntu18-latest-drivers"
+            self.image = "ami-09a94552763ed1a2b"
             self.disk_size = 64
             self.instance_type = "p2.xlarge"
             self.instance_key = self._find_instance_key(ASSETS_PATH, self.region_name)

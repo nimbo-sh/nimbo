@@ -30,13 +30,13 @@ class _Encryption(str, enum.Enum):
 class AwsConfig(BaseConfig):
     aws_profile: Optional[str] = None
     region_name: Optional[str] = None
+    image: Optional[str] = None
 
     s3_datasets_path: Optional[str] = None
     s3_results_path: Optional[str] = None
     encryption: _Encryption = None
 
     instance_type: Optional[str] = None
-    image: str = "ubuntu18-latest-drivers"
     disk_size: Optional[int] = None
     disk_iops: pydantic.conint(ge=0) = None
     disk_type: _DiskType = _DiskType.GP2

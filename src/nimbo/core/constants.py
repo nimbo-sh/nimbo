@@ -20,7 +20,7 @@ region_name: eu-west-1
 instance_type: p2.xlarge
 spot: no
 
-image: ubuntu18-latest-drivers
+image: ami-12345TODO
 disk_size: 128  # In GB
 conda_env: your-env-file.yml  # denotes project root
 

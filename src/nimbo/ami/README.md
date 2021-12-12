@@ -13,8 +13,3 @@ This will assume the image `<image-id>` exists in `eu-west-1`, and that the imag
     "Type": "production"
 }
 ```
-
-To update the firebase database with all the production images across regions, run:
-```
-python src/nimbo/ami/update_firebase_catalog.py
-```

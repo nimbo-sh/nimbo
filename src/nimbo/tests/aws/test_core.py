@@ -14,7 +14,7 @@ def runner():
 
 @isolated_filesystem(RequiredCase.MINIMAL)
 def test_get_image_id(runner: CliRunner):
-    reference_image = "ubuntu18-latest-drivers"
+    reference_image = "ami-09a94552763ed1a2b"
     reference_region = "eu-west-1"
 
     CONFIG.image = reference_image
