@@ -9,7 +9,6 @@ import botocore.exceptions
 import requests
 
 from nimbo import CONFIG
-from nimbo.core import telemetry
 from nimbo.core.cloud_provider.provider.services.instance import Instance
 from nimbo.core.cloud_provider.provider_impl.aws.services.aws_permissions import (
     AwsPermissions,
@@ -26,8 +25,6 @@ class AwsInstance(Instance):
             return {"message": job_cmd + "_dry_run"}
 
         # Launch instance with new volume for anaconda
-        telemetry.record_event("run")
-
         start_t = time.monotonic()
 
         instance_id = AwsInstance._start_instance()

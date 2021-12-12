@@ -4,8 +4,6 @@ from typing import Optional, Set
 
 import pydantic
 
-from nimbo.core.constants import TELEMETRY_URL
-
 
 class RequiredCase(str, enum.Enum):
     # First digit is a unique ID, other digits are the IDs of dependencies
@@ -52,10 +50,8 @@ class BaseConfig(pydantic.BaseModel):
 
     ip_cidr_range: pydantic.conint(strict=True, ge=0, le=32) = 32
     ssh_timeout: pydantic.conint(strict=True, ge=0) = 180
-    telemetry: bool = True
 
     user_id: Optional[str] = None
-    telemetry_url: str = TELEMETRY_URL
 
     def _local_results_not_outside_project(self) -> Optional[str]:
         if os.path.isabs(self.local_results_path):
@@ -68,9 +64,3 @@ class BaseConfig(pydantic.BaseModel):
             return "local_datasets_path should be a relative path"
         if ".." in self.local_datasets_path:
             return "local_datasets_path should not be outside of the project directory"
-
-    @pydantic.validator("telemetry_url")
-    def _nimbo_telemetry_url_unchanged(cls, value):
-        if value != TELEMETRY_URL:
-            raise ValueError("overriding telemetry url is forbidden")
-        return value

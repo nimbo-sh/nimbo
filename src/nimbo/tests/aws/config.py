@@ -60,7 +60,7 @@ class AwsTestConfig(CommonTestConfigMixin, AwsConfig):
         cases = RequiredCase.decompose(*cases)
 
         if RequiredCase.NONE in cases:
-            self.telemetry = False
+            pass
         if RequiredCase.MINIMAL in cases:
             self.region_name = "eu-west-1"
         if RequiredCase.STORAGE in cases:
