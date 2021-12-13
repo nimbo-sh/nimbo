@@ -148,23 +148,19 @@ class AwsUtils(Utils):
             "Amazon Simple Storage Service",
         ]
 
+        filters = {"And": []} #AWS filter syntax
+        filters["And"].append({"Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}}})
+        filters["And"].append({"Dimensions": {"Key": "SERVICE", "Values": services}})
+        if CONFIG.client_name is not None:
+            filters["And"].append({"Tags": {"Key": "Client", "Values": [CONFIG.client_name]}})
+        if CONFIG.project_name is not None:
+            filters["And"].append({"Tags": {"Key": "Project", "Values": [CONFIG.project_name]}})
+
         client = CONFIG.get_session().client("ce")
         results = client.get_cost_and_usage(
             TimePeriod={"End": end, "Start": start},
             Granularity=granularity.upper(),
-            Filter={
-                "And": [
-                    {
-                        "Not": {
-                            "Dimensions": {
-                                "Key": "RECORD_TYPE",
-                                "Values": ["Credit", "Refund"],
-                            }
-                        }
-                    },
-                    {"Dimensions": {"Key": "SERVICE", "Values": services}},
-                ]
-            },
+            Filter=filters,
             Metrics=["UnblendedCost"],
             GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
         )["ResultsByTime"]
